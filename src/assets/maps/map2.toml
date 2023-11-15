@@ -1,0 +1,12 @@
+name = "route-1"
+
+bound.x = 100
+bound.y = 100
+
+walls = [
+[1,8,12,4]
+]
+
+[interactables]
+gate.position = [5,1,2,1]
+gate.on_activate = "move player Village 12 3"

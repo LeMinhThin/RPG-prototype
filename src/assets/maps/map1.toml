@@ -1,0 +1,16 @@
+name = "Village"
+
+bound.x = 100
+bound.y = 100
+
+walls = [
+[1,4,6,2],
+[5,1,4,2]
+]
+
+[interactables]
+gate_west.position = [10,3,1,2]
+gate_west.on_activate = "move player route-1 6 3"
+
+gate_north.position = [7,5,2,2]
+gate_north.on_activate = "move player idk"
