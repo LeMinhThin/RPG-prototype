@@ -8,4 +8,3 @@ edition = "2021"
 [dependencies]
 macroquad = "0.4.4"
 toml = "0.8.8"
-yaml-rust = "0.4.5"

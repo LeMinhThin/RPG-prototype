@@ -103,7 +103,7 @@ impl Game {
             ..Default::default()
         };
         draw_texture_ex(
-            &self.player.texture,
+            &self.textures.player,
             self.player.pos_x,
             self.player.pos_y,
             WHITE,
@@ -130,8 +130,8 @@ impl Game {
             ..Default::default()
         };
         draw_texture_ex(
-            &self.player.texture,
-            self.player.pos_x - STANDARD_SQUARE,
+            &self.textures.player,
+            &self.player.pos_x - STANDARD_SQUARE,
             self.player.pos_y,
             WHITE,
             draw_param,
@@ -139,13 +139,16 @@ impl Game {
     }
 
     fn draw_gates(&self) {
-        let gates = self.maps[&self.current_map].get_gates();
+        let gates = &self.maps[&self.current_map].gates;
 
         for gate in gates {
-            draw_rectangle(gate.x,
-                           gate.y,
-                           gate.w,
-                           gate.h, GREEN)
+            draw_rectangle(
+                gate.location.x,
+                gate.location.y,
+                gate.location.w,
+                gate.location.h,
+                GREEN,
+            )
         }
     }
 }

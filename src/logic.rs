@@ -14,22 +14,32 @@ pub struct Game {
     pub current_map: String,
     pub cam_offset_x: f32,
     pub cam_offset_y: f32,
+    pub textures: Textures,
+}
+
+pub struct Textures {
+    pub player: Texture2D
 }
 
 impl Game {
     pub fn new(textures: Texture2D) -> Self {
         let mut maps = HashMap::new();
         let map_path = get_map_list();
+
         // TODO unhardcode this value
         let current_map = "Village".to_string();
         for map in map_path {
             let map_content = Area::from(map);
             maps.insert(map_content.0, map_content.1);
         }
+
+        let textures = pack_texture(textures);
+
         Game {
-            player: Player::new(textures),
+            player: Player::new(),
             maps,
             current_map,
+            textures,
             cam_offset_x: 0.,
             cam_offset_y: 0.,
         }
@@ -98,7 +108,7 @@ impl Game {
     }
 
     fn move_through_gate(&mut self) {
-        let gates = self.maps[&self.current_map].get_gates();
+        let gates = self.maps[&self.current_map].gates.clone();
         for gate in gates {
             if let Some(_) = self.player.hitbox().intersect(gate.hitbox()) {
                 self.run_command(&gate.command)
@@ -125,13 +135,11 @@ impl Game {
     fn run_command(&mut self, command: &str) {
         let commands: Vec<&str> = command.split_whitespace().collect();
         match commands[0] {
-            "move" => {
-                match commands[1] {
-                    "player" => self.move_map(commands[2], (commands[3], commands[4])),
-                    _ => ()
-                }
+            "move" => match commands[1] {
+                "player" => self.move_map(commands[2], (commands[3], commands[4])),
+                _ => (),
             },
-            _ => ()
+            _ => (),
         }
     }
 
@@ -139,5 +147,11 @@ impl Game {
         self.current_map = to.to_string();
         self.player.pos_x = location.0.parse::<f32>().unwrap() * STANDARD_SQUARE;
         self.player.pos_y = location.1.parse::<f32>().unwrap() * STANDARD_SQUARE
+    }
+}
+
+fn pack_texture(texture: Texture2D) -> Textures {
+    Textures {
+        player: texture
     }
 }

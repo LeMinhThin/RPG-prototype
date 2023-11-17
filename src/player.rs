@@ -9,7 +9,6 @@ const PLAYER_VELOCITY: f32 = 300.;
 pub struct Player {
     pub pos_x: f32,
     pub pos_y: f32,
-    pub texture: Texture2D,
     pub animation: AnimatedSprite,
     pub held_weapon: Weapon,
     pub heath: f32,
@@ -18,12 +17,11 @@ pub struct Player {
 }
 
 impl Player {
-    pub fn new(texture: Texture2D) -> Self {
+    pub fn new() -> Self {
         let animation = animations();
         Player {
             pos_x: 0.,
             pos_y: 0.,
-            texture,
             held_weapon: Weapon::sword(),
             heath: 100.,
             attack_cooldown: 0,
