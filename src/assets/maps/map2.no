@@ -1,6 +1,6 @@
 name = "route-1"
 
-bound.x = 100
+bound_x = 100
 bound.y = 100
 
 walls = [

@@ -7,6 +7,9 @@ const TARGET_HEIGHT: f32 = 720.;
 
 const CAM_SPEED: f32 = 1. / 10.;
 
+const SHEET_SIZE: i8 = 12;
+const TERRAIN_TILE_SIZE: f32 = 16.;
+
 impl Game {
     pub fn new_camera_offset(&mut self) {
         let cam_box = self.cam_box();
@@ -18,21 +21,19 @@ impl Game {
         if cam_box.intersect(player_hitbox) == Some(player_hitbox) {
             return;
         }
-        if player_hitbox.x < cam_box.x {
-            self.cam_offset_x += CAM_SPEED * (cam_box.x - player_hitbox.x) / screen_width
+        if player_hitbox.left() < cam_box.left() {
+            self.cam_offset_x += CAM_SPEED * (cam_box.left() - player_hitbox.left()) / screen_width
         }
-        if player_hitbox.x + STANDARD_SQUARE > cam_box.x + cam_box.w {
-            self.cam_offset_x += CAM_SPEED
-                * ((cam_box.x + cam_box.w) - (player_hitbox.x + player_hitbox.w))
-                / screen_width
+        if player_hitbox.right() > cam_box.right() {
+            self.cam_offset_x +=
+                CAM_SPEED * (cam_box.right() - player_hitbox.right()) / screen_width
         }
-        if player_hitbox.y < cam_box.y {
-            self.cam_offset_y -= CAM_SPEED * (cam_box.y - player_hitbox.y) / screen_height
+        if player_hitbox.top() < cam_box.top() {
+            self.cam_offset_y -= CAM_SPEED * (cam_box.top() - player_hitbox.top()) / screen_height
         }
-        if player_hitbox.y + STANDARD_SQUARE > cam_box.y + cam_box.h {
-            self.cam_offset_y -= CAM_SPEED
-                * ((cam_box.y + cam_box.h) - (player_hitbox.y + player_hitbox.h))
-                / screen_height
+        if player_hitbox.bottom() > cam_box.bottom() {
+            self.cam_offset_y -=
+                CAM_SPEED * (cam_box.bottom() - player_hitbox.bottom()) / screen_height
         }
     }
 
@@ -71,7 +72,7 @@ impl Game {
         };
         set_camera(&camera);
 
-        self.draw_walls();
+        self.draw_terrain();
         self.draw_monsters();
         self.draw_player();
         self.draw_gates();
@@ -89,9 +90,40 @@ impl Game {
         }
     }
 
-    fn draw_walls(&self) {
-        for wall in self.maps[&self.current_map].walls.iter() {
-            draw_rectangle(wall.x, wall.y, wall.w, wall.h, BLUE);
+    fn draw_terrain(&self) {
+        let map = &self.maps[&self.current_map];
+        let mesh = &map.render_mesh;
+
+        let dest_size = Some(vec2(STANDARD_SQUARE, STANDARD_SQUARE));
+        let mut index_y = 0;
+
+        for y_coord in map.bound.lower_y..map.bound.upper_y {
+            let mut index_x = 0;
+            for x_coord in map.bound.lower_x..map.bound.upper_x {
+                let (x, y) = to_index(mesh[index_y][index_x]);
+
+                let source = Some(Rect {
+                    x,
+                    y,
+                    w: TERRAIN_TILE_SIZE,
+                    h: TERRAIN_TILE_SIZE,
+                });
+
+                let params = DrawTextureParams {
+                    source,
+                    dest_size,
+                    ..Default::default()
+                };
+
+                let (x, y) = (
+                    x_coord as f32 * STANDARD_SQUARE,
+                    y_coord as f32 * STANDARD_SQUARE,
+                );
+
+                draw_texture_ex(&self.textures.terrain, x, y, WHITE, params);
+                index_x += 1;
+            }
+            index_y += 1;
         }
     }
 
@@ -151,4 +183,11 @@ impl Game {
             )
         }
     }
+}
+
+fn to_index(point: i8) -> (f32, f32) {
+    let x = (point % SHEET_SIZE - 1) as f32;
+    let y = (point / SHEET_SIZE) as f32;
+
+    (x * TERRAIN_TILE_SIZE, y * TERRAIN_TILE_SIZE)
 }

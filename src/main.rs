@@ -5,6 +5,8 @@ mod monsters;
 mod player;
 mod weapons;
 
+use std::vec;
+
 use logic::*;
 use macroquad::prelude::*;
 
@@ -18,8 +20,12 @@ fn window_conf() -> Conf {
 
 #[macroquad::main(window_conf)]
 async fn main() {
-    let textures: Texture2D = load_texture("res/player.png").await.unwrap();
-    textures.set_filter(FilterMode::Nearest);
+    let player_textures: Texture2D = load_texture("res/player.png").await.unwrap();
+    player_textures.set_filter(FilterMode::Nearest);
+    let terrain_textures: Texture2D = load_texture("res/terrain.png").await.unwrap();
+    terrain_textures.set_filter(FilterMode::Nearest);
+    let texture = vec![player_textures, terrain_textures];
+    let textures = pack_texture(texture);
     let mut game_state = Game::new(textures);
     loop {
         let delta_time = get_frame_time();

@@ -18,11 +18,12 @@ pub struct Game {
 }
 
 pub struct Textures {
-    pub player: Texture2D
+    pub player: Texture2D,
+    pub terrain: Texture2D,
 }
 
 impl Game {
-    pub fn new(textures: Texture2D) -> Self {
+    pub fn new(textures: Textures) -> Self {
         let mut maps = HashMap::new();
         let map_path = get_map_list();
 
@@ -30,10 +31,9 @@ impl Game {
         let current_map = "Village".to_string();
         for map in map_path {
             let map_content = Area::from(map);
+            println!("{:?}", map_content.1.bound);
             maps.insert(map_content.0, map_content.1);
         }
-
-        let textures = pack_texture(textures);
 
         Game {
             player: Player::new(),
@@ -50,6 +50,11 @@ impl Game {
             if self.player.attack_cooldown == 0 {
                 self.player.attack_cooldown = self.player.held_weapon.cooldown;
                 self.damage_monster();
+            }
+        }
+        if is_key_pressed(KeyCode::F3) {
+            for slice in &self.maps[&self.current_map].render_mesh {
+                println!("{slice:?}")
             }
         }
     }
@@ -87,20 +92,21 @@ impl Game {
     fn wall_collision(&mut self) {
         let walls = self.maps[&self.current_map].walls.clone();
         for wall in walls {
-            if let Some(rect) = wall.intersect(self.player.hitbox()) {
+            let hitbox = wall.hitbox;
+            if let Some(rect) = hitbox.intersect(self.player.hitbox()) {
                 // Top or bottom platform_collision
                 let player_size = TILE_SIZE * SCALE_FACTOR;
                 if rect.h < rect.w {
-                    if wall.y + wall.h > self.player.pos_y + player_size {
-                        self.player.pos_y = wall.y - player_size;
+                    if hitbox.y + hitbox.h > self.player.pos_y + player_size {
+                        self.player.pos_y = hitbox.y - player_size;
                     } else {
-                        self.player.pos_y = wall.y + wall.h;
+                        self.player.pos_y = hitbox.y + hitbox.h;
                     }
                 } else {
-                    if wall.x + wall.w > self.player.pos_x + player_size {
-                        self.player.pos_x = wall.x - player_size;
+                    if hitbox.x + hitbox.w > self.player.pos_x + player_size {
+                        self.player.pos_x = hitbox.x - player_size;
                     } else {
-                        self.player.pos_x = wall.x + wall.w
+                        self.player.pos_x = hitbox.x + hitbox.w
                     }
                 }
             }
@@ -150,8 +156,9 @@ impl Game {
     }
 }
 
-fn pack_texture(texture: Texture2D) -> Textures {
+pub fn pack_texture(texture: Vec<Texture2D>) -> Textures {
     Textures {
-        player: texture
+        player: texture[0].clone(),
+        terrain: texture[1].clone(),
     }
 }
