@@ -31,7 +31,6 @@ impl Game {
         let current_map = "Village".to_string();
         for map in map_path {
             let map_content = Area::from(map);
-            println!("{:?}", map_content.1.bound);
             maps.insert(map_content.0, map_content.1);
         }
 
@@ -50,11 +49,6 @@ impl Game {
             if self.player.attack_cooldown == 0 {
                 self.player.attack_cooldown = self.player.held_weapon.cooldown;
                 self.damage_monster();
-            }
-        }
-        if is_key_pressed(KeyCode::F3) {
-            for slice in &self.maps[&self.current_map].render_mesh {
-                println!("{slice:?}")
             }
         }
     }

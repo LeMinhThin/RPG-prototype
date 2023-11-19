@@ -235,10 +235,6 @@ fn make_render_mesh(height_map: Vec<Vec<i8>>) -> Vec<Vec<i8>> {
     let lenght_y = height_map.len() - 1;
     let lenght_x = height_map[0].len() - 1;
 
-    for i in &height_map {
-        println!("{i:?}")
-    }
-
     let mut render_mesh = make_mesh(lenght_x, lenght_y);
 
     for y in 0..=lenght_y {
@@ -289,14 +285,6 @@ fn make_lookup_array(neighbors: [Option<&i8>; 4], point: &i8) -> [bool; 4] {
 
     let mut array: [bool; 4] = [true; 4];
 
-    /*
-    println!("");
-    println!("    {:?}", neighbors[0]);
-    println!("{:?} {point} {:?}", neighbors[3], neighbors[2]);
-    println!("    {:?}", neighbors[1]);
-    println!("");
-    */
-
     let mut index = 0;
     while index < array.len() {
         if neighbors[index] == None {
@@ -308,8 +296,6 @@ fn make_lookup_array(neighbors: [Option<&i8>; 4], point: &i8) -> [bool; 4] {
         }
         index += 1;
     }
-
-    //println!("{array:?}");
 
     array
 }
