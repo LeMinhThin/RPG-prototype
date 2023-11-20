@@ -2,12 +2,12 @@ use crate::logic::*;
 use macroquad::prelude::*;
 use std::f32::consts::PI;
 
-const TARGET_WIDTH: f32 = 1280.;
-const TARGET_HEIGHT: f32 = 720.;
+const TARGET_WIDTH: f32 = 1600.;
+const TARGET_HEIGHT: f32 = 900.;
 
 const CAM_SPEED: f32 = 1. / 10.;
 
-const SHEET_SIZE: i8 = 12;
+const SHEET_SIZE: u8 = 12;
 const TERRAIN_TILE_SIZE: f32 = 16.;
 
 impl Game {
@@ -93,13 +93,24 @@ impl Game {
     fn draw_terrain(&self) {
         let map = &self.maps[&self.current_map];
         let mesh = &map.render_mesh;
+        let screen_box = screen_box(self.cam_box());
 
         let dest_size = Some(vec2(STANDARD_SQUARE, STANDARD_SQUARE));
         let mut index_y = 0;
 
-        for y_coord in map.bound.lower_y..map.bound.upper_y {
+        for y_coord in 0..map.bound.y {
             let mut index_x = 0;
-            for x_coord in map.bound.lower_x..map.bound.upper_x {
+            for x_coord in 0..map.bound.x {
+                let (render_pos_x, render_pos_y) = (
+                    x_coord as f32 * STANDARD_SQUARE,
+                    y_coord as f32 * STANDARD_SQUARE,
+                );
+
+                if !screen_box.contains(vec2(render_pos_x, render_pos_y)) {
+                    index_x += 1;
+                    continue;
+                }
+
                 let (x, y) = to_index(mesh[index_y][index_x]);
 
                 let source = Some(Rect {
@@ -115,12 +126,13 @@ impl Game {
                     ..Default::default()
                 };
 
-                let (x, y) = (
-                    x_coord as f32 * STANDARD_SQUARE,
-                    y_coord as f32 * STANDARD_SQUARE,
+                draw_texture_ex(
+                    &self.textures.terrain,
+                    render_pos_x,
+                    render_pos_y,
+                    WHITE,
+                    params,
                 );
-
-                draw_texture_ex(&self.textures.terrain, x, y, WHITE, params);
                 index_x += 1;
             }
             index_y += 1;
@@ -185,9 +197,38 @@ impl Game {
     }
 }
 
-fn to_index(point: i8) -> (f32, f32) {
+fn to_index(point: u8) -> (f32, f32) {
     let x = (point % SHEET_SIZE - 1) as f32;
     let y = (point / SHEET_SIZE) as f32;
 
     (x * TERRAIN_TILE_SIZE, y * TERRAIN_TILE_SIZE)
+}
+
+fn screen_box(cam_box: Rect) -> Rect {
+    let center = cam_box.center();
+
+    let screen_width = screen_width();
+    let screen_height = screen_height();
+
+    // I don't know why you need to multiply everything by 2 for it to work,
+    // It just works ok, don't ask
+    Rect {
+        x: center.x - screen_width * 1.4,
+        y: center.y - screen_height * 1.4,
+        w: screen_width * 2.8 + STANDARD_SQUARE,
+        h: screen_height *2.8 + STANDARD_SQUARE,
+    }
+}
+
+// For debugging purpose
+
+#[allow(dead_code)]
+trait Draw {
+    fn draw(&self);
+}
+
+impl Draw for Rect {
+    fn draw(&self) {
+        draw_rectangle(self.x, self.y, self.w, self.h, PURPLE)
+    }
 }

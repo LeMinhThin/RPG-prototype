@@ -14,13 +14,13 @@ pub struct Area {
     //pub interactables: Vec<Interactable>,
     pub gates: Vec<Gate>,
     pub bound: Bound,
-    pub render_mesh: Vec<Vec<i8>>,
+    pub render_mesh: Vec<Vec<u8>>,
 }
 
 #[derive(Clone)]
 pub struct Wall {
     pub hitbox: Rect,
-    elevation: i8,
+    elevation: u8,
 }
 
 #[derive(Clone, Debug)]
@@ -31,19 +31,15 @@ pub struct Gate {
 
 #[derive(Clone, Debug)]
 pub struct Bound {
-    pub lower_x: i8,
-    pub lower_y: i8,
-    pub upper_x: i8,
-    pub upper_y: i8,
+    pub x: u8,
+    pub y: u8,
 }
 
 impl Bound {
-    fn new(lower_x: i8, lower_y: i8, upper_x: i8, upper_y: i8) -> Self {
+    fn new(x: u8, y: u8) -> Self {
         Bound {
-            lower_x,
-            lower_y,
-            upper_x,
-            upper_y,
+       x,
+        y
         }
     }
 }
@@ -65,8 +61,7 @@ impl Area {
             gates = make_gates(x.as_table().unwrap());
         }
 
-        let bounds = parsed["bound"].as_table().unwrap();
-        let bound = make_bound(bounds);
+        let bound = make_bound(&parsed["bound"]);
 
         let render_mesh = calc_render_mesh(&walls, &bound);
 
@@ -130,7 +125,7 @@ fn make_walls(content: &Vec<Value>) -> Vec<Wall> {
             i[2].as_integer().unwrap() as f32 * STANDARD_SQUARE,
             i[3].as_integer().unwrap() as f32 * STANDARD_SQUARE,
         );
-        let elevation = i[4].as_integer().unwrap() as i8;
+        let elevation = i[4].as_integer().unwrap() as u8;
         walls.push(Wall { hitbox, elevation });
     }
     walls
@@ -150,23 +145,20 @@ fn make_gates(content: &Map<String, Value>) -> Vec<Gate> {
     gates
 }
 
-fn make_bound(bounds: &Table) -> Bound {
-    let bound_x = bounds["x"].as_array().unwrap();
-    let bound_y = bounds["y"].as_array().unwrap();
+fn make_bound(bounds: &Value) -> Bound {
+    let bound = bounds.as_array().unwrap();
 
     Bound::new(
-        convert(&bound_x[0]),
-        convert(&bound_x[1]),
-        convert(&bound_y[0]),
-        convert(&bound_y[1]),
+        convert(&bound[0]),
+        convert(&bound[1]),
     )
 }
 
-fn convert(value: &Value) -> i8 {
-    value.as_integer().unwrap() as i8
+fn convert(value: &Value) -> u8 {
+    value.as_integer().unwrap() as u8
 }
 
-fn lookup_sprite(input: [bool; 4]) -> i8 {
+fn lookup_sprite(input: [bool; 4]) -> u8 {
     // 0 = north_neighbor
     // 1 = south_neighbor
     // 2 = east_neighbor
@@ -185,10 +177,9 @@ fn lookup_sprite(input: [bool; 4]) -> i8 {
     }
 }
 
-fn calc_render_mesh(walls: &Vec<Wall>, bounds: &Bound) -> Vec<Vec<i8>> {
+fn calc_render_mesh(walls: &Vec<Wall>, bounds: &Bound) -> Vec<Vec<u8>> {
     let (width, height) = (
-        (bounds.lower_x - bounds.upper_x).abs(),
-        (bounds.lower_y - bounds.upper_y).abs(),
+        bounds.x, bounds.y
     );
     let mut height_map = make_mesh(width as usize, height as usize);
     for wall in walls {
@@ -199,9 +190,9 @@ fn calc_render_mesh(walls: &Vec<Wall>, bounds: &Bound) -> Vec<Vec<i8>> {
     make_render_mesh(height_map)
 }
 
-fn make_mesh(width: usize, height: usize) -> Vec<Vec<i8>> {
+fn make_mesh(width: usize, height: usize) -> Vec<Vec<u8>> {
     // Ah yes, "Functional Programming"
-    let slice: Vec<i8> = (0..=width).map(|_| 0).collect();
+    let slice: Vec<u8> = (0..=width).map(|_| 0).collect();
     (0..=height).map(|_| slice.clone()).collect()
 }
 
@@ -218,7 +209,7 @@ fn pos_in_tile(wall: &Wall) -> Wall {
     }
 }
 
-fn modify_mesh(mesh: &mut Vec<Vec<i8>>, wall: Wall) {
+fn modify_mesh(mesh: &mut Vec<Vec<u8>>, wall: Wall) {
     let left = wall.hitbox.x as usize;
     let top = wall.hitbox.y as usize;
     let bottom = wall.hitbox.bottom() as usize;
@@ -231,7 +222,7 @@ fn modify_mesh(mesh: &mut Vec<Vec<i8>>, wall: Wall) {
     }
 }
 
-fn make_render_mesh(height_map: Vec<Vec<i8>>) -> Vec<Vec<i8>> {
+fn make_render_mesh(height_map: Vec<Vec<u8>>) -> Vec<Vec<u8>> {
     let lenght_y = height_map.len() - 1;
     let lenght_x = height_map[0].len() - 1;
 
@@ -245,9 +236,9 @@ fn make_render_mesh(height_map: Vec<Vec<i8>>) -> Vec<Vec<i8>> {
             // 1 = south_neighbor
             // 2 = east_neighbor
             // 3 = west_neighbor
-            let index_y = y as i8;
-            let index_x = x as i8;
-            let neighbors: [Option<&i8>; 4] = [
+            let index_y = y as i16;
+            let index_x = x as i16;
+            let neighbors: [Option<&u8>; 4] = [
                 get_cell(&height_map, index_y - 1, index_x), // north
                 get_cell(&height_map, index_y + 1, index_x), // south
                 get_cell(&height_map, index_y, index_x + 1), // east
@@ -263,7 +254,7 @@ fn make_render_mesh(height_map: Vec<Vec<i8>>) -> Vec<Vec<i8>> {
     render_mesh
 }
 
-fn get_cell(map: &Vec<Vec<i8>>, y: i8, x: i8) -> Option<&i8> {
+fn get_cell(map: &Vec<Vec<u8>>, y: i16, x: i16) -> Option<&u8> {
     if y < 0 {
         return None;
     }
@@ -275,7 +266,7 @@ fn get_cell(map: &Vec<Vec<i8>>, y: i8, x: i8) -> Option<&i8> {
     map.get(y)?.get(x)
 }
 
-fn make_lookup_array(neighbors: [Option<&i8>; 4], point: &i8) -> [bool; 4] {
+fn make_lookup_array(neighbors: [Option<&u8>; 4], point: &u8) -> [bool; 4] {
     // 0 = north_neighbor
     // 1 = south_neighbor
     // 2 = east_neighbor

@@ -32,10 +32,10 @@ impl Player {
 
     pub fn hitbox(&self) -> Rect {
         Rect {
-            x: self.pos_x,
-            y: self.pos_y,
-            w: STANDARD_SQUARE,
-            h: STANDARD_SQUARE,
+            x: self.pos_x + (9. / TILE_SIZE) * STANDARD_SQUARE,
+            y: self.pos_y + (3. / TILE_SIZE) * STANDARD_SQUARE,
+            w: STANDARD_SQUARE * (13. / TILE_SIZE),
+            h: STANDARD_SQUARE * (21. / TILE_SIZE),
         }
     }
 

@@ -2,11 +2,14 @@ name = "Village"
 
 walls = [
  [1,1,3,3,3],
- [6,1,2,2,2]
+ [4,1,2,2,4]
 ]
 
-bound.x = [0,0]
-bound.y = [10,10]
+# first bound is always at 0,0 this value is hardcoded
+# also you can't have a negative point on the map
+# for example this bound = [-1, 0] is invalid
+
+bound = [10,10]
 
 [interactables]
 gate_west.position = [10,3,1,2]

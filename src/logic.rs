@@ -86,21 +86,20 @@ impl Game {
     fn wall_collision(&mut self) {
         let walls = self.maps[&self.current_map].walls.clone();
         for wall in walls {
-            let hitbox = wall.hitbox;
-            if let Some(rect) = hitbox.intersect(self.player.hitbox()) {
-                // Top or bottom platform_collision
-                let player_size = TILE_SIZE * SCALE_FACTOR;
-                if rect.h < rect.w {
-                    if hitbox.y + hitbox.h > self.player.pos_y + player_size {
-                        self.player.pos_y = hitbox.y - player_size;
+            let wall_hitbox = wall.hitbox;
+            let player_hitbox = self.player.hitbox();
+            if let Some(rect) = wall_hitbox.intersect(player_hitbox) {
+                if rect.w < rect.h {
+                    if player_hitbox.right() > wall_hitbox.right() {
+                        self.player.pos_x += rect.w
                     } else {
-                        self.player.pos_y = hitbox.y + hitbox.h;
+                        self.player.pos_x -= rect.w
                     }
                 } else {
-                    if hitbox.x + hitbox.w > self.player.pos_x + player_size {
-                        self.player.pos_x = hitbox.x - player_size;
+                    if player_hitbox.bottom() > wall_hitbox.bottom() {
+                        self.player.pos_y += rect.h
                     } else {
-                        self.player.pos_x = hitbox.x + hitbox.w
+                        self.player.pos_y -= rect.h
                     }
                 }
             }

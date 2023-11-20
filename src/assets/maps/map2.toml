@@ -1,10 +1,9 @@
 name = "route-1"
 
-bound_x = 100
-bound.y = 100
+bound = [254, 254]
 
 walls = [
-[1,8,12,4]
+[1,3,12,4, 3]
 ]
 
 [interactables]
