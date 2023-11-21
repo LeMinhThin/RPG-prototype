@@ -52,33 +52,26 @@ impl Player {
         if self.attack_cooldown > 0 {
             return;
         }
-        let mut dx: f32 = 0.;
-        let mut dy: f32 = 0.;
+        let mut movement_vector: Vec2 = vec2(0., 0.);
         if is_key_down(KeyCode::W) {
-            dy += -1.;
-        }
-        if is_key_down(KeyCode::S) {
-            dy += 1.
-        }
-        if is_key_down(KeyCode::D) {
-            dx += 1.
+            movement_vector.y += -1.
         }
         if is_key_down(KeyCode::A) {
-            dx += -1.
+            movement_vector.x += -1.
         }
-        self.new_orientation(&dy, &dx);
-        if dx == 0. && dy == 0. {
+        if is_key_down(KeyCode::S) {
+            movement_vector.y += 1.
+        }
+        if is_key_down(KeyCode::D) {
+            movement_vector.x += 1.
+        }
+        self.new_orientation(&movement_vector);
+        if movement_vector == Vec2::ZERO {
             return;
         }
-        let coefficent;
-        if dx < 0. {
-            coefficent = -1.
-        } else {
-            coefficent = 1.
-        }
-        let angle: f32 = (dy / dx).atan();
-        self.pos_x += PLAYER_VELOCITY * angle.cos() * coefficent * delta_time;
-        self.pos_y += PLAYER_VELOCITY * angle.sin() * coefficent * delta_time;
+        movement_vector = movement_vector.normalize();
+        self.pos_x += PLAYER_VELOCITY * movement_vector.x * delta_time;
+        self.pos_y += PLAYER_VELOCITY * movement_vector.y * delta_time;
     }
 
     pub fn tick(&mut self) {
@@ -90,9 +83,9 @@ impl Player {
         self.animation.update();
     }
 
-    fn new_orientation(&mut self, dy: &f32, dx: &f32) {
-        let dy = *dy as i8;
-        let dx = *dx as i8;
+    fn new_orientation(&mut self, movement_vector: &Vec2) {
+        let dy = movement_vector.y as i8;
+        let dx = movement_vector.x as i8;
         let row;
         if dy == 0 && dx == 0 {
             row = match self.facing {

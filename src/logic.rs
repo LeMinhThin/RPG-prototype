@@ -5,8 +5,8 @@ use crate::player::*;
 use macroquad::prelude::*;
 
 pub const TILE_SIZE: f32 = 24.;
-pub const SCALE_FACTOR: f32 = 6.;
-pub const STANDARD_SQUARE: f32 = TILE_SIZE * SCALE_FACTOR;
+pub static mut SCALE_FACTOR: f32 = 6.;
+pub static STANDARD_SQUARE: f32 = unsafe { TILE_SIZE * SCALE_FACTOR };
 
 pub struct Game {
     pub player: Player,
@@ -133,13 +133,7 @@ impl Game {
 
     fn run_command(&mut self, command: &str) {
         let commands: Vec<&str> = command.split_whitespace().collect();
-        match commands[0] {
-            "move" => match commands[1] {
-                "player" => self.move_map(commands[2], (commands[3], commands[4])),
-                _ => (),
-            },
-            _ => (),
-        }
+        self.move_map(commands[0], (commands[1], commands[2]))
     }
 
     fn move_map(&mut self, to: &str, location: (&str, &str)) {

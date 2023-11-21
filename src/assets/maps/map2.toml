@@ -8,4 +8,4 @@ walls = [
 
 [interactables]
 gate.position = [5,1,2,1]
-gate.on_activate = "move player Village 12 3"
+gate.move_player = "Village 12 3"

@@ -37,10 +37,7 @@ pub struct Bound {
 
 impl Bound {
     fn new(x: u8, y: u8) -> Self {
-        Bound {
-       x,
-        y
-        }
+        Bound { x, y }
     }
 }
 
@@ -139,7 +136,7 @@ fn make_gates(content: &Map<String, Value>) -> Vec<Gate> {
         let y = *&positions[1].as_integer().unwrap() as f32;
         let w = *&positions[2].as_integer().unwrap() as f32;
         let h = *&positions[3].as_integer().unwrap() as f32;
-        let command = gate.1["on_activate"].as_str().unwrap().to_string();
+        let command = gate.1["move_player"].as_str().unwrap().to_string();
         gates.push(Gate::new(x, y, w, h, command))
     }
     gates
@@ -148,10 +145,7 @@ fn make_gates(content: &Map<String, Value>) -> Vec<Gate> {
 fn make_bound(bounds: &Value) -> Bound {
     let bound = bounds.as_array().unwrap();
 
-    Bound::new(
-        convert(&bound[0]),
-        convert(&bound[1]),
-    )
+    Bound::new(convert(&bound[0]), convert(&bound[1]))
 }
 
 fn convert(value: &Value) -> u8 {
@@ -178,9 +172,7 @@ fn lookup_sprite(input: [bool; 4]) -> u8 {
 }
 
 fn calc_render_mesh(walls: &Vec<Wall>, bounds: &Bound) -> Vec<Vec<u8>> {
-    let (width, height) = (
-        bounds.x, bounds.y
-    );
+    let (width, height) = (bounds.x, bounds.y);
     let mut height_map = make_mesh(width as usize, height as usize);
     for wall in walls {
         let scaled = pos_in_tile(wall);

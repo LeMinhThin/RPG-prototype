@@ -47,7 +47,7 @@ impl Game {
         let cam_pos_x = -self.cam_offset_x * screen_width * ratio_x;
         let cam_pos_y = self.cam_offset_y * screen_height * ratio_y;
 
-        let bound_x = screen_width - 2. * STANDARD_SQUARE;
+        let bound_x = screen_width - 1. * STANDARD_SQUARE;
         let bound_y = screen_height - 1. * STANDARD_SQUARE;
 
         Rect::new(
@@ -60,10 +60,8 @@ impl Game {
 
     pub fn draw(&mut self) {
         clear_background(WHITE);
-        let screen_width = screen_width();
-        let screen_height = screen_height();
-        let zoom_x = (1. / screen_width) * (screen_width / TARGET_WIDTH);
-        let zoom_y = (1. / screen_height) * (screen_height / TARGET_HEIGHT);
+        let zoom_x = 1. / TARGET_WIDTH;
+        let zoom_y = 1. / TARGET_HEIGHT;
         let camera: Camera2D = Camera2D {
             offset: vec2(self.cam_offset_x, self.cam_offset_y),
             target: vec2(0., 0.),
@@ -80,13 +78,7 @@ impl Game {
 
     fn draw_monsters(&self) {
         for monster in self.maps[&self.current_map].enemies.iter() {
-            draw_rectangle(
-                monster.pos_x,
-                monster.pos_y,
-                STANDARD_SQUARE,
-                STANDARD_SQUARE,
-                RED,
-            )
+            monster.hitbox().draw();
         }
     }
 
@@ -140,7 +132,7 @@ impl Game {
     }
 
     fn draw_player(&mut self) {
-        let dest_size = Some(self.player.animation.frame().dest_size * SCALE_FACTOR);
+        let dest_size = Some(unsafe {self.player.animation.frame().dest_size * SCALE_FACTOR});
         let draw_param = DrawTextureParams {
             source: Some(self.player.animation.frame().source_rect),
             dest_size,
@@ -213,14 +205,14 @@ fn screen_box(cam_box: Rect) -> Rect {
     // I don't know why you need to multiply everything by 2 for it to work,
     // It just works ok, don't ask
     Rect {
-        x: center.x - screen_width * 1.4,
-        y: center.y - screen_height * 1.4,
-        w: screen_width * 2.8 + STANDARD_SQUARE,
-        h: screen_height *2.8 + STANDARD_SQUARE,
+        x: center.x - screen_width * 1.3,
+        y: center.y - screen_height * 1.3,
+        w: screen_width * 2.6,
+        h: screen_height * 2.6,
     }
 }
 
-// For debugging purpose
+// For debugging and prototyping purposes
 
 #[allow(dead_code)]
 trait Draw {
@@ -229,6 +221,6 @@ trait Draw {
 
 impl Draw for Rect {
     fn draw(&self) {
-        draw_rectangle(self.x, self.y, self.w, self.h, PURPLE)
+        draw_rectangle(self.x, self.y, self.w, self.h, RED)
     }
 }
