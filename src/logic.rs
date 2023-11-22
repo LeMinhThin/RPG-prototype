@@ -5,8 +5,8 @@ use crate::player::*;
 use macroquad::prelude::*;
 
 pub const TILE_SIZE: f32 = 24.;
-pub static mut SCALE_FACTOR: f32 = 6.;
-pub static STANDARD_SQUARE: f32 = unsafe { TILE_SIZE * SCALE_FACTOR };
+pub const SCALE_FACTOR: f32 = 6.;
+pub const STANDARD_SQUARE: f32 =TILE_SIZE * SCALE_FACTOR;
 
 pub struct Game {
     pub player: Player,
@@ -20,6 +20,7 @@ pub struct Game {
 pub struct Textures {
     pub player: Texture2D,
     pub terrain: Texture2D,
+    pub slime: Texture2D
 }
 
 impl Game {
@@ -69,6 +70,7 @@ impl Game {
         {
             monster.move_to_player(&self.player, delta_time);
             monster.damage_player(&mut self.player, delta_time);
+            monster.update_anim();
         }
 
         self.kill_monster();
@@ -147,5 +149,6 @@ pub fn pack_texture(texture: Vec<Texture2D>) -> Textures {
     Textures {
         player: texture[0].clone(),
         terrain: texture[1].clone(),
+        slime: texture[2].clone()
     }
 }

@@ -45,7 +45,7 @@ impl Area {
     pub fn from(map: PathBuf) -> (String, Self) {
         let mut walls: Vec<Wall> = vec![];
         let mut gates = vec![];
-        let enemies = vec![Monster::cube(500., 200.)];
+        let enemies = vec![Monster::slime(500., 200.)];
 
         let content = read_to_string(map).unwrap();
         let parsed = content.parse::<Table>().unwrap();

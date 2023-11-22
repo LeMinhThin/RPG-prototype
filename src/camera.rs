@@ -78,7 +78,19 @@ impl Game {
 
     fn draw_monsters(&self) {
         for monster in self.maps[&self.current_map].enemies.iter() {
-            monster.hitbox().draw();
+            let dest_size = Some(monster.animation.frame().dest_size * SCALE_FACTOR );
+            let draw_param = DrawTextureParams {
+                source: Some(monster.animation.frame().source_rect),
+                dest_size,
+                ..Default::default()
+            };
+            draw_texture_ex(
+                &self.textures.slime,
+                monster.pos_x,
+                monster.pos_y,
+                WHITE,
+                draw_param,
+            );
         }
     }
 
@@ -132,7 +144,7 @@ impl Game {
     }
 
     fn draw_player(&mut self) {
-        let dest_size = Some(unsafe {self.player.animation.frame().dest_size * SCALE_FACTOR});
+        let dest_size = Some(self.player.animation.frame().dest_size * SCALE_FACTOR );
         let draw_param = DrawTextureParams {
             source: Some(self.player.animation.frame().source_rect),
             dest_size,
