@@ -40,5 +40,4 @@ async fn load_textures() -> Textures {
         texture.set_filter(FilterMode::Nearest)
     }
     pack_texture(textures)
-
 }

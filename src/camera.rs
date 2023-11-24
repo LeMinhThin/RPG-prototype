@@ -1,6 +1,5 @@
 use crate::logic::*;
 use macroquad::prelude::*;
-use std::f32::consts::PI;
 
 const TARGET_WIDTH: f32 = 1600.;
 const TARGET_HEIGHT: f32 = 900.;
@@ -78,7 +77,7 @@ impl Game {
 
     fn draw_monsters(&self) {
         for monster in self.maps[&self.current_map].enemies.iter() {
-            let dest_size = Some(monster.animation.frame().dest_size * SCALE_FACTOR );
+            let dest_size = Some(monster.animation.frame().dest_size * SCALE_FACTOR);
             let draw_param = DrawTextureParams {
                 source: Some(monster.animation.frame().source_rect),
                 dest_size,
@@ -144,7 +143,7 @@ impl Game {
     }
 
     fn draw_player(&mut self) {
-        let dest_size = Some(self.player.animation.frame().dest_size * SCALE_FACTOR );
+        let dest_size = Some(self.player.animation.frame().dest_size * SCALE_FACTOR);
         let draw_param = DrawTextureParams {
             source: Some(self.player.animation.frame().source_rect),
             dest_size,
@@ -157,20 +156,23 @@ impl Game {
             WHITE,
             draw_param,
         );
-        if self.player.attack_cooldown > 0 {
+        if self.player.attack_cooldown > 0. {
             self.draw_weapon();
         }
     }
 
     fn draw_weapon(&self) {
+        let rotation = self.player.get_weapon_angle();
         let draw_param = DrawTextureParams {
             source: Some(Rect::new(
-                TILE_SIZE * 1.,
                 TILE_SIZE * 0.,
+                TILE_SIZE * 8.,
                 TILE_SIZE,
                 TILE_SIZE,
             )),
-            rotation: -PI * 0.5,
+            rotation,
+            // This breaks the game for some reason
+            //pivot: Some(draw_pos),
             dest_size: Some(Vec2 {
                 x: STANDARD_SQUARE,
                 y: STANDARD_SQUARE,
@@ -179,7 +181,7 @@ impl Game {
         };
         draw_texture_ex(
             &self.textures.player,
-            &self.player.pos_x - STANDARD_SQUARE,
+            self.player.pos_x,
             self.player.pos_y,
             WHITE,
             draw_param,
@@ -227,7 +229,7 @@ fn screen_box(cam_box: Rect) -> Rect {
 // For debugging and prototyping purposes
 
 #[allow(dead_code)]
-trait Draw {
+pub trait Draw {
     fn draw(&self);
 }
 

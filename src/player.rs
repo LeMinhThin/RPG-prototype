@@ -1,3 +1,4 @@
+use std::f32::consts::PI;
 use crate::logic::{STANDARD_SQUARE, TILE_SIZE};
 use crate::weapons::Weapon;
 use macroquad::experimental::animation::*;
@@ -12,7 +13,7 @@ pub struct Player {
     pub animation: AnimatedSprite,
     pub held_weapon: Weapon,
     pub heath: f32,
-    pub attack_cooldown: u8,
+    pub attack_cooldown: f32,
     facing: Orientation,
 }
 
@@ -24,7 +25,7 @@ impl Player {
             pos_y: 0.,
             held_weapon: Weapon::sword(),
             heath: 100.,
-            attack_cooldown: 0,
+            attack_cooldown: 0.,
             animation,
             facing: Orientation::Down,
         }
@@ -39,7 +40,7 @@ impl Player {
         }
     }
 
-    pub fn weapon_hitbox(&mut self) -> Rect {
+    pub fn weapon_hitbox(&self) -> Rect {
         Rect::new(
             self.pos_x - STANDARD_SQUARE,
             self.pos_y - STANDARD_SQUARE,
@@ -49,7 +50,7 @@ impl Player {
     }
 
     pub fn new_pos(&mut self, delta_time: &f32) {
-        if self.attack_cooldown > 0 {
+        if self.attack_cooldown > 0. {
             return;
         }
         let mut movement_vector: Vec2 = vec2(0., 0.);
@@ -77,8 +78,11 @@ impl Player {
     pub fn tick(&mut self) {
         let delta_time = get_frame_time();
         self.new_pos(&delta_time);
-        if self.attack_cooldown > 0 {
-            self.attack_cooldown -= 1;
+        if self.attack_cooldown > 0. {
+            self.attack_cooldown -= delta_time;
+        }
+        if self.attack_cooldown < 0. {
+            self.attack_cooldown = 0.
         }
         self.animation.update();
     }
@@ -105,6 +109,17 @@ impl Player {
             };
         }
         self.animation.set_animation(row)
+    }
+
+    pub fn get_weapon_angle(&self) -> f32 {
+        let mut angle = current_angle(&self.facing) +  3. * PI /4.;
+
+        let elapsed_time = self.held_weapon.cooldown - self.attack_cooldown;
+        if elapsed_time < 3. * get_frame_time() {
+            angle += PI
+        }
+
+        angle
     }
 }
 
@@ -155,5 +170,14 @@ fn make_anim(name: &str, row: u32) -> Animation {
         row,
         frames: 6,
         fps: 12,
+    }
+}
+
+fn current_angle(facing: &Orientation) -> f32 {
+    match facing {
+        Orientation::Up => -PI / 2.,
+        Orientation::Left => PI,
+        Orientation::Down => PI / 2.,
+        Orientation::Right => 0.
     }
 }

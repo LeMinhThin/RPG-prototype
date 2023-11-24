@@ -16,7 +16,6 @@ pub struct Monster {
     pub pos_y: f32,
     pub animation: AnimatedSprite,
     pub is_moving: bool,
-
 }
 
 impl Monster {
@@ -27,7 +26,7 @@ impl Monster {
             health: 50.,
             pos_x: x,
             pos_y: y,
-            is_moving: false
+            is_moving: false,
         }
     }
 
@@ -36,7 +35,8 @@ impl Monster {
     }
 
     pub fn move_to_player(&mut self, player: &Player, delta_time: &f32) {
-        let dist = ((player.pos_x - self.pos_x).powi(2) + (player.pos_y - self.pos_y).powi(2)).sqrt();
+        let dist =
+            ((player.pos_x - self.pos_x).powi(2) + (player.pos_y - self.pos_y).powi(2)).sqrt();
         if dist > 5. * STANDARD_SQUARE {
             self.is_moving = false;
             return;

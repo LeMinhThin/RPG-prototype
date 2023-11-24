@@ -4,7 +4,8 @@ use crate::logic::STANDARD_SQUARE;
 pub struct Weapon {
     pub base_damage: f32,
     pub lenght: f32,
-    pub cooldown: u8,
+    pub cooldown: f32,
+    pub angle: f32,
 }
 
 impl Weapon {
@@ -12,7 +13,8 @@ impl Weapon {
         Weapon {
             base_damage: 10.,
             lenght: STANDARD_SQUARE,
-            cooldown: 10,
+            cooldown: 0.5,
+            angle: 0.,
         }
     }
 }

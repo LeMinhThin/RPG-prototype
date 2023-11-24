@@ -6,7 +6,7 @@ use macroquad::prelude::*;
 
 pub const TILE_SIZE: f32 = 24.;
 pub const SCALE_FACTOR: f32 = 6.;
-pub const STANDARD_SQUARE: f32 =TILE_SIZE * SCALE_FACTOR;
+pub const STANDARD_SQUARE: f32 = TILE_SIZE * SCALE_FACTOR;
 
 pub struct Game {
     pub player: Player,
@@ -20,7 +20,7 @@ pub struct Game {
 pub struct Textures {
     pub player: Texture2D,
     pub terrain: Texture2D,
-    pub slime: Texture2D
+    pub slime: Texture2D,
 }
 
 impl Game {
@@ -47,7 +47,7 @@ impl Game {
 
     fn key_event_handler(&mut self) {
         if is_key_pressed(KeyCode::Space) {
-            if self.player.attack_cooldown == 0 {
+            if self.player.attack_cooldown == 0. {
                 self.player.attack_cooldown = self.player.held_weapon.cooldown;
                 self.damage_monster();
             }
@@ -149,6 +149,6 @@ pub fn pack_texture(texture: Vec<Texture2D>) -> Textures {
     Textures {
         player: texture[0].clone(),
         terrain: texture[1].clone(),
-        slime: texture[2].clone()
+        slime: texture[2].clone(),
     }
 }
