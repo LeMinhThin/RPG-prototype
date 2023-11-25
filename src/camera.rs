@@ -1,5 +1,6 @@
 use crate::logic::*;
 use macroquad::prelude::*;
+use std::f32::consts::PI;
 
 const TARGET_WIDTH: f32 = 1600.;
 const TARGET_HEIGHT: f32 = 900.;
@@ -73,6 +74,7 @@ impl Game {
         self.draw_monsters();
         self.draw_player();
         self.draw_gates();
+        self.debug_draw();
     }
 
     fn draw_monsters(&self) {
@@ -162,7 +164,10 @@ impl Game {
     }
 
     fn draw_weapon(&self) {
+        // Oh my god this is such a spaghetti mess
         let rotation = self.player.get_weapon_angle();
+        let draw_pos = self.player.get_draw_pos();
+        let slash_pos = self.player.slash_pos();
         let draw_param = DrawTextureParams {
             source: Some(Rect::new(
                 TILE_SIZE * 0.,
@@ -171,8 +176,6 @@ impl Game {
                 TILE_SIZE,
             )),
             rotation,
-            // This breaks the game for some reason
-            //pivot: Some(draw_pos),
             dest_size: Some(Vec2 {
                 x: STANDARD_SQUARE,
                 y: STANDARD_SQUARE,
@@ -181,8 +184,29 @@ impl Game {
         };
         draw_texture_ex(
             &self.textures.player,
-            self.player.pos_x,
-            self.player.pos_y,
+            draw_pos.x,
+            draw_pos.y,
+            WHITE,
+            draw_param,
+        );
+        // draw slash sprite
+
+        let dest_size = Some(vec2(STANDARD_SQUARE * 2., STANDARD_SQUARE));
+        let draw_param = DrawTextureParams {
+            source: Some(Rect::new(
+                TILE_SIZE * 7.,
+                TILE_SIZE * 0.,
+                TILE_SIZE * 2.,
+                TILE_SIZE,
+            )),
+            rotation: self.player.current_angle() + PI / 2.,
+            dest_size,
+            ..Default::default()
+        };
+        draw_texture_ex(
+            &self.textures.player,
+            slash_pos.x,
+            slash_pos.y,
             WHITE,
             draw_param,
         );
@@ -200,6 +224,10 @@ impl Game {
                 GREEN,
             )
         }
+    }
+
+    fn debug_draw(&self) {
+        self.player.weapon_hitbox().draw()
     }
 }
 
@@ -235,6 +263,23 @@ pub trait Draw {
 
 impl Draw for Rect {
     fn draw(&self) {
-        draw_rectangle(self.x, self.y, self.w, self.h, RED)
+        draw_line(self.left(), self.top(), self.left(), self.bottom(), 3., RED);
+        draw_line(self.left(), self.top(), self.right(), self.top(), 3., RED);
+        draw_line(
+            self.left(),
+            self.bottom(),
+            self.right(),
+            self.bottom(),
+            3.,
+            RED,
+        );
+        draw_line(
+            self.right(),
+            self.top(),
+            self.right(),
+            self.bottom(),
+            3.,
+            RED,
+        )
     }
 }

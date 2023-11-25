@@ -22,7 +22,7 @@ impl Monster {
     pub fn slime(x: f32, y: f32) -> Self {
         Monster {
             animation: animation(),
-            damage: 10.,
+            damage: 50.,
             health: 50.,
             pos_x: x,
             pos_y: y,

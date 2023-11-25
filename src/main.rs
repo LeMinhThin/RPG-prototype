@@ -14,6 +14,7 @@ fn window_conf() -> Conf {
     Conf {
         window_width: 800,
         window_height: 600,
+        fullscreen: true,
         ..Default::default()
     }
 }
@@ -27,6 +28,11 @@ async fn main() {
         game_state.tick(&delta_time);
         game_state.draw();
         next_frame().await;
+
+        // game over if health < 0
+        if game_state.player.heath < 0. {
+            break;
+        }
     }
 }
 

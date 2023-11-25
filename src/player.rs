@@ -1,10 +1,11 @@
-use std::f32::consts::PI;
 use crate::logic::{STANDARD_SQUARE, TILE_SIZE};
 use crate::weapons::Weapon;
 use macroquad::experimental::animation::*;
 use macroquad::prelude::*;
+use std::f32::consts::PI;
 
 const PLAYER_VELOCITY: f32 = 300.;
+const FOUR_PIXELS: f32 = (4. / TILE_SIZE) * STANDARD_SQUARE;
 
 #[derive(Clone)]
 pub struct Player {
@@ -14,7 +15,7 @@ pub struct Player {
     pub held_weapon: Weapon,
     pub heath: f32,
     pub attack_cooldown: f32,
-    facing: Orientation,
+    pub facing: Orientation,
 }
 
 impl Player {
@@ -41,11 +42,21 @@ impl Player {
     }
 
     pub fn weapon_hitbox(&self) -> Rect {
+        let weapon_lenght = self.held_weapon.lenght;
+        let player_hitbox = self.hitbox();
+        let player_center = player_hitbox.center();
+        let (w, h) = match self.facing {
+            Orientation::Up | Orientation::Down => (2.* weapon_lenght, weapon_lenght),
+            Orientation::Left | Orientation::Right => (weapon_lenght, 2. * weapon_lenght)
+        };
+        let (x, y) = match self.facing {
+            Orientation::Up => (player_center.x - weapon_lenght, player_hitbox.top() - weapon_lenght),
+            Orientation::Left => (player_hitbox.left() - weapon_lenght, player_center.y - weapon_lenght),
+            Orientation::Down => (player_center.x - weapon_lenght, player_hitbox.bottom()),
+            Orientation::Right => (player_hitbox.right(), player_center.y - weapon_lenght)
+        };
         Rect::new(
-            self.pos_x - STANDARD_SQUARE,
-            self.pos_y - STANDARD_SQUARE,
-            self.held_weapon.lenght,
-            self.held_weapon.lenght * 2.,
+            x,y,w,h
         )
     }
 
@@ -112,7 +123,7 @@ impl Player {
     }
 
     pub fn get_weapon_angle(&self) -> f32 {
-        let mut angle = current_angle(&self.facing) +  3. * PI /4.;
+        let mut angle = self.current_angle() + PI;
 
         let elapsed_time = self.held_weapon.cooldown - self.attack_cooldown;
         if elapsed_time < 3. * get_frame_time() {
@@ -120,6 +131,69 @@ impl Player {
         }
 
         angle
+    }
+
+    // This is so unbelievably messy that I don't even want to begin to explain
+    pub fn get_draw_pos(&self) -> Vec2 {
+        let elapsed_time = self.held_weapon.cooldown - self.attack_cooldown;
+        let player_hitbox = self.hitbox();
+
+        let up = vec2(
+            player_hitbox.left() - FOUR_PIXELS,
+            player_hitbox.top() - STANDARD_SQUARE,
+        );
+        let right = vec2(player_hitbox.right(), player_hitbox.top());
+        let left = vec2(player_hitbox.left() - STANDARD_SQUARE, player_hitbox.top());
+        let down = vec2(player_hitbox.left() - FOUR_PIXELS, player_hitbox.bottom());
+
+        if elapsed_time < 3. * get_frame_time() {
+            return match self.facing {
+                Orientation::Up => left,
+                Orientation::Left => down,
+                Orientation::Down => right,
+                Orientation::Right => up,
+            };
+        }
+        match self.facing {
+            Orientation::Up => right,
+            Orientation::Left => up,
+            Orientation::Down => left,
+            Orientation::Right => down,
+        }
+    }
+
+    pub fn current_angle(&self) -> f32 {
+        match self.facing {
+            Orientation::Up => -PI / 2.,
+            Orientation::Left => PI,
+            Orientation::Down => PI / 2.,
+            Orientation::Right => 0.,
+        }
+    }
+
+    // When I die, delete all of these so people wouldn't know I was the author
+    pub fn slash_pos(&self) -> Vec2 {
+        let player_hitbox = self.hitbox();
+        let player_center = player_hitbox.center();
+
+        match self.facing {
+            Orientation::Up => vec2(
+                player_center.x - STANDARD_SQUARE,
+                player_hitbox.top() - STANDARD_SQUARE + FOUR_PIXELS * 1.5,
+            ),
+            Orientation::Left => vec2(
+                player_hitbox.left() - STANDARD_SQUARE - player_hitbox.w,
+                player_center.y - STANDARD_SQUARE / 2.,
+            ),
+            Orientation::Down => vec2(
+                player_center.x - STANDARD_SQUARE,
+                player_hitbox.bottom() - FOUR_PIXELS,
+            ),
+            Orientation::Right => vec2(
+                player_hitbox.right() - player_hitbox.w,
+                player_center.y - STANDARD_SQUARE / 2.,
+            ),
+        }
     }
 }
 
@@ -170,14 +244,5 @@ fn make_anim(name: &str, row: u32) -> Animation {
         row,
         frames: 6,
         fps: 12,
-    }
-}
-
-fn current_angle(facing: &Orientation) -> f32 {
-    match facing {
-        Orientation::Up => -PI / 2.,
-        Orientation::Left => PI,
-        Orientation::Down => PI / 2.,
-        Orientation::Right => 0.
     }
 }
