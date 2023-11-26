@@ -3,6 +3,8 @@ use std::collections::HashMap;
 use crate::map::*;
 use crate::player::*;
 use macroquad::prelude::*;
+use std::fs::{read_dir, read_to_string};
+use std::path::PathBuf;
 
 pub const TILE_SIZE: f32 = 24.;
 pub const SCALE_FACTOR: f32 = 6.;
@@ -25,19 +27,19 @@ pub struct Textures {
 
 impl Game {
     pub fn new(textures: Textures) -> Self {
-        let mut maps = HashMap::new();
-        let map_path = get_map_list();
-
+        let mut area: HashMap<String, Area> = HashMap::new();
         // TODO unhardcode this value
         let current_map = "Village".to_string();
-        for map in map_path {
-            let map_content = Area::from(map);
-            maps.insert(map_content.0, map_content.1);
+        let map_list = get_map_list();
+        for map in map_list {
+            let json_string = read_to_string(map).unwrap();
+            let map_content = Area::from(&json_string);
+            area.insert(map_content.0, map_content.1);
         }
 
         Game {
             player: Player::new(),
-            maps,
+            maps: area,
             current_map,
             textures,
             cam_offset_x: 0.,
@@ -88,6 +90,9 @@ impl Game {
     fn wall_collision(&mut self) {
         let walls = self.maps[&self.current_map].walls.clone();
         for wall in walls {
+            if wall.elevation == self.player.elevation {
+                continue;
+            }
             let wall_hitbox = wall.hitbox;
             let player_hitbox = self.player.hitbox();
             if let Some(rect) = wall_hitbox.intersect(player_hitbox) {
@@ -145,10 +150,17 @@ impl Game {
     }
 }
 
-pub fn pack_texture(texture: Vec<Texture2D>) -> Textures {
-    Textures {
-        player: texture[0].clone(),
-        terrain: texture[1].clone(),
-        slime: texture[2].clone(),
+fn get_map_list() -> Vec<PathBuf> {
+    let map_path = PathBuf::from("./assets/maps/");
+    let maps = read_dir(map_path).unwrap();
+
+    let mut return_vec: Vec<PathBuf> = vec![];
+    for map in maps {
+        let to_add: PathBuf = map.unwrap().path();
+        if !to_add.to_str().unwrap().contains(".json") {
+            continue;
+        }
+        return_vec.push(to_add)
     }
+    return_vec
 }

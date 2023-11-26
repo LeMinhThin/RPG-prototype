@@ -1,0 +1,140 @@
+Object {
+    "height": Number(47),
+    "id": Number(11),
+    "name": String(""),
+    "properties": Array [
+        Object {
+            "name": String("elevation"),
+            "type": String("int"),
+            "value": Number(1),
+        },
+    ],
+    "rotation": Number(0),
+    "type": String(""),
+    "visible": Bool(true),
+    "width": Number(197.875),
+    "x": Number(0.125),
+    "y": Number(0),
+} 
+
+
+Object {
+    "height": Number(109.6875),
+    "id": Number(13),
+    "name": String(""),
+    "properties": Array [
+        Object {
+            "name": String("elevation"),
+            "type": String("int"),
+            "value": Number(1),
+        },
+    ],
+    "rotation": Number(0),
+    "type": String(""),
+    "visible": Bool(true),
+    "width": Number(105.9375),
+    "x": Number(198.0625),
+    "y": Number(0.0625),
+} 
+
+
+Object {
+    "height": Number(148.8125),
+    "id": Number(14),
+    "name": String(""),
+    "properties": Array [
+        Object {
+            "name": String("elevation"),
+            "type": String("int"),
+            "value": Number(1),
+        },
+    ],
+    "rotation": Number(0),
+    "type": String(""),
+    "visible": Bool(true),
+    "width": Number(42.3125),
+    "x": Number(278.1875),
+    "y": Number(171.1875),
+} 
+
+
+Object {
+    "height": Number(61.75),
+    "id": Number(15),
+    "name": String(""),
+    "properties": Array [
+        Object {
+            "name": String("elevation"),
+            "type": String("int"),
+            "value": Number(1),
+        },
+    ],
+    "rotation": Number(0),
+    "type": String(""),
+    "visible": Bool(true),
+    "width": Number(57.875),
+    "x": Number(0.25),
+    "y": Number(47.25),
+} 
+
+
+Object {
+    "height": Number(209),
+    "id": Number(16),
+    "name": String(""),
+    "properties": Array [
+        Object {
+            "name": String("elevation"),
+            "type": String("int"),
+            "value": Number(1),
+        },
+    ],
+    "rotation": Number(0),
+    "type": String(""),
+    "visible": Bool(true),
+    "width": Number(41.5),
+    "x": Number(0.5),
+    "y": Number(109.75),
+} 
+
+
+Object {
+    "height": Number(116.335227272727),
+    "id": Number(17),
+    "name": String(""),
+    "properties": Array [
+        Object {
+            "name": String("elevation"),
+            "type": String("int"),
+            "value": Number(1),
+        },
+    ],
+    "rotation": Number(0),
+    "type": String(""),
+    "visible": Bool(true),
+    "width": Number(63.2045454545455),
+    "x": Number(42.25),
+    "y": Number(202.9375),
+} 
+
+
+Object {
+    "height": Number(36.5454545454545),
+    "id": Number(19),
+    "name": String(""),
+    "properties": Array [
+        Object {
+            "name": String("elevation"),
+            "type": String("int"),
+            "value": Number(1),
+        },
+    ],
+    "rotation": Number(0),
+    "type": String(""),
+    "visible": Bool(true),
+    "width": Number(172.363636363636),
+    "x": Number(105.636363636364),
+    "y": Number(283.090909090909),
+} 
+
+

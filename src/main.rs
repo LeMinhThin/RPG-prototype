@@ -1,14 +1,12 @@
 mod camera;
+use logic::*;
+use macroquad::prelude::*;
+
 mod logic;
 mod map;
 mod monsters;
 mod player;
 mod weapons;
-
-use std::vec;
-
-use logic::*;
-use macroquad::prelude::*;
 
 fn window_conf() -> Conf {
     Conf {
@@ -46,4 +44,12 @@ async fn load_textures() -> Textures {
         texture.set_filter(FilterMode::Nearest)
     }
     pack_texture(textures)
+}
+
+fn pack_texture(texture: Vec<Texture2D>) -> Textures {
+    Textures {
+        player: texture[0].clone(),
+        terrain: texture[1].clone(),
+        slime: texture[2].clone(),
+    }
 }

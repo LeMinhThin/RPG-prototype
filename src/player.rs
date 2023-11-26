@@ -4,7 +4,7 @@ use macroquad::experimental::animation::*;
 use macroquad::prelude::*;
 use std::f32::consts::PI;
 
-const PLAYER_VELOCITY: f32 = 300.;
+const PLAYER_VELOCITY: f32 = 900.;
 const FOUR_PIXELS: f32 = (4. / TILE_SIZE) * STANDARD_SQUARE;
 
 #[derive(Clone)]
@@ -16,19 +16,21 @@ pub struct Player {
     pub heath: f32,
     pub attack_cooldown: f32,
     pub facing: Orientation,
+    pub elevation: u8,
 }
 
 impl Player {
     pub fn new() -> Self {
         let animation = animations();
         Player {
-            pos_x: 0.,
-            pos_y: 0.,
+            pos_x: 900.,
+            pos_y: 400.,
             held_weapon: Weapon::sword(),
             heath: 100.,
             attack_cooldown: 0.,
             animation,
             facing: Orientation::Down,
+            elevation: 0,
         }
     }
 
@@ -46,18 +48,22 @@ impl Player {
         let player_hitbox = self.hitbox();
         let player_center = player_hitbox.center();
         let (w, h) = match self.facing {
-            Orientation::Up | Orientation::Down => (2.* weapon_lenght, weapon_lenght),
-            Orientation::Left | Orientation::Right => (weapon_lenght, 2. * weapon_lenght)
+            Orientation::Up | Orientation::Down => (2. * weapon_lenght, weapon_lenght),
+            Orientation::Left | Orientation::Right => (weapon_lenght, 2. * weapon_lenght),
         };
         let (x, y) = match self.facing {
-            Orientation::Up => (player_center.x - weapon_lenght, player_hitbox.top() - weapon_lenght),
-            Orientation::Left => (player_hitbox.left() - weapon_lenght, player_center.y - weapon_lenght),
+            Orientation::Up => (
+                player_center.x - weapon_lenght,
+                player_hitbox.top() - weapon_lenght,
+            ),
+            Orientation::Left => (
+                player_hitbox.left() - weapon_lenght,
+                player_center.y - weapon_lenght,
+            ),
             Orientation::Down => (player_center.x - weapon_lenght, player_hitbox.bottom()),
-            Orientation::Right => (player_hitbox.right(), player_center.y - weapon_lenght)
+            Orientation::Right => (player_hitbox.right(), player_center.y - weapon_lenght),
         };
-        Rect::new(
-            x,y,w,h
-        )
+        Rect::new(x, y, w, h)
     }
 
     pub fn new_pos(&mut self, delta_time: &f32) {

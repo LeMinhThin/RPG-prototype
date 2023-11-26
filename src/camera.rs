@@ -1,4 +1,4 @@
-use crate::logic::*;
+use crate::{logic::*, map::Area};
 use macroquad::prelude::*;
 use std::f32::consts::PI;
 
@@ -8,7 +8,7 @@ const TARGET_HEIGHT: f32 = 900.;
 const CAM_SPEED: f32 = 1. / 10.;
 
 const SHEET_SIZE: u8 = 12;
-const TERRAIN_TILE_SIZE: f32 = 16.;
+pub const TERRAIN_TILE_SIZE: f32 = 16.;
 
 impl Game {
     pub fn new_camera_offset(&mut self) {
@@ -74,7 +74,7 @@ impl Game {
         self.draw_monsters();
         self.draw_player();
         self.draw_gates();
-        self.debug_draw();
+        //self.debug_draw();
     }
 
     fn draw_monsters(&self) {
@@ -97,51 +97,8 @@ impl Game {
 
     fn draw_terrain(&self) {
         let map = &self.maps[&self.current_map];
-        let mesh = &map.render_mesh;
-        let screen_box = screen_box(self.cam_box());
-
-        let dest_size = Some(vec2(STANDARD_SQUARE, STANDARD_SQUARE));
-        let mut index_y = 0;
-
-        for y_coord in 0..map.bound.y {
-            let mut index_x = 0;
-            for x_coord in 0..map.bound.x {
-                let (render_pos_x, render_pos_y) = (
-                    x_coord as f32 * STANDARD_SQUARE,
-                    y_coord as f32 * STANDARD_SQUARE,
-                );
-
-                if !screen_box.contains(vec2(render_pos_x, render_pos_y)) {
-                    index_x += 1;
-                    continue;
-                }
-
-                let (x, y) = to_index(mesh[index_y][index_x]);
-
-                let source = Some(Rect {
-                    x,
-                    y,
-                    w: TERRAIN_TILE_SIZE,
-                    h: TERRAIN_TILE_SIZE,
-                });
-
-                let params = DrawTextureParams {
-                    source,
-                    dest_size,
-                    ..Default::default()
-                };
-
-                draw_texture_ex(
-                    &self.textures.terrain,
-                    render_pos_x,
-                    render_pos_y,
-                    WHITE,
-                    params,
-                );
-                index_x += 1;
-            }
-            index_y += 1;
-        }
+        let screen_center = self.cam_box().center();
+        map.draw_tiles(&self.textures.terrain, screen_center);
     }
 
     fn draw_player(&mut self) {
@@ -227,7 +184,10 @@ impl Game {
     }
 
     fn debug_draw(&self) {
-        self.player.weapon_hitbox().draw()
+        let walls = &self.maps[&self.current_map].walls;
+        for i in walls {
+            i.hitbox.draw()
+        }
     }
 }
 
@@ -238,8 +198,14 @@ fn to_index(point: u8) -> (f32, f32) {
     (x * TERRAIN_TILE_SIZE, y * TERRAIN_TILE_SIZE)
 }
 
-fn screen_box(cam_box: Rect) -> Rect {
-    let center = cam_box.center();
+fn to_coord(x: u8, y: u8) -> (f32, f32) {
+    let x = x as f32 * STANDARD_SQUARE;
+    let y = y as f32 * STANDARD_SQUARE;
+    (x, y)
+}
+
+fn screen_box(screen_center: Vec2) -> Rect {
+    let center = screen_center;
 
     let screen_width = screen_width();
     let screen_height = screen_height();
@@ -257,7 +223,7 @@ fn screen_box(cam_box: Rect) -> Rect {
 // For debugging and prototyping purposes
 
 #[allow(dead_code)]
-pub trait Draw {
+trait Draw {
     fn draw(&self);
 }
 
@@ -281,5 +247,39 @@ impl Draw for Rect {
             3.,
             RED,
         )
+    }
+}
+
+impl Area {
+    fn draw_tiles(&self, terrain_texture: &Texture2D, screen_center: Vec2) {
+        let cam_box = screen_box(screen_center);
+        for y_coord in 0..self.bound.y {
+            for x_coord in 0..self.bound.x {
+                let source_id = self.draw_mesh[y_coord as usize][x_coord as usize];
+                let params = gen_draw_params(source_id);
+                let (x, y) = to_coord(x_coord, y_coord);
+
+                if cam_box.contains(vec2(x, y)) {
+                    draw_texture_ex(terrain_texture, x, y, WHITE, params)
+                }
+            }
+        }
+    }
+}
+
+fn gen_draw_params(source_id: u8) -> DrawTextureParams {
+    let dest_size = Some(vec2(STANDARD_SQUARE, STANDARD_SQUARE));
+    let (x_index, y_index) = to_index(source_id);
+
+    let source = Some(Rect::new(
+        x_index,
+        y_index,
+        TERRAIN_TILE_SIZE,
+        TERRAIN_TILE_SIZE,
+    ));
+    DrawTextureParams {
+        dest_size,
+        source,
+        ..Default::default()
     }
 }
