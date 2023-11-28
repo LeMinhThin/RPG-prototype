@@ -37,9 +37,15 @@ async fn load_textures() -> Textures {
     let player_textures: Texture2D = load_texture("res/player.png").await.unwrap();
     let terrain_textures: Texture2D = load_texture("res/terrain.png").await.unwrap();
     let slime_textures: Texture2D = load_texture("res/slime.png").await.unwrap();
+    let mushroom_textures: Texture2D = load_texture("res/mushroom.png").await.unwrap();
 
-    let mut textures = vec![player_textures, terrain_textures, slime_textures];
-    for texture in textures.iter_mut() {
+    let textures = vec![
+        player_textures,
+        terrain_textures,
+        slime_textures,
+        mushroom_textures,
+    ];
+    for texture in textures.iter() {
         texture.set_filter(FilterMode::Nearest)
     }
     pack_texture(textures)
@@ -50,5 +56,6 @@ fn pack_texture(texture: Vec<Texture2D>) -> Textures {
         player: texture[0].clone(),
         terrain: texture[1].clone(),
         slime: texture[2].clone(),
+        mushroom: texture[3].clone(),
     }
 }

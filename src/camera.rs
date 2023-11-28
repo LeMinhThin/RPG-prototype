@@ -2,7 +2,8 @@ use macroquad::prelude::*;
 
 use std::f32::consts::PI;
 
-use crate::monsters::{Monster, Slime};
+use crate::monsters::slime::Slime;
+use crate::monsters::*;
 use crate::{logic::*, map::Area};
 
 const TARGET_WIDTH: f32 = 1600.;

@@ -41,7 +41,7 @@
                 {
                  "height":12.75,
                  "id":11,
-                 "name":"",
+                 "name":"Wall",
                  "properties":[
                         {
                          "name":"elevation",
@@ -58,7 +58,7 @@
                 {
                  "height":76.0511363636364,
                  "id":13,
-                 "name":"",
+                 "name":"Wall",
                  "properties":[
                         {
                          "name":"elevation",
@@ -68,14 +68,14 @@
                  "rotation":0,
                  "type":"",
                  "visible":true,
-                 "width":23.6950757575758,
+                 "width":6.69507575757581,
                  "x":198.0625,
                  "y":33.9488636363636
                 }, 
                 {
                  "height":148.8125,
                  "id":14,
-                 "name":"",
+                 "name":"Wall",
                  "properties":[
                         {
                          "name":"elevation",
@@ -92,7 +92,7 @@
                 {
                  "height":61.75,
                  "id":15,
-                 "name":"",
+                 "name":"Wall",
                  "properties":[
                         {
                          "name":"elevation",
@@ -109,7 +109,7 @@
                 {
                  "height":95.7272727272727,
                  "id":16,
-                 "name":"",
+                 "name":"Wall",
                  "properties":[
                         {
                          "name":"elevation",
@@ -126,7 +126,7 @@
                 {
                  "height":4.33522727272705,
                  "id":17,
-                 "name":"",
+                 "name":"Wall",
                  "properties":[
                         {
                          "name":"elevation",
@@ -141,9 +141,9 @@
                  "y":202.9375
                 }, 
                 {
-                 "height":36.5454545454545,
+                 "height":3.1079545454545,
                  "id":19,
-                 "name":"",
+                 "name":"Wall",
                  "properties":[
                         {
                          "name":"elevation",
@@ -156,6 +156,56 @@
                  "width":172.363636363636,
                  "x":105.636363636364,
                  "y":283.090909090909
+                }, 
+                {
+                 "height":0,
+                 "id":21,
+                 "name":"Spawner",
+                 "point":true,
+                 "properties":[
+                        {
+                         "name":"cooldown",
+                         "type":"float",
+                         "value":30
+                        }, 
+                        {
+                         "name":"max-mob",
+                         "type":"int",
+                         "value":5
+                        }, 
+                        {
+                         "name":"spawn-radius",
+                         "type":"int",
+                         "value":3
+                        }, 
+                        {
+                         "name":"type",
+                         "type":"string",
+                         "value":"Slime"
+                        }],
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":0,
+                 "x":397.666666666667,
+                 "y":226.333333333333
+                }, 
+                {
+                 "height":12,
+                 "id":27,
+                 "name":"  ",
+                 "properties":[
+                        {
+                         "name":"elevation",
+                         "type":"int",
+                         "value":1
+                        }],
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":15.4545454545455,
+                 "x":34.7272727272727,
+                 "y":97.5454545454545
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -195,7 +245,7 @@
          "y":0
         }],
  "nextlayerid":6,
- "nextobjectid":21,
+ "nextobjectid":28,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.10.2",

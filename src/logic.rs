@@ -24,6 +24,7 @@ pub struct Textures {
     pub player: Texture2D,
     pub terrain: Texture2D,
     pub slime: Texture2D,
+    pub mushroom: Texture2D,
 }
 
 impl Game {

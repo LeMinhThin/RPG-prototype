@@ -3,7 +3,7 @@ use serde_json::Value;
 
 use crate::camera::TERRAIN_TILE_SIZE;
 use crate::logic::STANDARD_SQUARE;
-use crate::monsters::Monster;
+use crate::monsters::*;
 
 const GATE_HITBOX_SCALE: f32 = 0.2;
 
@@ -115,6 +115,9 @@ fn make_walls(objects: &Value) -> Option<Vec<Wall>> {
     let raw_data = objects["objects"].as_array()?;
     let mut walls: Vec<Wall> = vec![];
     for wall in raw_data {
+        if wall["name"].as_str() != Some("Wall") {
+            continue;
+        }
         let x = wall["x"].as_f64()? as f32;
         let y = wall["y"].as_f64()? as f32;
         let w = wall["width"].as_f64()? as f32;
