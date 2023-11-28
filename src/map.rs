@@ -2,11 +2,10 @@ use macroquad::prelude::*;
 use serde_json::Value;
 
 use crate::camera::TERRAIN_TILE_SIZE;
-use crate::logic::{STANDARD_SQUARE, TILE_SIZE};
+use crate::logic::STANDARD_SQUARE;
 use crate::monsters::Monster;
 
 const GATE_HITBOX_SCALE: f32 = 0.2;
-const RATIO: f32 = TILE_SIZE / TERRAIN_TILE_SIZE;
 
 pub struct Area {
     pub enemies: Vec<Monster>,
@@ -68,7 +67,7 @@ impl Area {
         (
             "Village".to_string(),
             Area {
-                enemies: vec![],
+                enemies: vec![Monster::slime()],
                 bound,
                 draw_mesh,
                 gates: vec![],
@@ -122,10 +121,12 @@ fn make_walls(objects: &Value) -> Option<Vec<Wall>> {
         let h = wall["height"].as_f64()? as f32;
         let elevation = get_elev(wall).unwrap();
 
-        let hitbox = Rect::new(x / TERRAIN_TILE_SIZE * STANDARD_SQUARE,
-                               y / TERRAIN_TILE_SIZE * STANDARD_SQUARE,
-                               w / TERRAIN_TILE_SIZE * STANDARD_SQUARE,
-                               h / TERRAIN_TILE_SIZE * STANDARD_SQUARE);
+        let hitbox = Rect::new(
+            x / TERRAIN_TILE_SIZE * STANDARD_SQUARE,
+            y / TERRAIN_TILE_SIZE * STANDARD_SQUARE,
+            w / TERRAIN_TILE_SIZE * STANDARD_SQUARE,
+            h / TERRAIN_TILE_SIZE * STANDARD_SQUARE,
+        );
 
         walls.push(Wall { hitbox, elevation });
     }

@@ -1,34 +1,68 @@
-use crate::logic::{STANDARD_SQUARE, TILE_SIZE};
+use crate::logic::*;
 use crate::weapons::Weapon;
 use macroquad::experimental::animation::*;
 use macroquad::prelude::*;
 use std::f32::consts::PI;
 
-const PLAYER_VELOCITY: f32 = 900.;
+const PLAYER_VELOCITY: f32 = 800.;
 const FOUR_PIXELS: f32 = (4. / TILE_SIZE) * STANDARD_SQUARE;
+const PLAYER_HEATH: f32 = 100.;
+const FRICTION: f32 = 25. / 100.;
 
 #[derive(Clone)]
 pub struct Player {
-    pub pos_x: f32,
-    pub pos_y: f32,
-    pub animation: AnimatedSprite,
+    pub props: Props,
     pub held_weapon: Weapon,
-    pub heath: f32,
     pub attack_cooldown: f32,
     pub facing: Orientation,
     pub elevation: u8,
 }
 
+#[derive(Clone)]
+pub struct Props {
+    pub movement_vector: Vec2,
+    pub heath: f32,
+    pub animation: AnimatedSprite,
+    pub x: f32,
+    pub y: f32,
+}
+
+impl Props {
+    pub fn from(x: f32, y: f32, heath: f32, animation: AnimatedSprite) -> Self {
+        Props {
+            movement_vector: vec2(0., 0.),
+            heath,
+            animation,
+            x,
+            y,
+        }
+    }
+
+    pub fn get_pos(&self) -> Vec2 {
+        vec2(self.x, self.y)
+    }
+
+    pub fn new_pos(&mut self) {
+        let delta_time = get_frame_time();
+        self.x += self.movement_vector.x * delta_time;
+        self.y += self.movement_vector.y * delta_time;
+
+        self.movement_vector *= FRICTION;
+    }
+
+    pub fn move_to(&mut self, point: Vec2, speed: f32) {
+        let vector = vec2(point.x - self.x, point.y - self.y).normalize() * speed;
+        self.movement_vector += vector
+    }
+}
+
 impl Player {
     pub fn new() -> Self {
-        let animation = animations();
+        let animation = player_animations();
         Player {
-            pos_x: 900.,
-            pos_y: 400.,
+            props: Props::from(0., 0., PLAYER_HEATH, animation),
             held_weapon: Weapon::sword(),
-            heath: 100.,
             attack_cooldown: 0.,
-            animation,
             facing: Orientation::Down,
             elevation: 0,
         }
@@ -36,8 +70,8 @@ impl Player {
 
     pub fn hitbox(&self) -> Rect {
         Rect {
-            x: self.pos_x + (9. / TILE_SIZE) * STANDARD_SQUARE,
-            y: self.pos_y + (3. / TILE_SIZE) * STANDARD_SQUARE,
+            x: self.props.x + (9. / TILE_SIZE) * STANDARD_SQUARE,
+            y: self.props.y + (3. / TILE_SIZE) * STANDARD_SQUARE,
             w: STANDARD_SQUARE * (13. / TILE_SIZE),
             h: STANDARD_SQUARE * (21. / TILE_SIZE),
         }
@@ -66,7 +100,7 @@ impl Player {
         Rect::new(x, y, w, h)
     }
 
-    pub fn new_pos(&mut self, delta_time: &f32) {
+    pub fn new_pos(&mut self) {
         if self.attack_cooldown > 0. {
             return;
         }
@@ -87,21 +121,22 @@ impl Player {
         if movement_vector == Vec2::ZERO {
             return;
         }
-        movement_vector = movement_vector.normalize();
-        self.pos_x += PLAYER_VELOCITY * movement_vector.x * delta_time;
-        self.pos_y += PLAYER_VELOCITY * movement_vector.y * delta_time;
+        movement_vector = movement_vector.normalize() * PLAYER_VELOCITY;
+        self.props.movement_vector += movement_vector;
+
+        self.props.new_pos();
     }
 
     pub fn tick(&mut self) {
         let delta_time = get_frame_time();
-        self.new_pos(&delta_time);
+        self.new_pos();
         if self.attack_cooldown > 0. {
             self.attack_cooldown -= delta_time;
         }
         if self.attack_cooldown < 0. {
             self.attack_cooldown = 0.
         }
-        self.animation.update();
+        self.props.animation.update();
     }
 
     fn new_orientation(&mut self, movement_vector: &Vec2) {
@@ -125,7 +160,7 @@ impl Player {
                 Orientation::Right => 7,
             };
         }
-        self.animation.set_animation(row)
+        self.props.animation.set_animation(row)
     }
 
     pub fn get_weapon_angle(&self) -> f32 {
@@ -227,28 +262,20 @@ fn facing(dy: &i8, dx: &i8) -> Orientation {
     }
 }
 
-fn animations() -> AnimatedSprite {
+fn player_animations() -> AnimatedSprite {
     AnimatedSprite::new(
         TILE_SIZE as u32,
         TILE_SIZE as u32,
         &[
-            make_anim("idle_down", 0),
-            make_anim("idle_left", 1),
-            make_anim("idle_up", 2),
-            make_anim("idle_right", 3),
-            make_anim("walk_down", 4),
-            make_anim("walk_left", 5),
-            make_anim("walk_up", 6),
-            make_anim("walk_right", 7),
+            make_anim("idle_down", 0, 6),
+            make_anim("idle_left", 1, 6),
+            make_anim("idle_up", 2, 6),
+            make_anim("idle_right", 3, 6),
+            make_anim("walk_down", 4, 6),
+            make_anim("walk_left", 5, 6),
+            make_anim("walk_up", 6, 6),
+            make_anim("walk_right", 7, 6),
         ],
         true,
     )
-}
-fn make_anim(name: &str, row: u32) -> Animation {
-    Animation {
-        name: name.to_string(),
-        row,
-        frames: 6,
-        fps: 12,
-    }
 }

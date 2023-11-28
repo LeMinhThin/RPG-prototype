@@ -1,7 +1,7 @@
-mod camera;
 use logic::*;
 use macroquad::prelude::*;
 
+mod camera;
 mod logic;
 mod map;
 mod monsters;
@@ -22,13 +22,12 @@ async fn main() {
     let textures = load_textures().await;
     let mut game_state = Game::new(textures);
     loop {
-        let delta_time = get_frame_time();
-        game_state.tick(&delta_time);
+        game_state.tick();
         game_state.draw();
         next_frame().await;
 
         // game over if health < 0
-        if game_state.player.heath < 0. {
+        if game_state.player.props.heath < 0. {
             break;
         }
     }

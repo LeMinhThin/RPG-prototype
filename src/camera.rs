@@ -1,6 +1,9 @@
-use crate::{logic::*, map::Area};
 use macroquad::prelude::*;
+
 use std::f32::consts::PI;
+
+use crate::monsters::{Monster, Slime};
+use crate::{logic::*, map::Area};
 
 const TARGET_WIDTH: f32 = 1600.;
 const TARGET_HEIGHT: f32 = 900.;
@@ -79,19 +82,7 @@ impl Game {
 
     fn draw_monsters(&self) {
         for monster in self.maps[&self.current_map].enemies.iter() {
-            let dest_size = Some(monster.animation.frame().dest_size * SCALE_FACTOR);
-            let draw_param = DrawTextureParams {
-                source: Some(monster.animation.frame().source_rect),
-                dest_size,
-                ..Default::default()
-            };
-            draw_texture_ex(
-                &self.textures.slime,
-                monster.pos_x,
-                monster.pos_y,
-                WHITE,
-                draw_param,
-            );
+            monster.draw(&self.textures)
         }
     }
 
@@ -102,16 +93,16 @@ impl Game {
     }
 
     fn draw_player(&mut self) {
-        let dest_size = Some(self.player.animation.frame().dest_size * SCALE_FACTOR);
+        let dest_size = Some(self.player.props.animation.frame().dest_size * SCALE_FACTOR);
         let draw_param = DrawTextureParams {
-            source: Some(self.player.animation.frame().source_rect),
+            source: Some(self.player.props.animation.frame().source_rect),
             dest_size,
             ..Default::default()
         };
         draw_texture_ex(
             &self.textures.player,
-            self.player.pos_x,
-            self.player.pos_y,
+            self.player.props.x,
+            self.player.props.y,
             WHITE,
             draw_param,
         );
@@ -183,17 +174,26 @@ impl Game {
         }
     }
 
+    /*
     fn debug_draw(&self) {
         let walls = &self.maps[&self.current_map].walls;
         for i in walls {
             i.hitbox.draw()
         }
     }
+    */
 }
 
 fn to_index(point: u8) -> (f32, f32) {
-    let x = (point % SHEET_SIZE - 1) as f32;
-    let y = (point / SHEET_SIZE) as f32;
+    let x;
+    let y;
+    if point % SHEET_SIZE == 0 {
+        x = SHEET_SIZE as f32 - 1.;
+        y = (point / SHEET_SIZE) as f32 - 1.;
+    } else {
+        x = (point % SHEET_SIZE - 1) as f32;
+        y = (point / SHEET_SIZE) as f32;
+    }
 
     (x * TERRAIN_TILE_SIZE, y * TERRAIN_TILE_SIZE)
 }
@@ -281,5 +281,31 @@ fn gen_draw_params(source_id: u8) -> DrawTextureParams {
         dest_size,
         source,
         ..Default::default()
+    }
+}
+
+impl Monster {
+    pub fn draw(&self, texture: &Textures) {
+        match self {
+            Monster::Slime(slime) => slime.draw(texture),
+        }
+    }
+}
+
+impl Slime {
+    fn draw(&self, texture: &Textures) {
+        let dest_size = Some(self.props.animation.frame().dest_size * SCALE_FACTOR);
+        let draw_param = DrawTextureParams {
+            source: Some(self.props.animation.frame().source_rect),
+            dest_size,
+            ..Default::default()
+        };
+        draw_texture_ex(
+            &texture.slime,
+            self.props.x,
+            self.props.y,
+            WHITE,
+            draw_param,
+        );
     }
 }

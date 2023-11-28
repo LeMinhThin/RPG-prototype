@@ -1,84 +1,99 @@
-use crate::logic::{STANDARD_SQUARE, TILE_SIZE};
-use macroquad::{
-    experimental::animation::{AnimatedSprite, Animation},
-    prelude::*,
-};
+use crate::logic::{make_anim, STANDARD_SQUARE, TILE_SIZE};
+use crate::player::{Player, Props};
+use macroquad::experimental::animation::*;
+use macroquad::prelude::*;
 
-use crate::player::Player;
-
-const MONSTER_VELOCITY: f32 = 100.;
+const SLIME_HEATH: f32 = 50.;
+const SLIME_SPEED: f32 = 150.;
 
 #[derive(Clone)]
-pub struct Monster {
-    pub damage: f32,
-    pub health: f32,
-    pub pos_x: f32,
-    pub pos_y: f32,
-    pub animation: AnimatedSprite,
-    pub is_moving: bool,
+pub enum Monster {
+    Slime(Slime),
 }
 
 impl Monster {
-    pub fn slime(x: f32, y: f32) -> Self {
-        Monster {
-            animation: animation(),
-            damage: 50.,
-            health: 50.,
-            pos_x: x,
-            pos_y: y,
-            is_moving: false,
+    pub fn tick(&mut self, player: &mut Player) {
+        let player_pos = player.props.get_pos();
+        match self {
+            Monster::Slime(slime) => {
+                slime.move_to_player(player_pos);
+                slime.damage_player(player);
+                slime.props.animation.update();
+                slime.props.new_pos();
+            }
         }
     }
 
-    pub fn hitbox(&self) -> Rect {
-        Rect::new(self.pos_x, self.pos_y, STANDARD_SQUARE, STANDARD_SQUARE)
-    }
-
-    pub fn move_to_player(&mut self, player: &Player, delta_time: &f32) {
-        let dist =
-            ((player.pos_x - self.pos_x).powi(2) + (player.pos_y - self.pos_y).powi(2)).sqrt();
-        if dist > 5. * STANDARD_SQUARE {
-            self.is_moving = false;
-            return;
-        }
-        self.is_moving = true;
-        let movement_vector =
-            vec2(self.pos_x - player.pos_x, self.pos_y - player.pos_y).normalize();
-
-        self.pos_x -= MONSTER_VELOCITY * movement_vector.x * delta_time;
-        self.pos_y -= MONSTER_VELOCITY * movement_vector.y * delta_time;
-    }
-
-    pub fn damage_player(&self, player: &mut Player, delta_time: &f32) {
-        if let Some(_) = self.hitbox().intersect(player.hitbox()) {
-            player.heath -= self.damage * delta_time
+    pub fn get_heath(&self) -> f32 {
+        match self {
+            Monster::Slime(slime) => {
+                return slime.props.heath;
+            }
         }
     }
 
-    pub fn update_anim(&mut self) {
-        if self.is_moving {
-            self.animation.set_animation(1)
-        } else {
-            self.animation.set_animation(0)
+    pub fn get_mut_heath(&mut self) -> &mut f32 {
+        match self {
+            Monster::Slime(slime) => {
+                return &mut slime.props.heath;
+            }
         }
-        self.animation.update()
+    }
+
+    pub fn get_hitbox(&self) -> Rect {
+        match self {
+            Monster::Slime(slime) => {
+                return slime.hitbox();
+            }
+        }
+    }
+
+    pub fn slime() -> Self {
+        Monster::Slime(Slime::from(300., 300.))
     }
 }
 
-fn animation() -> AnimatedSprite {
+#[derive(Clone)]
+pub struct Slime {
+    pub props: Props,
+    damage: f32,
+}
+
+impl Slime {
+    fn from(x: f32, y: f32) -> Self {
+        let animation = slime_animations();
+        let props = Props::from(x, y, SLIME_HEATH, animation);
+        Slime { props, damage: 10. }
+    }
+
+    fn move_to_player(&mut self, player_pos: Vec2) {
+        self.props.move_to(player_pos, SLIME_SPEED)
+    }
+
+    fn damage_player(&self, player: &mut Player) {
+        let self_hitbox = self.hitbox();
+        let player_hitbox = player.hitbox();
+
+        if let Some(_) = self_hitbox.intersect(player_hitbox) {
+            player.props.heath -= self.damage * get_frame_time()
+        }
+    }
+
+    fn hitbox(&self) -> Rect {
+        Rect {
+            x: self.props.x,
+            y: self.props.y,
+            w: STANDARD_SQUARE,
+            h: STANDARD_SQUARE,
+        }
+    }
+}
+
+fn slime_animations() -> AnimatedSprite {
     AnimatedSprite::new(
         TILE_SIZE as u32,
         TILE_SIZE as u32,
         &[make_anim("idle", 0, 4), make_anim("moving", 1, 6)],
         true,
     )
-}
-
-fn make_anim(name: &str, row: u32, frames: u32) -> Animation {
-    Animation {
-        name: name.to_string(),
-        row,
-        frames,
-        fps: 12,
-    }
 }

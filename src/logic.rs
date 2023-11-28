@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use crate::map::*;
 use crate::player::*;
+use macroquad::experimental::animation::*;
 use macroquad::prelude::*;
 use std::fs::{read_dir, read_to_string};
 use std::path::PathBuf;
@@ -56,7 +57,7 @@ impl Game {
         }
     }
 
-    pub fn tick(&mut self, delta_time: &f32) {
+    pub fn tick(&mut self) {
         self.new_camera_offset();
         self.key_event_handler();
         self.player.tick();
@@ -70,9 +71,7 @@ impl Game {
             .enemies
             .iter_mut()
         {
-            monster.move_to_player(&self.player, delta_time);
-            monster.damage_player(&mut self.player, delta_time);
-            monster.update_anim();
+            monster.tick(&mut self.player);
         }
 
         self.kill_monster();
@@ -82,13 +81,13 @@ impl Game {
         self.maps.get_mut(&self.current_map).unwrap().enemies = self.maps[&self.current_map]
             .enemies
             .iter()
-            .filter(|x| x.health > 0.)
+            .filter(|x| x.get_heath() > 0.)
             .cloned()
             .collect()
     }
 
     fn wall_collision(&mut self) {
-        let walls = self.maps[&self.current_map].walls.clone();
+        let walls = &self.maps[&self.current_map].walls;
         for wall in walls {
             if wall.elevation == self.player.elevation {
                 continue;
@@ -98,15 +97,15 @@ impl Game {
             if let Some(rect) = wall_hitbox.intersect(player_hitbox) {
                 if rect.w < rect.h {
                     if player_hitbox.right() > wall_hitbox.right() {
-                        self.player.pos_x += rect.w
+                        self.player.props.x += rect.w
                     } else {
-                        self.player.pos_x -= rect.w
+                        self.player.props.x -= rect.w
                     }
                 } else {
                     if player_hitbox.bottom() > wall_hitbox.bottom() {
-                        self.player.pos_y += rect.h
+                        self.player.props.y += rect.h
                     } else {
-                        self.player.pos_y -= rect.h
+                        self.player.props.y -= rect.h
                     }
                 }
             }
@@ -132,8 +131,9 @@ impl Game {
             .enemies
             .iter_mut()
         {
-            if let Some(_) = damage_zone.intersect(monster.hitbox()) {
-                monster.health -= damage;
+            if let Some(_) = damage_zone.intersect(monster.get_hitbox()) {
+                let monster_heath = monster.get_mut_heath();
+                *monster_heath = *monster_heath - damage;
             }
         }
     }
@@ -145,8 +145,8 @@ impl Game {
 
     fn move_map(&mut self, to: &str, location: (&str, &str)) {
         self.current_map = to.to_string();
-        self.player.pos_x = location.0.parse::<f32>().unwrap() * STANDARD_SQUARE;
-        self.player.pos_y = location.1.parse::<f32>().unwrap() * STANDARD_SQUARE
+        self.player.props.x = location.0.parse::<f32>().unwrap() * STANDARD_SQUARE;
+        self.player.props.y = location.1.parse::<f32>().unwrap() * STANDARD_SQUARE
     }
 }
 
@@ -163,4 +163,13 @@ fn get_map_list() -> Vec<PathBuf> {
         return_vec.push(to_add)
     }
     return_vec
+}
+
+pub fn make_anim(name: &str, row: u32, frames: u32) -> Animation {
+    Animation {
+        name: name.to_string(),
+        row,
+        frames,
+        fps: 12,
+    }
 }
