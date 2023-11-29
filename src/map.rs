@@ -4,22 +4,19 @@ use serde_json::Value;
 use crate::camera::TERRAIN_TILE_SIZE;
 use crate::logic::STANDARD_SQUARE;
 use crate::monsters::*;
+use spawner::*;
 
 const GATE_HITBOX_SCALE: f32 = 0.2;
+const RATIO: f32 = STANDARD_SQUARE / TERRAIN_TILE_SIZE;
 
 pub struct Area {
     pub enemies: Vec<Monster>,
-    pub walls: Vec<Wall>,
-    //pub interactables: Vec<Interactable>,
+    pub walls: Vec<Rect>,
     pub gates: Vec<Gate>,
+    pub spawners: Vec<Spawner>,
+    //pub interactables: Vec<Interactable>,
     pub bound: Bound,
-    pub draw_mesh: Vec<Vec<u8>>,
-}
-
-#[derive(Clone)]
-pub struct Wall {
-    pub hitbox: Rect,
-    pub elevation: u8,
+    pub draw_mesh: Meshes,
 }
 
 #[derive(Clone, Debug)]
@@ -32,6 +29,23 @@ pub struct Gate {
 pub struct Bound {
     pub x: u8,
     pub y: u8,
+}
+
+pub struct Meshes {
+    pub terrain: Vec<Vec<u8>>,
+    pub decorations: Vec<Vec<u8>>,
+}
+
+impl Meshes {
+    fn new() -> Self {
+        let terrain = vec![];
+        let decorations = vec![];
+
+        Meshes {
+            terrain,
+            decorations,
+        }
+    }
 }
 
 impl Bound {
@@ -49,16 +63,23 @@ impl Area {
 
         let bound = Bound::from(&parsed);
 
-        let mut draw_mesh = vec![];
+        let mut draw_mesh = Meshes::new();
         let mut walls = vec![];
+        let mut spawners = vec![];
 
         for layer in parsed["layers"].as_array().unwrap() {
             match layer["name"].as_str().unwrap().to_lowercase().as_str() {
                 "terrain" => {
-                    draw_mesh = make_render_mesh(&bound, layer).unwrap();
+                    draw_mesh.terrain = make_render_mesh(&bound, layer).unwrap();
                 }
                 "walls" => {
                     walls = make_walls(layer).unwrap();
+                }
+                "decorations" => {
+                    draw_mesh.decorations = make_render_mesh(&bound, layer).unwrap();
+                }
+                "spawners" => {
+                    spawners = make_spawners(layer).unwrap();
                 }
                 _ => (),
             }
@@ -69,6 +90,7 @@ impl Area {
             Area {
                 enemies: vec![Monster::slime()],
                 bound,
+                spawners,
                 draw_mesh,
                 gates: vec![],
                 walls,
@@ -111,9 +133,9 @@ fn make_render_mesh(bound: &Bound, objects: &Value) -> Option<Vec<Vec<u8>>> {
     Some(return_vec)
 }
 
-fn make_walls(objects: &Value) -> Option<Vec<Wall>> {
+fn make_walls(objects: &Value) -> Option<Vec<Rect>> {
     let raw_data = objects["objects"].as_array()?;
-    let mut walls: Vec<Wall> = vec![];
+    let mut walls: Vec<Rect> = vec![];
     for wall in raw_data {
         if wall["name"].as_str() != Some("Wall") {
             continue;
@@ -122,26 +144,66 @@ fn make_walls(objects: &Value) -> Option<Vec<Wall>> {
         let y = wall["y"].as_f64()? as f32;
         let w = wall["width"].as_f64()? as f32;
         let h = wall["height"].as_f64()? as f32;
-        let elevation = get_elev(wall).unwrap();
 
-        let hitbox = Rect::new(
-            x / TERRAIN_TILE_SIZE * STANDARD_SQUARE,
-            y / TERRAIN_TILE_SIZE * STANDARD_SQUARE,
-            w / TERRAIN_TILE_SIZE * STANDARD_SQUARE,
-            h / TERRAIN_TILE_SIZE * STANDARD_SQUARE,
+        let wall = Rect::new(
+            x * RATIO,
+            y * RATIO,
+            w * RATIO,
+            h * RATIO,
         );
 
-        walls.push(Wall { hitbox, elevation });
+        walls.push(wall);
     }
     Some(walls)
 }
 
-fn get_elev(object: &Value) -> Option<u8> {
-    let properties = object["properties"].as_array()?;
-    for property in properties {
-        if property["name"].as_str()? == "elevation" {
-            return Some(property["value"].as_u64()? as u8);
+fn make_spawners(objects: &Value) -> Option<Vec<Spawner>> {
+    let mut spawners: Vec<Spawner> = vec![];
+    let data = objects["objects"].as_array()?;
+    for spawner in data {
+        let x = spawner["x"].as_f64()? as f32;
+        let y = spawner["y"].as_f64()? as f32;
+        let (cooldown, spawn_radius, kind, max_mob) = get_props(spawner)?;
+
+        let spawner = Spawner::new(kind, spawn_radius, max_mob, cooldown, x * RATIO, y * RATIO);
+
+        spawners.push(spawner)
+    }
+
+    Some(spawners)
+}
+
+// f32 cooldown
+// f32 spawn_radius
+// String kind
+// int max_mob
+
+fn get_props(objects: &Value) -> Option<(f32, f32, SpawnerType, u32)> {
+    let props = objects["properties"].as_array()?;
+    // Default values
+    let mut cooldown = 30.;
+    let mut spawn_radius = 3. * STANDARD_SQUARE;
+    let mut kind = SpawnerType::Slime;
+    let mut max_mob = 3;
+
+    for prop in props {
+        match prop["name"].as_str()? {
+            "cooldown" => cooldown = prop["value"].as_f64()? as f32,
+            "kind" => kind = what_kind(prop["value"].as_str()?),
+            "max_mob" => max_mob = prop["value"].as_f64()? as u32,
+            "spawn_radius" => {
+                spawn_radius = prop["value"].as_f64()? as f32 * STANDARD_SQUARE;
+            }
+            x => panic!("you forgot to account for {x}"),
         }
     }
-    None
+
+    Some((cooldown, spawn_radius, kind, max_mob))
+}
+
+fn what_kind(name: &str) -> SpawnerType {
+    match name {
+        "slime" => SpawnerType::Slime,
+        x => panic!("you forgot to account for {x}"),
+    }
 }

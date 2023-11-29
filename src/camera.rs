@@ -78,6 +78,7 @@ impl Game {
         self.draw_monsters();
         self.draw_player();
         self.draw_gates();
+        self.draw_decorations();
         //self.debug_draw();
     }
 
@@ -90,7 +91,13 @@ impl Game {
     fn draw_terrain(&self) {
         let map = &self.maps[&self.current_map];
         let screen_center = self.cam_box().center();
-        map.draw_tiles(&self.textures.terrain, screen_center);
+        map.draw_tiles(&self.textures.terrain, screen_center, "terrain");
+    }
+
+    fn draw_decorations(&self) {
+        let map = &self.maps[&self.current_map];
+        let screen_center = self.cam_box().center();
+        map.draw_tiles(&self.textures.terrain, screen_center, "decorations");
     }
 
     fn draw_player(&mut self) {
@@ -177,9 +184,8 @@ impl Game {
 
     /*
     fn debug_draw(&self) {
-        let walls = &self.maps[&self.current_map].walls;
+        let walls = &self.maps[&self.current_map].spawners;
         for i in walls {
-            i.hitbox.draw()
         }
     }
     */
@@ -252,16 +258,25 @@ impl Draw for Rect {
 }
 
 impl Area {
-    fn draw_tiles(&self, terrain_texture: &Texture2D, screen_center: Vec2) {
+    fn draw_tiles(&self, texture: &Texture2D, screen_center: Vec2, to_draw: &str) {
         let cam_box = screen_box(screen_center);
+        let mesh = match to_draw {
+            "terrain" => &self.draw_mesh.terrain,
+            "decorations" => &self.draw_mesh.decorations,
+            x => panic!("you forgot to account for {x}"),
+        };
         for y_coord in 0..self.bound.y {
             for x_coord in 0..self.bound.x {
-                let source_id = self.draw_mesh[y_coord as usize][x_coord as usize];
+                let source_id = mesh[y_coord as usize][x_coord as usize];
+                // Id of 0 indicate that the tile is blank
+                if source_id == 0 {
+                    continue;
+                }
                 let params = gen_draw_params(source_id);
                 let (x, y) = to_coord(x_coord, y_coord);
 
                 if cam_box.contains(vec2(x, y)) {
-                    draw_texture_ex(terrain_texture, x, y, WHITE, params)
+                    draw_texture_ex(texture, x, y, WHITE, params)
                 }
             }
         }

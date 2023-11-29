@@ -1,41 +1,53 @@
 use macroquad::rand::{gen_range, rand};
+use macroquad::time::get_frame_time;
+use macroquad::math::Rect;
 
-use super::Monster;
 use super::slime::Slime;
+use super::Monster;
 
 // The term "radius" being used here is technically wrong as it is more of a square than a circle but
 // it would take an additional layer of complexity to fix this tiny bug, which I'm not very fond of
 // dealing with so "radius" remains for now.
-struct Spawner {
+pub struct Spawner {
     kind: SpawnerType,
-    spawn_radius: f32,
+    pub spawn_radius: f32,
     max_mob: u32,
     cooldown: f32,
-    x: f32,
-    y: f32,
-
+    max_cooldown: f32,
+    pub x: f32,
+    pub y: f32,
 }
 
-enum SpawnerType {
-    Slime
+pub enum SpawnerType {
+    Slime,
 }
 
 impl Spawner {
-    fn new(kind: SpawnerType, spawn_radius: f32, max_mob: u32, cooldown: f32, x: f32, y: f32) -> Self {
+    pub fn new(
+        kind: SpawnerType,
+        spawn_radius: f32,
+        max_mob: u32,
+        max_cooldown: f32,
+        x: f32,
+        y: f32,
+    ) -> Self {
         Spawner {
             kind,
             spawn_radius,
             max_mob,
-            cooldown,
+            max_cooldown,
+            cooldown: max_cooldown,
             x,
-            y
+            y,
         }
     }
 
-    fn spawn_mob(&mut self, monsters: &mut Vec<Monster>) {
+    pub fn tick(&mut self, monsters: &mut Vec<Monster>) {
         if self.cooldown > 0. {
+            self.cooldown -= get_frame_time();
             return;
         }
+        self.cooldown = self.max_cooldown;
         if self.count_mob(&monsters) > self.max_mob {
             return;
         }
@@ -44,10 +56,10 @@ impl Spawner {
         for _ in 0..=num_mobs {
             let x_offset = gen_range(-self.spawn_radius, self.spawn_radius);
             let y_offset = gen_range(-self.spawn_radius, self.spawn_radius);
-            
+
             match self.kind {
                 SpawnerType::Slime => {
-                    let new_mob = Monster::Slime(Slime::from(x_offset, y_offset));
+                    let new_mob = Monster::Slime(Slime::from(self.x + x_offset, self.y + y_offset));
                     monsters.push(new_mob);
                 }
             }
@@ -55,12 +67,12 @@ impl Spawner {
     }
 
     fn count_mob(&self, mobs: &Vec<Monster>) -> u32 {
+        let spawner_detect_box = Rect::new(self.x - self.spawn_radius, self.y - self.spawn_radius, self.spawn_radius * 2., self.spawn_radius * 2.);
         let mut num_mobs = 0;
         for mob in mobs {
-            let mob_pos = mob.get_hitbox().center();
+            let mob_hitbox = mob.get_hitbox();
 
-            let dist = ((self.x - mob_pos.x).powi(2) + (self.y - mob_pos.y).powi(2)).sqrt();
-            if dist < self.spawn_radius {
+            if let Some(_) = spawner_detect_box.intersect(mob_hitbox) {
                 num_mobs += 1;
             }
         }

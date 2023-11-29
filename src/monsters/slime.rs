@@ -5,6 +5,7 @@ use macroquad::prelude::*;
 
 const SLIME_HEATH: f32 = 50.;
 const SLIME_SPEED: f32 = 150.;
+const SLIME_MAX_TRACKING: f32 = 500.;
 
 #[derive(Clone)]
 pub struct Slime {
@@ -20,6 +21,11 @@ impl Slime {
     }
 
     pub fn move_to_player(&mut self, player_pos: Vec2) {
+        let dist = ((self.props.x - player_pos.x).powi(2) + (self.props.y - player_pos.y).powi(2)).sqrt();
+
+        if dist > SLIME_MAX_TRACKING {
+            return;
+        }
         self.props.move_to(player_pos, SLIME_SPEED)
     }
 
