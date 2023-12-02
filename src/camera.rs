@@ -80,6 +80,7 @@ impl Game {
         self.draw_gates();
         self.draw_decorations();
         //self.debug_draw();
+        self.show_ui();
     }
 
     fn draw_monsters(&self) {
@@ -181,14 +182,6 @@ impl Game {
             )
         }
     }
-
-    /*
-    fn debug_draw(&self) {
-        let walls = &self.maps[&self.current_map].spawners;
-        for i in walls {
-        }
-    }
-    */
 }
 
 fn to_index(point: u8) -> (f32, f32) {

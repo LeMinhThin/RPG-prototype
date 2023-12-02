@@ -60,12 +60,14 @@ impl Area {
     pub fn from(json_string: &str) -> (String, Self) {
         // TODO parse this shit
         let parsed: Value = serde_json::from_str(json_string).unwrap();
+        let name = parsed["class"].as_str().unwrap();
 
         let bound = Bound::from(&parsed);
 
         let mut draw_mesh = Meshes::new();
         let mut walls = vec![];
         let mut spawners = vec![];
+        let mut gates = vec![];
 
         for layer in parsed["layers"].as_array().unwrap() {
             match layer["name"].as_str().unwrap().to_lowercase().as_str() {
@@ -81,18 +83,21 @@ impl Area {
                 "spawners" => {
                     spawners = make_spawners(layer).unwrap();
                 }
+                "gates" => {
+                    gates = make_gates(layer).unwrap();
+                }
                 _ => (),
             }
         }
 
         (
-            "Village".to_string(),
+            name.to_string(),
             Area {
                 enemies: vec![Monster::slime()],
                 bound,
                 spawners,
                 draw_mesh,
-                gates: vec![],
+                gates,
                 walls,
             },
         )
@@ -100,12 +105,7 @@ impl Area {
 }
 impl Gate {
     fn new(x: f32, y: f32, w: f32, h: f32, command: String) -> Self {
-        let location = Rect::new(
-            x * STANDARD_SQUARE,
-            y * STANDARD_SQUARE,
-            w * STANDARD_SQUARE,
-            h * STANDARD_SQUARE,
-        );
+        let location = Rect::new(x, y, w, h);
         Gate { location, command }
     }
 
@@ -121,15 +121,19 @@ impl Gate {
 // I dont really need these to be of type Option but doing so will alow me to use the ? operator,
 // which is shorter than just writing out .unwrap()
 fn make_render_mesh(bound: &Bound, objects: &Value) -> Option<Vec<Vec<u8>>> {
+    // Holy shit this is borderline unreadable
     let parsed = &objects["data"].as_array()?;
+
     let temp: Vec<u8> = parsed
         .iter()
         .map(|elem| elem.as_i64().unwrap() as u8)
         .collect();
+
     let return_vec = temp
         .chunks(bound.x as usize)
         .map(|elem| elem.into())
         .collect();
+
     Some(return_vec)
 }
 
@@ -137,20 +141,12 @@ fn make_walls(objects: &Value) -> Option<Vec<Rect>> {
     let raw_data = objects["objects"].as_array()?;
     let mut walls: Vec<Rect> = vec![];
     for wall in raw_data {
-        if wall["name"].as_str() != Some("Wall") {
-            continue;
-        }
         let x = wall["x"].as_f64()? as f32;
         let y = wall["y"].as_f64()? as f32;
         let w = wall["width"].as_f64()? as f32;
         let h = wall["height"].as_f64()? as f32;
 
-        let wall = Rect::new(
-            x * RATIO,
-            y * RATIO,
-            w * RATIO,
-            h * RATIO,
-        );
+        let wall = Rect::new(x * RATIO, y * RATIO, w * RATIO, h * RATIO);
 
         walls.push(wall);
     }
@@ -206,4 +202,37 @@ fn what_kind(name: &str) -> SpawnerType {
         "slime" => SpawnerType::Slime,
         x => panic!("you forgot to account for {x}"),
     }
+}
+
+fn make_gates(objects: &Value) -> Option<Vec<Gate>> {
+    let mut gates: Vec<Gate> = vec![];
+
+    let props = objects["objects"].as_array()?;
+    for gate in props {
+        let x = gate["x"].as_f64()? as f32 * RATIO;
+        let y = gate["y"].as_f64()? as f32 * RATIO;
+        let w = gate["width"].as_f64()? as f32 * RATIO;
+        let h = gate["height"].as_f64()? as f32 * RATIO;
+
+        let command = get_command(&gate["properties"]).unwrap();
+
+        gates.push(Gate::new(x, y, w, h, command))
+    }
+
+    Some(gates)
+}
+
+fn get_command(objects: &Value) -> Option<String> {
+    let commands = objects.as_array().unwrap();
+
+    let mut string = String::new();
+    for i in commands {
+        if i["name"].as_str()? == "to" {
+            string = i["value"].as_str()?.to_string();
+        }
+    }
+    if string.is_empty() {
+        return None;
+    }
+    Some(string)
 }

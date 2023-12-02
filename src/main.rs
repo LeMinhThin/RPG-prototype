@@ -6,6 +6,7 @@ mod logic;
 mod map;
 mod monsters;
 mod player;
+mod ui;
 mod weapons;
 
 fn window_conf() -> Conf {
@@ -27,7 +28,7 @@ async fn main() {
         next_frame().await;
 
         // game over if health < 0
-        if game_state.player.props.heath < 0. {
+        if game_state.player.props.heath <= 0. {
             break;
         }
     }

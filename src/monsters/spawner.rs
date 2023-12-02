@@ -1,6 +1,6 @@
+use macroquad::math::Rect;
 use macroquad::rand::{gen_range, rand};
 use macroquad::time::get_frame_time;
-use macroquad::math::Rect;
 
 use super::slime::Slime;
 use super::Monster;
@@ -47,10 +47,13 @@ impl Spawner {
             self.cooldown -= get_frame_time();
             return;
         }
+
         self.cooldown = self.max_cooldown;
+
         if self.count_mob(&monsters) > self.max_mob {
             return;
         }
+
         let num_mobs = rand() % self.max_mob;
 
         for _ in 0..=num_mobs {
@@ -67,7 +70,12 @@ impl Spawner {
     }
 
     fn count_mob(&self, mobs: &Vec<Monster>) -> u32 {
-        let spawner_detect_box = Rect::new(self.x - self.spawn_radius, self.y - self.spawn_radius, self.spawn_radius * 2., self.spawn_radius * 2.);
+        let spawner_detect_box = Rect::new(
+            self.x - self.spawn_radius,
+            self.y - self.spawn_radius,
+            self.spawn_radius * 2.,
+            self.spawn_radius * 2.,
+        );
         let mut num_mobs = 0;
         for mob in mobs {
             let mob_hitbox = mob.get_hitbox();

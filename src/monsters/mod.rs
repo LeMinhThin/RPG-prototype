@@ -1,4 +1,4 @@
-use crate::player::Player;
+use crate::player::{Player, Props};
 use macroquad::math::Rect;
 use slime::Slime;
 
@@ -12,42 +12,30 @@ pub enum Monster {
 
 impl Monster {
     pub fn tick(&mut self, player: &mut Player) {
-        let player_pos = player.props.get_pos();
         match self {
-            Monster::Slime(slime) => {
-                slime.move_to_player(player_pos);
-                slime.damage_player(player);
-                slime.props.animation.update();
-                slime.props.new_pos();
-            }
+            Monster::Slime(slime) => slime.tick(player),
         }
     }
 
-    pub fn get_heath(&self) -> f32 {
-        match self {
-            Monster::Slime(slime) => {
-                return slime.props.heath;
-            }
-        }
+    pub fn get_props(&self) -> &Props {
+        return match self {
+            Monster::Slime(slime) => &slime.props,
+        };
     }
 
-    pub fn get_mut_heath(&mut self) -> &mut f32 {
-        match self {
-            Monster::Slime(slime) => {
-                return &mut slime.props.heath;
-            }
-        }
-    }
-
-    pub fn get_hitbox(&self) -> Rect {
-        match self {
-            Monster::Slime(slime) => {
-                return slime.hitbox();
-            }
-        }
+    pub fn get_mut_props(&mut self) -> &mut Props {
+        return match self {
+            Monster::Slime(slime) => &mut slime.props,
+        };
     }
 
     pub fn slime() -> Self {
         Monster::Slime(Slime::from(300., 300.))
+    }
+
+    pub fn get_hitbox(&self) -> Rect {
+        match self {
+            Monster::Slime(slime) => slime.hitbox(),
+        }
     }
 }

@@ -4,10 +4,11 @@ use macroquad::experimental::animation::*;
 use macroquad::prelude::*;
 use std::f32::consts::PI;
 
+pub const INVUL_TIME:f32 = 0.5;
 const PLAYER_VELOCITY: f32 = 800.;
-const FOUR_PIXELS: f32 = (4. / TILE_SIZE) * STANDARD_SQUARE;
 const PLAYER_HEATH: f32 = 100.;
 const FRICTION: f32 = 25. / 100.;
+const ONE_PIXEL: f32 = (1./ TILE_SIZE) * STANDARD_SQUARE;
 
 #[derive(Clone)]
 pub struct Player {
@@ -15,7 +16,7 @@ pub struct Player {
     pub held_weapon: Weapon,
     pub attack_cooldown: f32,
     pub facing: Orientation,
-    pub elevation: u8,
+    pub invul_time: f32,
 }
 
 #[derive(Clone)]
@@ -64,16 +65,16 @@ impl Player {
             held_weapon: Weapon::sword(),
             attack_cooldown: 0.,
             facing: Orientation::Down,
-            elevation: 0,
+            invul_time: 0.
         }
     }
 
     pub fn hitbox(&self) -> Rect {
         Rect {
-            x: self.props.x + (9. / TILE_SIZE) * STANDARD_SQUARE,
-            y: self.props.y + (3. / TILE_SIZE) * STANDARD_SQUARE,
-            w: STANDARD_SQUARE * (13. / TILE_SIZE),
-            h: STANDARD_SQUARE * (21. / TILE_SIZE),
+            x: self.props.x + 10. * ONE_PIXEL,
+            y: self.props.y + 16. * ONE_PIXEL,
+            w: 11. * ONE_PIXEL,
+            h: 6. * ONE_PIXEL,
         }
     }
 
@@ -133,8 +134,8 @@ impl Player {
         if self.attack_cooldown > 0. {
             self.attack_cooldown -= delta_time;
         }
-        if self.attack_cooldown < 0. {
-            self.attack_cooldown = 0.
+        if self.invul_time > 0. {
+            self.invul_time -= delta_time
         }
         self.props.animation.update();
     }
@@ -180,12 +181,12 @@ impl Player {
         let player_hitbox = self.hitbox();
 
         let up = vec2(
-            player_hitbox.left() - FOUR_PIXELS,
+            player_hitbox.left() - 4. * ONE_PIXEL,
             player_hitbox.top() - STANDARD_SQUARE,
         );
         let right = vec2(player_hitbox.right(), player_hitbox.top());
         let left = vec2(player_hitbox.left() - STANDARD_SQUARE, player_hitbox.top());
-        let down = vec2(player_hitbox.left() - FOUR_PIXELS, player_hitbox.bottom());
+        let down = vec2(player_hitbox.left() - 4. * ONE_PIXEL, player_hitbox.bottom());
 
         if elapsed_time < 3. * get_frame_time() {
             return match self.facing {
@@ -220,7 +221,7 @@ impl Player {
         match self.facing {
             Orientation::Up => vec2(
                 player_center.x - STANDARD_SQUARE,
-                player_hitbox.top() - STANDARD_SQUARE + FOUR_PIXELS * 1.5,
+                player_hitbox.top() - STANDARD_SQUARE + 6. * ONE_PIXEL,
             ),
             Orientation::Left => vec2(
                 player_hitbox.left() - STANDARD_SQUARE - player_hitbox.w,
@@ -228,7 +229,7 @@ impl Player {
             ),
             Orientation::Down => vec2(
                 player_center.x - STANDARD_SQUARE,
-                player_hitbox.bottom() - FOUR_PIXELS,
+                player_hitbox.bottom() - 4. * ONE_PIXEL,
             ),
             Orientation::Right => vec2(
                 player_hitbox.right() - player_hitbox.w,
