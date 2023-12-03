@@ -79,7 +79,7 @@
                         {
                          "name":"cooldown",
                          "type":"float",
-                         "value":1
+                         "value":30
                         }, 
                         {
                          "name":"kind",
@@ -102,6 +102,39 @@
                  "width":0,
                  "x":375.818181818182,
                  "y":232.545454545455
+                }, 
+                {
+                 "height":0,
+                 "id":36,
+                 "name":"",
+                 "point":true,
+                 "properties":[
+                        {
+                         "name":"cooldown",
+                         "type":"float",
+                         "value":1
+                        }, 
+                        {
+                         "name":"kind",
+                         "type":"string",
+                         "value":"mushroom"
+                        }, 
+                        {
+                         "name":"max_mob",
+                         "type":"int",
+                         "value":3
+                        }, 
+                        {
+                         "name":"spawn_radius",
+                         "type":"float",
+                         "value":5
+                        }],
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":0,
+                 "x":172,
+                 "y":227.25
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -154,15 +187,15 @@
                  "y":34.25
                 }, 
                 {
-                 "height":76.0511363636364,
+                 "height":75.4925426136364,
                  "id":13,
                  "name":"",
                  "rotation":0,
                  "type":"",
                  "visible":true,
-                 "width":6.69507575757581,
-                 "x":198.0625,
-                 "y":33.9488636363636
+                 "width":7.10913825757581,
+                 "x":197.8828125,
+                 "y":34.2613636363636
                 }, 
                 {
                  "height":115.0625,
@@ -176,15 +209,15 @@
                  "y":171.1875
                 }, 
                 {
-                 "height":61.75,
+                 "height":62.73828125,
                  "id":15,
                  "name":"",
                  "rotation":0,
                  "type":"",
                  "visible":true,
-                 "width":7.51136363636363,
-                 "x":50.3636363636364,
-                 "y":48
+                 "width":6.95667613636363,
+                 "x":50.9183238636364,
+                 "y":47.01171875
                 }, 
                 {
                  "height":95.7272727272727,
@@ -193,19 +226,19 @@
                  "rotation":0,
                  "type":"",
                  "visible":true,
-                 "width":7.5,
-                 "x":34.5,
+                 "width":7.2734375,
+                 "x":34.7265625,
                  "y":109.75
                 }, 
                 {
-                 "height":4.33522727272705,
+                 "height":2.55744949494925,
                  "id":17,
                  "name":"",
                  "rotation":0,
                  "type":"",
                  "visible":true,
-                 "width":63.2045454545455,
-                 "x":42.25,
+                 "width":63.44898989899,
+                 "x":42.0055555555556,
                  "y":202.9375
                 }, 
                 {
@@ -220,26 +253,26 @@
                  "y":283.090909090909
                 }, 
                 {
-                 "height":12,
+                 "height":12.1875,
                  "id":27,
                  "name":"",
                  "rotation":0,
                  "type":"",
                  "visible":true,
-                 "width":15.4545454545455,
+                 "width":15.6186079545455,
                  "x":34.7272727272727,
                  "y":97.5454545454545
                 }, 
                 {
-                 "height":12.5,
+                 "height":10.75,
                  "id":31,
                  "name":"",
                  "rotation":0,
                  "type":"",
                  "visible":true,
-                 "width":24.125,
+                 "width":24.12109375,
                  "x":205,
-                 "y":97.25
+                 "y":99
                 }, 
                 {
                  "height":25.75,
@@ -253,15 +286,15 @@
                  "y":99
                 }, 
                 {
-                 "height":25.75,
+                 "height":25.3671875,
                  "id":34,
                  "name":"",
                  "rotation":0,
                  "type":"",
                  "visible":true,
-                 "width":6,
+                 "width":6.6171875,
                  "x":258.75,
-                 "y":98.75
+                 "y":99.1328125
                 }, 
                 {
                  "height":11.625,
@@ -281,7 +314,7 @@
          "y":0
         }],
  "nextlayerid":8,
- "nextobjectid":36,
+ "nextobjectid":37,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.10.2",

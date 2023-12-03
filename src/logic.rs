@@ -52,7 +52,7 @@ impl Game {
     }
 
     fn key_event_handler(&mut self) {
-        if is_key_pressed(KeyCode::Space) {
+        if is_key_pressed(KeyCode::Space) || is_mouse_button_pressed(MouseButton::Left) {
             if self.player.attack_cooldown <= 0. {
                 self.player.attack_cooldown = self.player.held_weapon.cooldown;
                 self.damage_monster();
@@ -70,23 +70,14 @@ impl Game {
         let current_map = self.maps.get_mut(&self.current_map).unwrap();
 
         for monster in current_map.enemies.iter_mut() {
-            monster.tick(&mut self.player);
+            monster.get_mut().tick(&mut self.player);
         }
 
         for spawner in current_map.spawners.iter_mut() {
             spawner.tick(&mut current_map.enemies)
         }
 
-        self.kill_monster();
-    }
-
-    fn kill_monster(&mut self) {
-        self.maps.get_mut(&self.current_map).unwrap().enemies = self
-            .get_monster_list()
-            .iter()
-            .filter(|x| x.get_props().heath > 0.)
-            .cloned()
-            .collect()
+        current_map.clean_up();
     }
 
     fn wall_collision(&mut self) {
@@ -130,9 +121,14 @@ impl Game {
         let player_pos = &self.player.props.get_pos();
 
         for monster in self.get_monster_list() {
-            if let Some(_) = damage_zone.intersect(monster.get_hitbox()) {
-                let monster_props = monster.get_mut_props();
-                let knockback = vec2(monster_props.x - player_pos.x, monster_props.y - player_pos.y).normalize() * KNOCKBACK;
+            if let Some(_) = damage_zone.intersect(monster.get().hitbox()) {
+                let monster_props = monster.get_mut().get_mut_props();
+                let knockback = vec2(
+                    monster_props.x - player_pos.x,
+                    monster_props.y - player_pos.y,
+                )
+                .normalize()
+                    * KNOCKBACK;
 
                 monster_props.movement_vector = knockback;
                 monster_props.heath -= damage
@@ -164,11 +160,11 @@ fn get_map_list() -> Vec<PathBuf> {
     return_vec
 }
 
-pub fn make_anim(name: &str, row: u32, frames: u32) -> Animation {
+pub fn make_anim(name: &str, row: u32, frames: u32, fps: u32) -> Animation {
     Animation {
         name: name.to_string(),
         row,
         frames,
-        fps: 8,
+        fps,
     }
 }

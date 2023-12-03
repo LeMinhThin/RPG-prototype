@@ -1,8 +1,8 @@
 use macroquad::prelude::*;
+use macroquad::rand::rand;
 
 use std::f32::consts::PI;
 
-use crate::monsters::slime::Slime;
 use crate::monsters::*;
 use crate::{logic::*, map::Area};
 
@@ -80,7 +80,7 @@ impl Game {
         self.draw_gates();
         self.draw_decorations();
         //self.debug_draw();
-        self.show_ui();
+        self.hud();
     }
 
     fn draw_monsters(&self) {
@@ -102,6 +102,12 @@ impl Game {
     }
 
     fn draw_player(&mut self) {
+        // Basicly this makes the player flash after it's hurt
+        if self.player.invul_time > 0. {
+            if rand() % 3 == 0 {
+                return;
+            }
+        }
         let dest_size = Some(self.player.props.animation.frame().dest_size * SCALE_FACTOR);
         let draw_param = DrawTextureParams {
             source: Some(self.player.props.animation.frame().source_rect),
@@ -213,17 +219,17 @@ fn screen_box(screen_center: Vec2) -> Rect {
     // I don't know why you need to multiply everything by 2 for it to work,
     // It just works ok, don't ask
     Rect {
-        x: center.x - screen_width * 1.3,
-        y: center.y - screen_height * 1.3,
-        w: screen_width * 2.6,
-        h: screen_height * 2.6,
+        x: center.x - screen_width * 1.2,
+        y: center.y - screen_height * 1.2,
+        w: screen_width * 2.4,
+        h: screen_height * 2.4,
     }
 }
 
 // For debugging and prototyping purposes
 
 #[allow(dead_code)]
-trait Draw {
+pub trait Draw {
     fn draw(&self);
 }
 
@@ -296,25 +302,8 @@ fn gen_draw_params(source_id: u8) -> DrawTextureParams {
 impl Monster {
     pub fn draw(&self, texture: &Textures) {
         match self {
-            Monster::Slime(slime) => slime.draw(texture),
+            Monster::Slime(slime) => slime.draw(&texture.slime),
+            Monster::Mushroom(mushroom) => mushroom.draw(&texture.mushroom),
         }
-    }
-}
-
-impl Slime {
-    fn draw(&self, texture: &Textures) {
-        let dest_size = Some(self.props.animation.frame().dest_size * SCALE_FACTOR);
-        let draw_param = DrawTextureParams {
-            source: Some(self.props.animation.frame().source_rect),
-            dest_size,
-            ..Default::default()
-        };
-        draw_texture_ex(
-            &texture.slime,
-            self.props.x,
-            self.props.y,
-            WHITE,
-            draw_param,
-        );
     }
 }

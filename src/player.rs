@@ -4,11 +4,11 @@ use macroquad::experimental::animation::*;
 use macroquad::prelude::*;
 use std::f32::consts::PI;
 
-pub const INVUL_TIME:f32 = 0.5;
-const PLAYER_VELOCITY: f32 = 800.;
+pub const INVUL_TIME: f32 = 1.0;
+const PLAYER_VELOCITY: f32 = 350.;
 const PLAYER_HEATH: f32 = 100.;
-const FRICTION: f32 = 25. / 100.;
-const ONE_PIXEL: f32 = (1./ TILE_SIZE) * STANDARD_SQUARE;
+const FRICTION: f32 = 1. / 2.;
+const ONE_PIXEL: f32 = (1. / TILE_SIZE) * STANDARD_SQUARE;
 
 #[derive(Clone)]
 pub struct Player {
@@ -65,7 +65,7 @@ impl Player {
             held_weapon: Weapon::sword(),
             attack_cooldown: 0.,
             facing: Orientation::Down,
-            invul_time: 0.
+            invul_time: 0.,
         }
     }
 
@@ -178,7 +178,7 @@ impl Player {
     // This is so unbelievably messy that I don't even want to begin to explain
     pub fn get_draw_pos(&self) -> Vec2 {
         let elapsed_time = self.held_weapon.cooldown - self.attack_cooldown;
-        let player_hitbox = self.hitbox();
+        let player_hitbox = self.abs_hitbox();
 
         let up = vec2(
             player_hitbox.left() - 4. * ONE_PIXEL,
@@ -186,7 +186,10 @@ impl Player {
         );
         let right = vec2(player_hitbox.right(), player_hitbox.top());
         let left = vec2(player_hitbox.left() - STANDARD_SQUARE, player_hitbox.top());
-        let down = vec2(player_hitbox.left() - 4. * ONE_PIXEL, player_hitbox.bottom());
+        let down = vec2(
+            player_hitbox.left() - 4. * ONE_PIXEL,
+            player_hitbox.bottom(),
+        );
 
         if elapsed_time < 3. * get_frame_time() {
             return match self.facing {
@@ -215,7 +218,7 @@ impl Player {
 
     // When I die, delete all of these so people wouldn't know I was the author
     pub fn slash_pos(&self) -> Vec2 {
-        let player_hitbox = self.hitbox();
+        let player_hitbox = self.abs_hitbox();
         let player_center = player_hitbox.center();
 
         match self.facing {
@@ -235,6 +238,16 @@ impl Player {
                 player_hitbox.right() - player_hitbox.w,
                 player_center.y - STANDARD_SQUARE / 2.,
             ),
+        }
+    }
+
+    fn abs_hitbox(&self) -> Rect {
+        let player_pos = &self.props;
+        Rect {
+            x: player_pos.x + 9. * ONE_PIXEL,
+            y: player_pos.y + 3. * ONE_PIXEL,
+            w: 13. * ONE_PIXEL,
+            h: 19. * ONE_PIXEL,
         }
     }
 }
@@ -268,14 +281,14 @@ fn player_animations() -> AnimatedSprite {
         TILE_SIZE as u32,
         TILE_SIZE as u32,
         &[
-            make_anim("idle_down", 0, 6),
-            make_anim("idle_left", 1, 6),
-            make_anim("idle_up", 2, 6),
-            make_anim("idle_right", 3, 6),
-            make_anim("walk_down", 4, 6),
-            make_anim("walk_left", 5, 6),
-            make_anim("walk_up", 6, 6),
-            make_anim("walk_right", 7, 6),
+            make_anim("idle_down", 0, 6, 12),
+            make_anim("idle_left", 1, 6, 12),
+            make_anim("idle_up", 2, 6, 12),
+            make_anim("idle_right", 3, 6, 12),
+            make_anim("walk_down", 4, 6, 12),
+            make_anim("walk_left", 5, 6, 12),
+            make_anim("walk_up", 6, 6, 12),
+            make_anim("walk_right", 7, 6, 12),
         ],
         true,
     )

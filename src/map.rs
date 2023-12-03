@@ -93,7 +93,7 @@ impl Area {
         (
             name.to_string(),
             Area {
-                enemies: vec![Monster::slime()],
+                enemies: vec![],
                 bound,
                 spawners,
                 draw_mesh,
@@ -101,6 +101,16 @@ impl Area {
                 walls,
             },
         )
+    }
+
+    pub fn clean_up(&mut self) {
+        let mut index = 0;
+        while index < self.enemies.len() {
+            if self.enemies[index].get().get_props().heath <= 0. {
+                self.enemies.remove(index);
+            }
+            index += 1;
+        }
     }
 }
 impl Gate {
@@ -200,6 +210,7 @@ fn get_props(objects: &Value) -> Option<(f32, f32, SpawnerType, u32)> {
 fn what_kind(name: &str) -> SpawnerType {
     match name {
         "slime" => SpawnerType::Slime,
+        "mushroom" => SpawnerType::Mushroom,
         x => panic!("you forgot to account for {x}"),
     }
 }

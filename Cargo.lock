@@ -105,6 +105,7 @@ name = "game"
 version = "0.1.5"
 dependencies = [
  "macroquad",
+ "profiler",
  "serde_json",
 ]
 
@@ -274,6 +275,12 @@ checksum = "134c189feb4956b20f6f547d2cf727d4c0fe06722b20a0eec87ed445a97f92da"
 dependencies = [
  "unicode-ident",
 ]
+
+[[package]]
+name = "profiler"
+version = "0.0.0-reserve"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bd33d62567aa1f1b3a8127e2ea0233e3a3d10449ad93d21e9980512eb08bc127"
 
 [[package]]
 name = "quad-rand"

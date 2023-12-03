@@ -1,13 +1,14 @@
-use macroquad::math::Rect;
-use macroquad::rand::{gen_range, rand};
-use macroquad::time::get_frame_time;
+use macroquad::prelude::*;
+use macroquad::rand::*;
 
+use super::mushroom::Mushroom;
 use super::slime::Slime;
 use super::Monster;
 
 // The term "radius" being used here is technically wrong as it is more of a square than a circle but
 // it would take an additional layer of complexity to fix this tiny bug, which I'm not very fond of
 // dealing with so "radius" remains for now.
+#[derive(Debug)]
 pub struct Spawner {
     kind: SpawnerType,
     pub spawn_radius: f32,
@@ -18,8 +19,10 @@ pub struct Spawner {
     pub y: f32,
 }
 
+#[derive(PartialEq, Debug)]
 pub enum SpawnerType {
     Slime,
+    Mushroom,
 }
 
 impl Spawner {
@@ -43,6 +46,9 @@ impl Spawner {
     }
 
     pub fn tick(&mut self, monsters: &mut Vec<Monster>) {
+        if is_key_pressed(KeyCode::F3) {
+            println!("{self:?}");
+        }
         if self.cooldown > 0. {
             self.cooldown -= get_frame_time();
             return;
@@ -56,7 +62,7 @@ impl Spawner {
 
         let num_mobs = rand() % self.max_mob;
 
-        for _ in 0..=num_mobs {
+        for _ in 0..num_mobs {
             let x_offset = gen_range(-self.spawn_radius, self.spawn_radius);
             let y_offset = gen_range(-self.spawn_radius, self.spawn_radius);
 
@@ -64,6 +70,11 @@ impl Spawner {
                 SpawnerType::Slime => {
                     let new_mob = Monster::Slime(Slime::from(self.x + x_offset, self.y + y_offset));
                     monsters.push(new_mob);
+                }
+                SpawnerType::Mushroom => {
+                    let new_mob =
+                        Monster::Mushroom(Mushroom::from(self.x + x_offset, self.y + y_offset));
+                    monsters.push(new_mob)
                 }
             }
         }
@@ -78,12 +89,24 @@ impl Spawner {
         );
         let mut num_mobs = 0;
         for mob in mobs {
-            let mob_hitbox = mob.get_hitbox();
+            let mob_hitbox = mob.get().hitbox();
+
+            if !self.is_same_type(mob) {
+                continue;
+            }
 
             if let Some(_) = spawner_detect_box.intersect(mob_hitbox) {
                 num_mobs += 1;
             }
         }
         num_mobs
+    }
+
+    fn is_same_type(&self, mob: &Monster) -> bool {
+        let mob_type = match mob {
+            Monster::Mushroom(_) => SpawnerType::Mushroom,
+            Monster::Slime(_) => SpawnerType::Slime,
+        };
+        mob_type == self.kind
     }
 }
