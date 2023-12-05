@@ -3,6 +3,7 @@ use crate::player::*;
 use macroquad::experimental::animation::AnimatedSprite;
 use macroquad::prelude::*;
 
+use super::Entity;
 use super::IsAMonster;
 
 const MUSHROOM_HEALTH: f32 = 20.;
@@ -16,12 +17,13 @@ pub struct Mushroom {
 }
 
 impl IsAMonster for Mushroom {
-    fn tick(&mut self, player: &mut Player) {
+    fn tick(&mut self, player: &mut Player, walls: &[Rect]) {
         let player_pos = player.props.get_pos();
         self.move_to(player_pos);
         self.damage_player(player);
         self.props.animation.update();
         self.props.new_pos();
+        self.wall_collsion(walls);
 
         self.change_anim();
     }
@@ -43,15 +45,6 @@ impl IsAMonster for Mushroom {
         if let Some(_) = self.hitbox().intersect(player.hitbox()) {
             player.props.heath -= self.damage;
             player.invul_time = INVUL_TIME;
-        }
-    }
-
-    fn hitbox(&self) -> Rect {
-        Rect {
-            x: self.props.x,
-            y: self.props.y,
-            w: STANDARD_SQUARE,
-            h: STANDARD_SQUARE,
         }
     }
 
@@ -94,6 +87,23 @@ impl Mushroom {
         Mushroom { props, damage: 5. }
     }
 }
+
+impl Collidable for Mushroom {
+    fn hitbox(&self) -> Rect {
+        Rect {
+            x: self.props.x,
+            y: self.props.y,
+            w: STANDARD_SQUARE,
+            h: STANDARD_SQUARE,
+        }
+    }
+
+    fn pos(&mut self) -> (&mut f32, &mut f32) {
+        (&mut self.props.x, &mut self.props.y)
+    }
+}
+
+impl Entity for Mushroom {}
 
 fn mushroom_animation() -> AnimatedSprite {
     AnimatedSprite::new(

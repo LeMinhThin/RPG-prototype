@@ -28,6 +28,53 @@ pub struct Props {
     pub y: f32,
 }
 
+pub trait Collidable {
+    fn hitbox(&self) -> Rect;
+    fn pos(&mut self) -> (&mut f32, &mut f32);
+    fn wall_collsion(&mut self, walls: &[Rect]) {
+        let hitbox = self.hitbox();
+        let (pos_x, pos_y) = self.pos();
+
+        for wall in walls {
+            let rect: Rect;
+            if let Some(x) = wall.intersect(hitbox) {
+                rect = x
+            } else {
+                continue;
+            }
+
+            if rect.w < rect.h {
+                if hitbox.right() > wall.right() {
+                    *pos_x += rect.w
+                } else {
+                    *pos_x -= rect.w
+                }
+            } else {
+                if hitbox.bottom() > wall.bottom() {
+                    *pos_y += rect.h
+                } else {
+                    *pos_y -= rect.h
+                }
+            }
+        }
+    }
+}
+
+impl Collidable for Player {
+    fn hitbox(&self) -> Rect {
+        Rect {
+            x: self.props.x + 10. * ONE_PIXEL,
+            y: self.props.y + 16. * ONE_PIXEL,
+            w: 11. * ONE_PIXEL,
+            h: 6. * ONE_PIXEL,
+        }
+    }
+
+    fn pos(&mut self) -> (&mut f32, &mut f32) {
+        (&mut self.props.x, &mut self.props.y)
+    }
+}
+
 impl Props {
     pub fn from(x: f32, y: f32, heath: f32, animation: AnimatedSprite) -> Self {
         Props {
@@ -66,15 +113,6 @@ impl Player {
             attack_cooldown: 0.,
             facing: Orientation::Down,
             invul_time: 0.,
-        }
-    }
-
-    pub fn hitbox(&self) -> Rect {
-        Rect {
-            x: self.props.x + 10. * ONE_PIXEL,
-            y: self.props.y + 16. * ONE_PIXEL,
-            w: 11. * ONE_PIXEL,
-            h: 6. * ONE_PIXEL,
         }
     }
 
@@ -128,9 +166,10 @@ impl Player {
         self.props.new_pos();
     }
 
-    pub fn tick(&mut self) {
+    pub fn tick(&mut self, walls: &[Rect]) {
         let delta_time = get_frame_time();
         self.new_pos();
+        self.wall_collsion(walls);
         if self.attack_cooldown > 0. {
             self.attack_cooldown -= delta_time;
         }

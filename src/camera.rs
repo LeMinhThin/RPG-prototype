@@ -4,6 +4,7 @@ use macroquad::rand::rand;
 use std::f32::consts::PI;
 
 use crate::monsters::*;
+use crate::player::Collidable;
 use crate::{logic::*, map::Area};
 
 const TARGET_WIDTH: f32 = 1600.;

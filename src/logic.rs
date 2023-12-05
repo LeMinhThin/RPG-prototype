@@ -63,14 +63,12 @@ impl Game {
     pub fn tick(&mut self) {
         self.new_camera_offset();
         self.key_event_handler();
-        self.player.tick();
-        self.wall_collision();
         self.move_through_gate();
-        // self.go_through_gate();
-        let current_map = self.maps.get_mut(&self.current_map).unwrap();
 
+        let current_map = self.maps.get_mut(&self.current_map).unwrap();
+        self.player.tick(&current_map.walls);
         for monster in current_map.enemies.iter_mut() {
-            monster.get_mut().tick(&mut self.player);
+            monster.get_mut().tick(&mut self.player, &current_map.walls);
         }
 
         for spawner in current_map.spawners.iter_mut() {
@@ -78,28 +76,6 @@ impl Game {
         }
 
         current_map.clean_up();
-    }
-
-    fn wall_collision(&mut self) {
-        let walls = &self.maps[&self.current_map].walls;
-        for wall in walls {
-            let player_hitbox = self.player.hitbox();
-            if let Some(rect) = wall.intersect(player_hitbox) {
-                if rect.w < rect.h {
-                    if player_hitbox.right() > wall.right() {
-                        self.player.props.x += rect.w
-                    } else {
-                        self.player.props.x -= rect.w
-                    }
-                } else {
-                    if player_hitbox.bottom() > wall.bottom() {
-                        self.player.props.y += rect.h
-                    } else {
-                        self.player.props.y -= rect.h
-                    }
-                }
-            }
-        }
     }
 
     fn move_through_gate(&mut self) {

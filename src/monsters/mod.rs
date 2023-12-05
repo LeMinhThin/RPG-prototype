@@ -1,8 +1,5 @@
-use crate::player::{Player, Props};
-use macroquad::{
-    math::{Rect, Vec2},
-    texture::Texture2D,
-};
+use crate::player::{Collidable, Player, Props};
+use macroquad::prelude::*;
 use mushroom::Mushroom;
 use slime::Slime;
 
@@ -17,7 +14,7 @@ pub enum Monster {
 }
 
 impl Monster {
-    pub fn get(&self) -> Box<&dyn IsAMonster> {
+    pub fn get(&self) -> Box<&(dyn Entity)> {
         return match self {
             Monster::Slime(slime) => Box::new(slime),
             Monster::Mushroom(mushroom) => Box::new(mushroom),
@@ -32,12 +29,13 @@ impl Monster {
 }
 
 pub trait IsAMonster {
-    fn tick(&mut self, player: &mut Player);
+    fn tick(&mut self, player: &mut Player, walls: &[Rect]);
     fn damage_player(&self, player: &mut Player);
     fn move_to(&mut self, player_pos: Vec2);
-    fn hitbox(&self) -> Rect;
     fn draw(&self, texture: &Texture2D);
     fn change_anim(&mut self);
     fn get_props(&self) -> &Props;
     fn get_mut_props(&mut self) -> &mut Props;
 }
+
+pub trait Entity: IsAMonster + Collidable {}

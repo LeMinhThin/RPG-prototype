@@ -1,9 +1,9 @@
 use crate::logic::*;
-use crate::player::{Player, Props, INVUL_TIME};
+use crate::player::{Collidable, Player, Props, INVUL_TIME};
 use macroquad::experimental::animation::*;
 use macroquad::prelude::*;
 
-use super::IsAMonster;
+use super::{Entity, IsAMonster};
 
 const SLIME_HEATH: f32 = 50.;
 const SLIME_SPEED: f32 = 150.;
@@ -15,13 +15,14 @@ pub struct Slime {
     damage: f32,
 }
 impl IsAMonster for Slime {
-    fn tick(&mut self, player: &mut Player) {
+    fn tick(&mut self, player: &mut Player, walls: &[Rect]) {
         let player_pos = player.props.get_pos();
 
         self.move_to(player_pos);
         self.damage_player(player);
         self.props.animation.update();
         self.props.new_pos();
+        self.wall_collsion(walls);
 
         self.change_anim()
     }
@@ -36,6 +37,7 @@ impl IsAMonster for Slime {
         }
         self.props.move_to(player_pos, SLIME_SPEED)
     }
+
     fn damage_player(&self, player: &mut Player) {
         if player.invul_time > 0. {
             return;
@@ -49,14 +51,6 @@ impl IsAMonster for Slime {
         }
     }
 
-    fn hitbox(&self) -> Rect {
-        Rect {
-            x: self.props.x,
-            y: self.props.y,
-            w: STANDARD_SQUARE,
-            h: STANDARD_SQUARE,
-        }
-    }
     fn draw(&self, texture: &Texture2D) {
         let dest_size = Some(self.props.animation.frame().dest_size * SCALE_FACTOR);
         let draw_param = DrawTextureParams {
@@ -93,6 +87,23 @@ impl Slime {
         Slime { props, damage: 10. }
     }
 }
+
+impl Collidable for Slime {
+    fn pos(&mut self) -> (&mut f32, &mut f32) {
+        (&mut self.props.x, &mut self.props.y)
+    }
+
+    fn hitbox(&self) -> Rect {
+        Rect {
+            x: self.props.x,
+            y: self.props.y,
+            w: STANDARD_SQUARE,
+            h: STANDARD_SQUARE,
+        }
+    }
+}
+
+impl Entity for Slime {}
 
 fn slime_animations() -> AnimatedSprite {
     AnimatedSprite::new(
