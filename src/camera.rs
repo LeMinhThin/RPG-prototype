@@ -1,7 +1,4 @@
 use macroquad::prelude::*;
-use macroquad::rand::rand;
-
-use std::f32::consts::PI;
 
 use crate::monsters::*;
 use crate::player::Collidable;
@@ -48,6 +45,8 @@ impl Game {
             }
         }
 
+        // So uhm the camera will start to follow the player once the player has gone out of bound.
+        // Since it would be quite nice to hide some easter eggs with it, this is a feauture now.
         self.set_offset(cam_box.center())
     }
 
@@ -109,17 +108,6 @@ impl Game {
         if self.current_state == GameState::GUI {
             self.player.show_inv();
         }
-        self.debug_draw();
-    }
-
-    fn debug_draw(&self) {
-        let bounds = &self.maps[&self.current_map].bound;
-        let bounds = vec2(
-            bounds.x as f32 * STANDARD_SQUARE,
-            bounds.y as f32 * STANDARD_SQUARE,
-        );
-        let bound_box = Rect::new(0., 0., bounds.x, bounds.y);
-        bound_box.draw()
     }
 
     fn draw_monsters(&self) {
@@ -141,77 +129,7 @@ impl Game {
     }
 
     fn draw_player(&mut self) {
-        // Basicly this makes the player flash after it's hurt
-        if self.player.invul_time > 0. {
-            if rand() % 3 == 0 {
-                return;
-            }
-        }
-        let dest_size = Some(self.player.props.animation.frame().dest_size * SCALE_FACTOR);
-        let draw_param = DrawTextureParams {
-            source: Some(self.player.props.animation.frame().source_rect),
-            dest_size,
-            ..Default::default()
-        };
-        draw_texture_ex(
-            &self.textures.player,
-            self.player.props.x,
-            self.player.props.y,
-            WHITE,
-            draw_param,
-        );
-        if self.player.attack_cooldown > 0. {
-            self.draw_weapon();
-        }
-    }
-
-    fn draw_weapon(&self) {
-        // Oh my god this is such a spaghetti mess
-        let rotation = self.player.get_weapon_angle();
-        let draw_pos = self.player.get_draw_pos();
-        let slash_pos = self.player.slash_pos();
-        let draw_param = DrawTextureParams {
-            source: Some(Rect::new(
-                TILE_SIZE * 0.,
-                TILE_SIZE * 8.,
-                TILE_SIZE,
-                TILE_SIZE,
-            )),
-            rotation,
-            dest_size: Some(Vec2 {
-                x: STANDARD_SQUARE,
-                y: STANDARD_SQUARE,
-            }),
-            ..Default::default()
-        };
-        draw_texture_ex(
-            &self.textures.player,
-            draw_pos.x,
-            draw_pos.y,
-            WHITE,
-            draw_param,
-        );
-        // draw slash sprite
-
-        let dest_size = Some(vec2(STANDARD_SQUARE * 2., STANDARD_SQUARE));
-        let draw_param = DrawTextureParams {
-            source: Some(Rect::new(
-                TILE_SIZE * 7.,
-                TILE_SIZE * 0.,
-                TILE_SIZE * 2.,
-                TILE_SIZE,
-            )),
-            rotation: self.player.current_angle() + PI / 2.,
-            dest_size,
-            ..Default::default()
-        };
-        draw_texture_ex(
-            &self.textures.player,
-            slash_pos.x,
-            slash_pos.y,
-            WHITE,
-            draw_param,
-        );
+        self.player.draw(&self.textures.player)
     }
 
     fn draw_gates(&self) {

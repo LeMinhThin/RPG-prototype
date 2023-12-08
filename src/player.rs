@@ -2,6 +2,7 @@ use crate::logic::*;
 use crate::weapons::Weapon;
 use macroquad::experimental::animation::*;
 use macroquad::prelude::*;
+use macroquad::rand::rand;
 use std::f32::consts::PI;
 
 pub const INVUL_TIME: f32 = 1.0;
@@ -218,7 +219,7 @@ impl Player {
         self.props.animation.set_animation(row)
     }
 
-    pub fn get_weapon_angle(&self) -> f32 {
+    fn get_weapon_angle(&self) -> f32 {
         let mut angle = self.current_angle() + PI;
 
         let elapsed_time = self.held_weapon.cooldown - self.attack_cooldown;
@@ -230,7 +231,7 @@ impl Player {
     }
 
     // This is so unbelievably messy that I don't even want to begin to explain
-    pub fn get_draw_pos(&self) -> Vec2 {
+    fn get_draw_pos(&self) -> Vec2 {
         let elapsed_time = self.held_weapon.cooldown - self.attack_cooldown;
         let player_hitbox = self.abs_hitbox();
 
@@ -261,7 +262,7 @@ impl Player {
         }
     }
 
-    pub fn current_angle(&self) -> f32 {
+    fn current_angle(&self) -> f32 {
         match self.facing {
             Orientation::Up => -PI / 2.,
             Orientation::Left => PI,
@@ -271,7 +272,7 @@ impl Player {
     }
 
     // When I die, delete all of these so people wouldn't know I was the author
-    pub fn slash_pos(&self) -> Vec2 {
+    fn slash_pos(&self) -> Vec2 {
         let player_hitbox = self.abs_hitbox();
         let player_center = player_hitbox.center();
 
@@ -320,6 +321,80 @@ impl Player {
             return true;
         }
         false
+    }
+
+    pub fn draw(&self, texture: &Texture2D) {
+        // Basicly this makes the player flash after it's hurt
+        if self.invul_time > 0. {
+            if rand() % 3 == 0 {
+                return;
+            }
+        }
+        let dest_size = Some(self.props.animation.frame().dest_size * SCALE_FACTOR);
+        let draw_param = DrawTextureParams {
+            source: Some(self.props.animation.frame().source_rect),
+            dest_size,
+            ..Default::default()
+        };
+        draw_texture_ex(
+            texture,
+            self.props.x,
+            self.props.y,
+            WHITE,
+            draw_param,
+        );
+        if self.attack_cooldown > 0. {
+            self.draw_weapon(texture);
+        }
+    }
+
+    fn draw_weapon(&self, texture: &Texture2D) {
+        // Oh my god this is such a spaghetti mess
+        let rotation = self.get_weapon_angle();
+        let draw_pos = self.get_draw_pos();
+        let slash_pos = self.slash_pos();
+        let draw_param = DrawTextureParams {
+            source: Some(Rect::new(
+                TILE_SIZE * 0.,
+                TILE_SIZE * 8.,
+                TILE_SIZE,
+                TILE_SIZE,
+            )),
+            rotation,
+            dest_size: Some(Vec2 {
+                x: STANDARD_SQUARE,
+                y: STANDARD_SQUARE,
+            }),
+            ..Default::default()
+        };
+        draw_texture_ex(
+            &texture,
+            draw_pos.x,
+            draw_pos.y,
+            WHITE,
+            draw_param,
+        );
+        // draw slash sprite
+
+        let dest_size = Some(vec2(STANDARD_SQUARE * 2., STANDARD_SQUARE));
+        let draw_param = DrawTextureParams {
+            source: Some(Rect::new(
+                TILE_SIZE * 7.,
+                TILE_SIZE * 0.,
+                TILE_SIZE * 2.,
+                TILE_SIZE,
+            )),
+            rotation: self.current_angle() + PI / 2.,
+            dest_size,
+            ..Default::default()
+        };
+        draw_texture_ex(
+            &texture,
+            slash_pos.x,
+            slash_pos.y,
+            WHITE,
+            draw_param,
+        );
     }
 }
 
