@@ -7,7 +7,7 @@ use crate::monsters::*;
 use spawner::*;
 
 const GATE_HITBOX_SCALE: f32 = 0.2;
-const RATIO: f32 = STANDARD_SQUARE / TERRAIN_TILE_SIZE;
+pub const RATIO: f32 = STANDARD_SQUARE / TERRAIN_TILE_SIZE;
 
 pub struct Area {
     pub enemies: Vec<Monster>,
@@ -27,8 +27,8 @@ pub struct Gate {
 
 #[derive(Clone, Debug)]
 pub struct Bound {
-    pub x: u8,
-    pub y: u8,
+    pub x: usize,
+    pub y: usize,
 }
 
 pub struct Meshes {
@@ -50,15 +50,14 @@ impl Meshes {
 
 impl Bound {
     fn from(table: &Value) -> Self {
-        let x = table["width"].as_u64().unwrap() as u8;
-        let y = table["height"].as_u64().unwrap() as u8;
+        let x = table["width"].as_u64().unwrap() as usize;
+        let y = table["height"].as_u64().unwrap() as usize;
         Bound { x, y }
     }
 }
 
 impl Area {
     pub fn from(json_string: &str) -> (String, Self) {
-        // TODO parse this shit
         let parsed: Value = serde_json::from_str(json_string).unwrap();
         let name = parsed["class"].as_str().unwrap();
 

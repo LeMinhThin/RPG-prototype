@@ -17,6 +17,7 @@ pub struct Player {
     pub attack_cooldown: f32,
     pub facing: Orientation,
     pub invul_time: f32,
+    pub inventory: Inventory,
 }
 
 #[derive(Clone)]
@@ -26,6 +27,19 @@ pub struct Props {
     pub animation: AnimatedSprite,
     pub x: f32,
     pub y: f32,
+}
+
+#[derive(Clone)]
+pub struct Inventory {
+    pub mouse_over: Vec<bool>,
+}
+
+impl Inventory {
+    fn empty() -> Self {
+        Inventory {
+            mouse_over: [false; 18].to_vec(),
+        }
+    }
 }
 
 pub trait Collidable {
@@ -113,6 +127,7 @@ impl Player {
             attack_cooldown: 0.,
             facing: Orientation::Down,
             invul_time: 0.,
+            inventory: Inventory::empty(),
         }
     }
 
@@ -280,6 +295,8 @@ impl Player {
         }
     }
 
+    // This method only exist so that I won't have to rewrite the already confusing enough
+    // attacking code
     fn abs_hitbox(&self) -> Rect {
         let player_pos = &self.props;
         Rect {
@@ -288,6 +305,21 @@ impl Player {
             w: 13. * ONE_PIXEL,
             h: 19. * ONE_PIXEL,
         }
+    }
+
+    pub fn should_attack(&mut self) -> bool {
+        if self.attack_cooldown > 0. {
+            return false;
+        }
+        if is_key_pressed(KeyCode::Space) {
+            self.attack_cooldown = self.held_weapon.cooldown;
+            return true;
+        }
+        if is_mouse_button_pressed(MouseButton::Left) {
+            self.attack_cooldown = self.held_weapon.cooldown;
+            return true;
+        }
+        false
     }
 }
 

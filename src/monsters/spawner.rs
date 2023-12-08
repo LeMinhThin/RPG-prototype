@@ -46,9 +46,6 @@ impl Spawner {
     }
 
     pub fn tick(&mut self, monsters: &mut Vec<Monster>) {
-        if is_key_pressed(KeyCode::F3) {
-            println!("{self:?}");
-        }
         if self.cooldown > 0. {
             self.cooldown -= get_frame_time();
             return;

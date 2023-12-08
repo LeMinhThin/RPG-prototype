@@ -3,6 +3,8 @@ use macroquad::ui::{hash, root_ui, Skin};
 
 use crate::logic::Game;
 
+mod inventory;
+
 impl Game {
     pub fn hud(&self) {
         let transparent = root_ui().style_builder().background(Image::empty()).build();
@@ -19,5 +21,7 @@ impl Game {
             let rect = Rect::new(60., 10., player_heath, 30.);
             ui.canvas().rect(rect, RED, GREEN)
         });
+
+        root_ui().pop_skin();
     }
 }

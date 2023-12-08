@@ -7,9 +7,6 @@ use crate::monsters::*;
 use crate::player::Collidable;
 use crate::{logic::*, map::Area};
 
-const TARGET_WIDTH: f32 = 1600.;
-const TARGET_HEIGHT: f32 = 900.;
-
 const CAM_SPEED: f32 = 1. / 10.;
 
 const SHEET_SIZE: u8 = 12;
@@ -17,56 +14,82 @@ pub const TERRAIN_TILE_SIZE: f32 = 16.;
 
 impl Game {
     pub fn new_camera_offset(&mut self) {
-        let cam_box = self.cam_box();
-        let player_hitbox = self.player.hitbox();
+        let mut cam_box = self.cam_box();
 
+        // Shift the camera box's center to the player's
+        let player_pos = self.player.hitbox().center();
+        let cam_center = cam_box.center();
+        cam_box.x += player_pos.x -cam_center.x;
+        cam_box.y += player_pos.y - cam_center.y;
+
+        let bound_box = self.bound_box();
+
+        // Inverse collision detection lmao
+        if let Some(rect) = bound_box.intersect(cam_box) {
+            if is_key_pressed(KeyCode::F3) {
+                println!("{:#?}", cam_box);
+                println!("{:#?}", bound_box);
+            }
+            if cam_box.top() < bound_box.top() {
+                cam_box.y += cam_box.h - rect.h
+            }
+            if cam_box.bottom() > bound_box.bottom() {
+                cam_box.y -= cam_box.h - rect.h
+            }
+            if cam_box.left() < bound_box.left() {
+                cam_box.x +=cam_box.w - rect.w
+            }
+            if cam_box.right() > bound_box.right() {
+                cam_box.x -= cam_box.w - rect.w
+            }
+            if is_key_pressed(KeyCode::F4) {
+                println!("{:#?}", cam_box);
+                println!("{:#?}", bound_box);
+            }
+        }
+
+        self.set_offset(cam_box.center())
+    }
+
+    fn set_offset(&mut self, new_offset: Vec2) {
         let screen_width = screen_width();
         let screen_height = screen_height();
 
-        if cam_box.intersect(player_hitbox) == Some(player_hitbox) {
-            return;
-        }
-        if player_hitbox.left() < cam_box.left() {
-            self.cam_offset_x += CAM_SPEED * (cam_box.left() - player_hitbox.left()) / screen_width
-        }
-        if player_hitbox.right() > cam_box.right() {
-            self.cam_offset_x +=
-                CAM_SPEED * (cam_box.right() - player_hitbox.right()) / screen_width
-        }
-        if player_hitbox.top() < cam_box.top() {
-            self.cam_offset_y -= CAM_SPEED * (cam_box.top() - player_hitbox.top()) / screen_height
-        }
-        if player_hitbox.bottom() > cam_box.bottom() {
-            self.cam_offset_y -=
-                CAM_SPEED * (cam_box.bottom() - player_hitbox.bottom()) / screen_height
-        }
+        let curent_offset = vec2(
+            -self.cam_offset_x * screen_width,
+            self.cam_offset_y * screen_height,
+        );
+
+        self.cam_offset_x += (curent_offset.x - new_offset.x) / screen_width * CAM_SPEED;
+        self.cam_offset_y -= (curent_offset.y - new_offset.y) / screen_height * CAM_SPEED;
+    }
+
+    fn bound_box(&self) -> Rect {
+        let bounds = &self.maps[&self.current_map].bound;
+        let bounds = vec2(bounds.x as f32 * STANDARD_SQUARE, bounds.y as f32 * STANDARD_SQUARE);
+        Rect::new(0., 0., bounds.x, bounds.y)
+
     }
 
     fn cam_box(&self) -> Rect {
         let screen_width = screen_width();
         let screen_height = screen_height();
 
-        let ratio_x = TARGET_WIDTH / screen_width;
-        let ratio_y = TARGET_HEIGHT / screen_height;
-
-        let cam_pos_x = -self.cam_offset_x * screen_width * ratio_x;
-        let cam_pos_y = self.cam_offset_y * screen_height * ratio_y;
-
-        let bound_x = screen_width - 1. * STANDARD_SQUARE;
-        let bound_y = screen_height - 1. * STANDARD_SQUARE;
+        let cam_pos_x = -self.cam_offset_x * screen_width;
+        let cam_pos_y = self.cam_offset_y * screen_height;
 
         Rect::new(
-            cam_pos_x - bound_x / 2.,
-            cam_pos_y - bound_y / 2.,
-            bound_x,
-            bound_y,
+            cam_pos_x - screen_width,
+            cam_pos_y - screen_height,
+            screen_width * 2.,
+            screen_height * 2.,
         )
     }
 
     pub fn draw(&mut self) {
         clear_background(WHITE);
-        let zoom_x = 1. / TARGET_WIDTH;
-        let zoom_y = 1. / TARGET_HEIGHT;
+        let zoom_x = 1. / screen_width();
+        let zoom_y = 1. / screen_height();
         let camera: Camera2D = Camera2D {
             offset: vec2(self.cam_offset_x, self.cam_offset_y),
             target: vec2(0., 0.),
@@ -75,13 +98,28 @@ impl Game {
         };
         set_camera(&camera);
 
+        self.hud();
         self.draw_terrain();
         self.draw_monsters();
         self.draw_player();
         self.draw_gates();
         self.draw_decorations();
-        //self.debug_draw();
-        self.hud();
+        self.cam_box().draw();
+
+        if self.current_state == GameState::GUI {
+            self.player.show_inv();
+        }
+        self.debug_draw();
+    }
+
+    fn debug_draw(&self) {
+        let bounds = &self.maps[&self.current_map].bound;
+        let bounds = vec2(
+            bounds.x as f32 * STANDARD_SQUARE,
+            bounds.y as f32 * STANDARD_SQUARE,
+        );
+        let bound_box = Rect::new(0., 0., bounds.x, bounds.y);
+        bound_box.draw()
     }
 
     fn draw_monsters(&self) {
@@ -205,7 +243,7 @@ fn to_index(point: u8) -> (f32, f32) {
     (x * TERRAIN_TILE_SIZE, y * TERRAIN_TILE_SIZE)
 }
 
-fn to_coord(x: u8, y: u8) -> (f32, f32) {
+fn to_coord(x: usize, y: usize) -> (f32, f32) {
     let x = x as f32 * STANDARD_SQUARE;
     let y = y as f32 * STANDARD_SQUARE;
     (x, y)
@@ -267,7 +305,7 @@ impl Area {
         };
         for y_coord in 0..self.bound.y {
             for x_coord in 0..self.bound.x {
-                let source_id = mesh[y_coord as usize][x_coord as usize];
+                let source_id = mesh[y_coord][x_coord];
                 // Id of 0 indicate that the tile is blank
                 if source_id == 0 {
                     continue;

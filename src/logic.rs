@@ -20,6 +20,7 @@ pub struct Game {
     pub cam_offset_x: f32,
     pub cam_offset_y: f32,
     pub textures: Textures,
+    pub current_state: GameState,
 }
 
 pub struct Textures {
@@ -27,6 +28,12 @@ pub struct Textures {
     pub terrain: Texture2D,
     pub slime: Texture2D,
     pub mushroom: Texture2D,
+}
+
+#[derive(PartialEq)]
+pub enum GameState {
+    Normal,
+    GUI,
 }
 
 impl Game {
@@ -48,14 +55,17 @@ impl Game {
             textures,
             cam_offset_x: 0.,
             cam_offset_y: 0.,
+            current_state: GameState::Normal,
         }
     }
 
     fn key_event_handler(&mut self) {
-        if is_key_pressed(KeyCode::Space) || is_mouse_button_pressed(MouseButton::Left) {
-            if self.player.attack_cooldown <= 0. {
-                self.player.attack_cooldown = self.player.held_weapon.cooldown;
-                self.damage_monster();
+        if is_key_pressed(KeyCode::E) {
+            self.current_state = GameState::GUI
+        }
+        if is_key_pressed(KeyCode::Escape) {
+            if self.current_state == GameState::GUI {
+                self.current_state = GameState::Normal
             }
         }
     }
@@ -65,17 +75,21 @@ impl Game {
         self.key_event_handler();
         self.move_through_gate();
 
-        let current_map = self.maps.get_mut(&self.current_map).unwrap();
-        self.player.tick(&current_map.walls);
-        for monster in current_map.enemies.iter_mut() {
-            monster.get_mut().tick(&mut self.player, &current_map.walls);
-        }
+        if self.current_state == GameState::Normal {
+            self.damage_monster();
+            let current_map = self.maps.get_mut(&self.current_map).unwrap();
+            self.player.tick(&current_map.walls);
 
-        for spawner in current_map.spawners.iter_mut() {
-            spawner.tick(&mut current_map.enemies)
-        }
+            for monster in current_map.enemies.iter_mut() {
+                monster.get_mut().tick(&mut self.player, &current_map.walls);
+            }
 
-        current_map.clean_up();
+            for spawner in current_map.spawners.iter_mut() {
+                spawner.tick(&mut current_map.enemies)
+            }
+
+            current_map.clean_up();
+        }
     }
 
     fn move_through_gate(&mut self) {
@@ -92,6 +106,9 @@ impl Game {
     }
 
     fn damage_monster(&mut self) {
+        if !self.player.should_attack() {
+            return;
+        }
         let damage_zone = self.player.weapon_hitbox();
         let damage = self.player.held_weapon.base_damage;
         let player_pos = &self.player.props.get_pos();
