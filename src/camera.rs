@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use macroquad::prelude::*;
 
 use crate::monsters::*;
@@ -16,17 +18,13 @@ impl Game {
         // Shift the camera box's center to the player's
         let player_pos = self.player.hitbox().center();
         let cam_center = cam_box.center();
-        cam_box.x += player_pos.x -cam_center.x;
+        cam_box.x += player_pos.x - cam_center.x;
         cam_box.y += player_pos.y - cam_center.y;
 
         let bound_box = self.bound_box();
 
         // Inverse collision detection lmao
         if let Some(rect) = bound_box.intersect(cam_box) {
-            if is_key_pressed(KeyCode::F3) {
-                println!("{:#?}", cam_box);
-                println!("{:#?}", bound_box);
-            }
             if cam_box.top() < bound_box.top() {
                 cam_box.y += cam_box.h - rect.h
             }
@@ -34,17 +32,12 @@ impl Game {
                 cam_box.y -= cam_box.h - rect.h
             }
             if cam_box.left() < bound_box.left() {
-                cam_box.x +=cam_box.w - rect.w
+                cam_box.x += cam_box.w - rect.w
             }
             if cam_box.right() > bound_box.right() {
                 cam_box.x -= cam_box.w - rect.w
             }
-            if is_key_pressed(KeyCode::F4) {
-                println!("{:#?}", cam_box);
-                println!("{:#?}", bound_box);
-            }
         }
-
         // So uhm the camera will start to follow the player once the player has gone out of bound.
         // Since it would be quite nice to hide some easter eggs with it, this is a feauture now.
         self.set_offset(cam_box.center())
@@ -59,15 +52,18 @@ impl Game {
             self.cam_offset_y * screen_height,
         );
 
+        // Because S M O O T H
         self.cam_offset_x += (curent_offset.x - new_offset.x) / screen_width * CAM_SPEED;
         self.cam_offset_y -= (curent_offset.y - new_offset.y) / screen_height * CAM_SPEED;
     }
 
     fn bound_box(&self) -> Rect {
         let bounds = &self.maps[&self.current_map].bound;
-        let bounds = vec2(bounds.x as f32 * STANDARD_SQUARE, bounds.y as f32 * STANDARD_SQUARE);
+        let bounds = vec2(
+            bounds.x as f32 * STANDARD_SQUARE,
+            bounds.y as f32 * STANDARD_SQUARE,
+        );
         Rect::new(0., 0., bounds.x, bounds.y)
-
     }
 
     fn cam_box(&self) -> Rect {
@@ -97,43 +93,46 @@ impl Game {
         };
         set_camera(&camera);
 
+        let current_map = &self.maps[&self.current_map];
+        let player_pos = self.player.hitbox().center();
+
         self.hud();
-        self.draw_terrain();
-        self.draw_monsters();
+        self.draw_terrain(current_map);
+        self.draw_monsters(current_map);
         self.draw_player();
-        self.draw_gates();
-        self.draw_decorations();
-        self.cam_box().draw();
+        self.draw_gates(current_map);
+        self.draw_decorations(current_map);
+        self.draw_npcs(current_map, player_pos);
 
         if self.current_state == GameState::GUI {
-            self.player.show_inv();
+            self.player.show_inv(&self.textures["ui"]);
         }
     }
 
-    fn draw_monsters(&self) {
-        for monster in self.maps[&self.current_map].enemies.iter() {
+    fn draw_monsters(&self, map: &Area) {
+        for monster in map.enemies.iter() {
             monster.draw(&self.textures)
         }
     }
 
-    fn draw_terrain(&self) {
-        let map = &self.maps[&self.current_map];
+    fn draw_terrain(&self, map: &Area) {
+        let draw_type = "terrain";
         let screen_center = self.cam_box().center();
-        map.draw_tiles(&self.textures.terrain, screen_center, "terrain");
+        map.draw_tiles(&self.textures[draw_type], screen_center, draw_type);
     }
 
-    fn draw_decorations(&self) {
-        let map = &self.maps[&self.current_map];
+    fn draw_decorations(&self, map: &Area) {
+        let draw_type = "decorations";
         let screen_center = self.cam_box().center();
-        map.draw_tiles(&self.textures.terrain, screen_center, "decorations");
+        map.draw_tiles(&self.textures["terrain"], screen_center, draw_type);
     }
 
-    fn draw_player(&mut self) {
-        self.player.draw(&self.textures.player)
+    fn draw_player(&self) {
+        self.player.draw(&self.textures["player"])
     }
 
-    fn draw_gates(&self) {
-        let gates = &self.maps[&self.current_map].gates;
+    fn draw_gates(&self, map: &Area) {
+        let gates = &map.gates;
 
         for gate in gates {
             draw_rectangle(
@@ -143,6 +142,19 @@ impl Game {
                 gate.location.h,
                 GREEN,
             )
+        }
+    }
+
+    fn draw_npcs(&self, map: &Area, player_pos: Vec2) {
+        let npcs = &map.npcs;
+
+        for npc in npcs {
+            npc.draw(&self.textures[&npc.name]);
+
+            npc.hitbox.draw();
+            if npc.hitbox.center().distance(player_pos) < STANDARD_SQUARE {
+                npc.draw_overlay(&self.textures["ui"]);
+            }
         }
     }
 }
@@ -257,10 +269,10 @@ fn gen_draw_params(source_id: u8) -> DrawTextureParams {
 }
 
 impl Monster {
-    pub fn draw(&self, texture: &Textures) {
+    pub fn draw(&self, texture: &HashMap<String, Texture2D>) {
         match self {
-            Monster::Slime(slime) => slime.draw(&texture.slime),
-            Monster::Mushroom(mushroom) => mushroom.draw(&texture.mushroom),
+            Monster::Slime(slime) => slime.draw(&texture["slime"]),
+            Monster::Mushroom(mushroom) => mushroom.draw(&texture["mushroom"]),
         }
     }
 }

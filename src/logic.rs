@@ -1,12 +1,12 @@
 use std::collections::HashMap;
+use std::fs::{read_dir, read_to_string};
+use std::path::PathBuf;
 
 use crate::map::*;
 use crate::monsters::Monster;
 use crate::player::*;
 use macroquad::experimental::animation::*;
 use macroquad::prelude::*;
-use std::fs::{read_dir, read_to_string};
-use std::path::PathBuf;
 
 pub const TILE_SIZE: f32 = 24.;
 pub const SCALE_FACTOR: f32 = 6.;
@@ -19,29 +19,24 @@ pub struct Game {
     pub current_map: String,
     pub cam_offset_x: f32,
     pub cam_offset_y: f32,
-    pub textures: Textures,
+    pub textures: HashMap<String, Texture2D>,
     pub current_state: GameState,
-}
-
-pub struct Textures {
-    pub player: Texture2D,
-    pub terrain: Texture2D,
-    pub slime: Texture2D,
-    pub mushroom: Texture2D,
 }
 
 #[derive(PartialEq)]
 pub enum GameState {
     Normal,
     GUI,
+    Talking(usize),
 }
 
 impl Game {
-    pub fn new(textures: Textures) -> Self {
+    pub fn new(textures: HashMap<String, Texture2D>) -> Self {
         let mut area: HashMap<String, Area> = HashMap::new();
         // TODO unhardcode this value
         let current_map = "Village".to_string();
-        let map_list = get_map_list();
+
+        let map_list = get_path("assets/maps/", ".json");
         for map in map_list {
             let json_string = read_to_string(map).unwrap();
             let map_content = Area::from(&json_string);
@@ -73,23 +68,27 @@ impl Game {
     pub fn tick(&mut self) {
         self.new_camera_offset();
         self.key_event_handler();
+        self.anim_tick();
+        if self.current_state != GameState::Normal {
+            return;
+        }
         self.move_through_gate();
 
-        if self.current_state == GameState::Normal {
-            self.damage_monster();
-            let current_map = self.maps.get_mut(&self.current_map).unwrap();
-            self.player.tick(&current_map.walls);
+        self.damage_monster();
+        let current_map = self.maps.get_mut(&self.current_map).unwrap();
 
-            for monster in current_map.enemies.iter_mut() {
-                monster.get_mut().tick(&mut self.player, &current_map.walls);
-            }
-
-            for spawner in current_map.spawners.iter_mut() {
-                spawner.tick(&mut current_map.enemies)
-            }
-
-            current_map.clean_up();
+        self.player.tick(&current_map.walls);
+        for monster in current_map.enemies.iter_mut() {
+            monster.get_mut().tick(&mut self.player, &current_map.walls);
         }
+        for spawner in current_map.spawners.iter_mut() {
+            spawner.tick(&mut current_map.enemies)
+        }
+        for npcs in current_map.npcs.iter_mut() {
+            npcs.tick()
+        }
+
+        current_map.clean_up();
     }
 
     fn move_through_gate(&mut self) {
@@ -98,6 +97,14 @@ impl Game {
             if let Some(_) = self.player.hitbox().intersect(gate.hitbox()) {
                 self.move_map(&gate.command)
             }
+        }
+    }
+
+    fn anim_tick(&mut self) {
+        self.player.props.animation.update();
+        let current_map = self.maps.get_mut(&self.current_map).unwrap();
+        for monsters in current_map.enemies.iter_mut() {
+            monsters.get_mut().tick_anim();
         }
     }
 
@@ -138,14 +145,13 @@ impl Game {
     }
 }
 
-fn get_map_list() -> Vec<PathBuf> {
-    let map_path = PathBuf::from("./assets/maps/");
-    let maps = read_dir(map_path).unwrap();
+pub fn get_path(dir: &str, file_type: &str) -> Vec<PathBuf> {
+    let maps = read_dir(dir).unwrap();
 
     let mut return_vec: Vec<PathBuf> = vec![];
     for map in maps {
         let to_add: PathBuf = map.unwrap().path();
-        if !to_add.to_str().unwrap().contains(".json") {
+        if !to_add.to_str().unwrap().contains(file_type) {
             continue;
         }
         return_vec.push(to_add)

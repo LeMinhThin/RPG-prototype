@@ -36,6 +36,7 @@ pub trait IsAMonster {
     fn change_anim(&mut self);
     fn get_props(&self) -> &Props;
     fn get_mut_props(&mut self) -> &mut Props;
+    fn tick_anim(&mut self);
 }
 
 pub trait Entity: IsAMonster + Collidable {}

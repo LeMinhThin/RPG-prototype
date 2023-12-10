@@ -1,3 +1,5 @@
+use std::{collections::HashMap, path::PathBuf};
+
 use logic::*;
 use macroquad::prelude::*;
 
@@ -5,6 +7,7 @@ mod camera;
 mod logic;
 mod map;
 mod monsters;
+mod npc;
 mod player;
 mod ui;
 mod weapons;
@@ -27,36 +30,32 @@ async fn main() {
         game_state.draw();
         next_frame().await;
 
-        // game over if health < 0
+        // game over if health <= 0
         if game_state.player.props.heath <= 0. {
             break;
         }
     }
 }
 
-async fn load_textures() -> Textures {
-    let player_textures: Texture2D = load_texture("res/player.png").await.unwrap();
-    let terrain_textures: Texture2D = load_texture("res/terrain.png").await.unwrap();
-    let slime_textures: Texture2D = load_texture("res/slime.png").await.unwrap();
-    let mushroom_textures: Texture2D = load_texture("res/mushroom.png").await.unwrap();
-
-    let textures = vec![
-        player_textures,
-        terrain_textures,
-        slime_textures,
-        mushroom_textures,
-    ];
-    for texture in textures.iter() {
-        texture.set_filter(FilterMode::Nearest)
+async fn load_textures() -> HashMap<String, Texture2D> {
+    let mut textures: HashMap<String, Texture2D> = HashMap::new();
+    let paths = get_path("res/", ".png");
+    for path in paths {
+        let texture = load_texture(path.to_str().unwrap()).await.unwrap();
+        texture.set_filter(FilterMode::Nearest);
+        let name = to_name(&path);
+        textures.insert(name, texture);
     }
-    pack_texture(textures)
+    textures
 }
 
-fn pack_texture(texture: Vec<Texture2D>) -> Textures {
-    Textures {
-        player: texture[0].clone(),
-        terrain: texture[1].clone(),
-        slime: texture[2].clone(),
-        mushroom: texture[3].clone(),
-    }
+fn to_name(path: &PathBuf) -> String {
+    path.file_name()
+        .unwrap()
+        .to_str()
+        .unwrap()
+        .split_once(".")
+        .unwrap()
+        .0
+        .to_string()
 }

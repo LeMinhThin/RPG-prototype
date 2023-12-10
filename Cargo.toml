@@ -6,6 +6,5 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-macroquad = "0.4.4"
-profiler = "0.0.0-reserve"
+macroquad = "*"
 serde_json = "1.0.108"

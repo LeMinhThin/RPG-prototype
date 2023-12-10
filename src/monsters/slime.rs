@@ -20,11 +20,14 @@ impl IsAMonster for Slime {
 
         self.move_to(player_pos);
         self.damage_player(player);
-        self.props.animation.update();
         self.props.new_pos();
         self.wall_collsion(walls);
 
         self.change_anim()
+    }
+
+    fn tick_anim(&mut self) {
+        self.props.animation.update();
     }
 
     fn move_to(&mut self, player_pos: Vec2) {
@@ -89,7 +92,7 @@ impl Slime {
 }
 
 impl Collidable for Slime {
-    fn pos(&mut self) -> (&mut f32, &mut f32) {
+    fn mut_pos(&mut self) -> (&mut f32, &mut f32) {
         (&mut self.props.x, &mut self.props.y)
     }
 
@@ -100,6 +103,10 @@ impl Collidable for Slime {
             w: STANDARD_SQUARE,
             h: STANDARD_SQUARE,
         }
+    }
+
+    fn pos(&self) -> Vec2 {
+        vec2(self.props.x, self.props.y)
     }
 }
 

@@ -45,10 +45,11 @@ impl Inventory {
 
 pub trait Collidable {
     fn hitbox(&self) -> Rect;
-    fn pos(&mut self) -> (&mut f32, &mut f32);
+    fn mut_pos(&mut self) -> (&mut f32, &mut f32);
+    fn pos(&self) -> Vec2;
     fn wall_collsion(&mut self, walls: &[Rect]) {
         let hitbox = self.hitbox();
-        let (pos_x, pos_y) = self.pos();
+        let (pos_x, pos_y) = self.mut_pos();
 
         for wall in walls {
             let rect: Rect;
@@ -85,8 +86,12 @@ impl Collidable for Player {
         }
     }
 
-    fn pos(&mut self) -> (&mut f32, &mut f32) {
+    fn mut_pos(&mut self) -> (&mut f32, &mut f32) {
         (&mut self.props.x, &mut self.props.y)
+    }
+
+    fn pos(&self) -> Vec2 {
+        vec2(self.props.x, self.props.y)
     }
 }
 
@@ -192,7 +197,6 @@ impl Player {
         if self.invul_time > 0. {
             self.invul_time -= delta_time
         }
-        self.props.animation.update();
     }
 
     fn new_orientation(&mut self, movement_vector: &Vec2) {
@@ -336,13 +340,7 @@ impl Player {
             dest_size,
             ..Default::default()
         };
-        draw_texture_ex(
-            texture,
-            self.props.x,
-            self.props.y,
-            WHITE,
-            draw_param,
-        );
+        draw_texture_ex(texture, self.props.x, self.props.y, WHITE, draw_param);
         if self.attack_cooldown > 0. {
             self.draw_weapon(texture);
         }
@@ -367,13 +365,7 @@ impl Player {
             }),
             ..Default::default()
         };
-        draw_texture_ex(
-            &texture,
-            draw_pos.x,
-            draw_pos.y,
-            WHITE,
-            draw_param,
-        );
+        draw_texture_ex(&texture, draw_pos.x, draw_pos.y, WHITE, draw_param);
         // draw slash sprite
 
         let dest_size = Some(vec2(STANDARD_SQUARE * 2., STANDARD_SQUARE));
@@ -388,13 +380,7 @@ impl Player {
             dest_size,
             ..Default::default()
         };
-        draw_texture_ex(
-            &texture,
-            slash_pos.x,
-            slash_pos.y,
-            WHITE,
-            draw_param,
-        );
+        draw_texture_ex(&texture, slash_pos.x, slash_pos.y, WHITE, draw_param);
     }
 }
 

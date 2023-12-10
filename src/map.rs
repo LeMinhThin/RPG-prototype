@@ -4,6 +4,7 @@ use serde_json::Value;
 use crate::camera::TERRAIN_TILE_SIZE;
 use crate::logic::STANDARD_SQUARE;
 use crate::monsters::*;
+use crate::npc::NPC;
 use spawner::*;
 
 const GATE_HITBOX_SCALE: f32 = 0.2;
@@ -14,7 +15,7 @@ pub struct Area {
     pub walls: Vec<Rect>,
     pub gates: Vec<Gate>,
     pub spawners: Vec<Spawner>,
-    //pub interactables: Vec<Interactable>,
+    pub npcs: Vec<NPC>,
     pub bound: Bound,
     pub draw_mesh: Meshes,
 }
@@ -67,6 +68,7 @@ impl Area {
         let mut walls = vec![];
         let mut spawners = vec![];
         let mut gates = vec![];
+        let mut npcs = vec![];
 
         for layer in parsed["layers"].as_array().unwrap() {
             match layer["name"].as_str().unwrap().to_lowercase().as_str() {
@@ -85,6 +87,9 @@ impl Area {
                 "gates" => {
                     gates = make_gates(layer).unwrap();
                 }
+                "npcs" => {
+                    npcs = make_npcs(layer).unwrap();
+                }
                 _ => (),
             }
         }
@@ -98,6 +103,7 @@ impl Area {
                 draw_mesh,
                 gates,
                 walls,
+                npcs,
             },
         )
     }
@@ -130,7 +136,7 @@ impl Gate {
 // I dont really need these to be of type Option but doing so will alow me to use the ? operator,
 // which is shorter than just writing out .unwrap()
 fn make_render_mesh(bound: &Bound, objects: &Value) -> Option<Vec<Vec<u8>>> {
-    // Holy shit this is borderline unreadable
+    // Ah yes, functional programming
     let parsed = &objects["data"].as_array()?;
 
     let temp: Vec<u8> = parsed
@@ -245,4 +251,33 @@ fn get_command(objects: &Value) -> Option<String> {
         return None;
     }
     Some(string)
+}
+
+fn make_npcs(objects: &Value) -> Option<Vec<NPC>> {
+    let mut npcs: Vec<NPC> = vec![];
+
+    let list = objects["objects"].as_array()?;
+
+    for item in list {
+        let mut diag_path = "";
+        let name = item["name"].as_str()?;
+
+        let x = item["x"].as_f64()? as f32;
+        let y = item["y"].as_f64()? as f32;
+        let w = item["width"].as_f64()? as f32;
+        let h = item["height"].as_f64()? as f32;
+        let hitbox = Rect::new(x * RATIO, y * RATIO, w * RATIO, h * RATIO);
+
+        let props = item["properties"].as_array()?;
+
+        for prop in props {
+            if prop["name"].as_str()? == "dialog" {
+                diag_path = prop["value"].as_str()?;
+            }
+        }
+        let npc = NPC::new(name, &diag_path, hitbox);
+        npcs.push(npc);
+    }
+
+    Some(npcs)
 }
