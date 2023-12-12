@@ -68,7 +68,7 @@ impl Game {
         Rect::new(0., 0., bounds.x, bounds.y)
     }
 
-    fn cam_box(&self) -> Rect {
+    pub fn cam_box(&self) -> Rect {
         let screen_width = screen_width();
         let screen_height = screen_height();
 
@@ -109,7 +109,7 @@ impl Game {
         match self.current_state {
             GameState::Normal => (),
             GameState::Talking(_) => self.draw_dialog(&current_map.npcs),
-            GameState::GUI => self.player.show_inv(&self.textures["ui"]),
+            GameState::GUI => self.show_inv(),
         }
     }
 

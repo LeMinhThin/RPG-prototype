@@ -18,7 +18,6 @@ impl NPC {
         let path: PathBuf = diag_path.replace("..", "assets").into();
         let dialog = read_to_string(path).unwrap();
         let dialogs: Vec<String> = dialog.split("|").map(|str| str.to_string()).collect();
-        println!("{dialogs:#?}");
 
         let anim = npc_anim();
 

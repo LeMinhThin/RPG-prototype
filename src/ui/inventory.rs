@@ -1,65 +1,103 @@
+use crate::logic::Game;
 use macroquad::prelude::*;
-use macroquad::ui::{hash, root_ui, widgets, Skin, Ui};
 
-use crate::player::Player;
+const COL: f32 = 4.;
+const ROW: f32 = 3.;
+const SIZE: f32 = 120.;
 
-const COL: f32 = 9.;
-const ROW: f32 = 2.;
-const SIZE: f32 = 80.;
-#[allow(dead_code)]
-impl Player {
-    pub fn show_inv(&mut self, texture: &Texture2D) {
-        let skin = Skin {
-            ..root_ui().default_skin()
-        };
+impl Game {
+    pub fn show_inv(&self) {
+        let screen_center = self.cam_box().center();
+        let width = 700.;
+        let height = 1200.;
+        let margin = 50.;
 
-        root_ui().push_skin(&skin);
+        let (left_box, right_box) = dual_box(screen_center, width, height, margin);
 
-        let size = vec2(800., 500.);
-        let inv_pos_x = screen_width() / 2. - size.x / 2.;
-        let inv_pos_y = screen_height() / 2. - size.y / 2.;
-        let position = vec2(inv_pos_x, inv_pos_y);
-
-        let _margin_x = (size.x - (COL * SIZE)) / (COL + 1.);
-        root_ui().window(hash!(), position, size, |ui| {
-            ui.texture(texture.clone(), SIZE * 10., SIZE * 10.);
-            widgets::Label::new("Hello World")
-                .size(vec2(SIZE, SIZE))
-                .ui(ui)
-            //self.draw_inv(ui, position, margin_x);
-        });
-
-        root_ui().pop_skin();
+        draw_rectangle(left_box.x, left_box.y, left_box.w, left_box.h, LIGHTGRAY);
+        draw_rectangle(
+            right_box.x,
+            right_box.y,
+            right_box.w,
+            right_box.h,
+            LIGHTGRAY,
+        );
+        draw_slots(right_box, self.get_mouse_pos());
     }
-    fn draw_inv(&mut self, ui: &mut Ui, origin: Vec2, margin: f32) {
-        let mut col = 0.;
-        let mut row = 0.;
-        let mut index = 0;
-        let mut last_hover = vec![];
-        let inv = &self.inventory.mouse_over;
 
-        // So uhm basicly the last_hover_method only returns a bool, so I had to buffer the output
-        // of the method in a vector, that why the code looks so messy.
+    fn get_mouse_pos(&self) -> Vec2 {
+        let screen_width = screen_width();
+        let screen_height = screen_height();
 
-        while row < ROW {
-            while col < COL {
-                let x = origin.x + (margin * (col + 1.) + SIZE * col);
-                let y = origin.y + (margin * (row + 1.) + SIZE * row);
+        let offset_x = -self.cam_offset_x * screen_width;
+        let offset_y = self.cam_offset_y * screen_height;
+        let mouse = mouse_position_local();
 
-                let rect = Rect::new(x, y, SIZE, SIZE);
-                if inv[index] {
-                    ui.canvas().rect(rect, GREEN, GREEN);
-                } else {
-                    ui.canvas().rect(rect, RED, RED);
-                }
+        vec2(mouse.x * screen_width + offset_x, mouse.y * screen_height + offset_y)
+    }
+}
 
-                last_hover.push(ui.last_item_hovered());
-                col += 1.;
-                index += 1;
+fn draw_slots(container: Rect, mouse_pos: Vec2) {
+    let margin_x = (container.w - (COL * SIZE)) / (COL + 1.);
+    let margin_y = (container.h - (ROW * SIZE)) / (ROW + 1.) / 2.;
+    let margin = min(margin_x, margin_y);
+
+    let max_row = ROW as u8;
+    let max_col = COL as u8;
+
+    let starting_pos = vec2(container.right(), container.bottom());
+
+    for row in 0..max_row {
+        let row = row as f32;
+        for col in 0..max_col {
+            let col = col as f32;
+
+            let rect = Rect::new(
+                starting_pos.x - col * (margin + 1.) - (col + 1.) * SIZE - margin,
+                starting_pos.y - row * (margin + 1.) - (row + 1.) * SIZE - margin,
+                SIZE,
+                SIZE,
+            );
+
+            if rect.contains(mouse_pos) {
+                draw_rectangle(rect.x, rect.y, rect.w, rect.h, GREEN)
+            } else {
+                draw_rectangle(rect.x, rect.y, rect.w, rect.h, RED)
             }
-            col = 0.;
-            row += 1.
         }
-        self.inventory.mouse_over = last_hover;
+    }
+}
+
+fn dual_box(screen_center: Vec2, width: f32, height: f32, margin: f32) -> (Rect, Rect) {
+    let ui_box = Rect::new(
+        screen_center.x - margin / 2. - width,
+        screen_center.y - height / 2.,
+        width * 2. + margin,
+        height,
+    );
+
+    let left_box = Rect::new(ui_box.left(), ui_box.top(), width, height);
+    let right_box = Rect::new(ui_box.right() - width, ui_box.top(), width, height);
+
+    (left_box, right_box)
+}
+
+/*
+fn single_box(screen_center: Vec2, width: f32, height: f32) -> Rect {
+    Rect::new(
+        screen_center.x - width / 2.,
+        screen_center.y - height / 2.,
+        width,
+        height,
+    )
+}
+*/
+
+// IDK why there isn't any min/max function for f32
+fn min<T: std::cmp::PartialOrd>(x: T, y: T) -> T {
+    if x < y {
+        return x;
+    } else {
+        return y;
     }
 }
