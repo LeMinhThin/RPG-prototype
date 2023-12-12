@@ -1,30 +1,23 @@
 use crate::player::{Collidable, Player, Props};
 use macroquad::prelude::*;
-use mushroom::Mushroom;
-use slime::Slime;
+use spawner::SpawnerType;
 
 pub mod mushroom;
 pub mod slime;
 pub mod spawner;
 
-#[derive(Clone)]
-pub enum Monster {
-    Slime(Slime),
-    Mushroom(Mushroom),
-}
+pub struct Monster(Box<dyn Entity>);
 
 impl Monster {
-    pub fn get(&self) -> Box<&(dyn Entity)> {
-        return match self {
-            Monster::Slime(slime) => Box::new(slime),
-            Monster::Mushroom(mushroom) => Box::new(mushroom),
-        };
+    pub fn get(&self) -> &Box<(dyn Entity)> {
+        match self {
+            Monster(val) => return val,
+        }
     }
-    pub fn get_mut(&mut self) -> Box<&mut dyn IsAMonster> {
-        return match self {
-            Monster::Slime(slime) => Box::new(slime),
-            Monster::Mushroom(mushroom) => Box::new(mushroom),
-        };
+    pub fn get_mut(&mut self) -> &mut Box<dyn Entity> {
+        match self {
+            Monster(val) => return val,
+        }
     }
 }
 
@@ -37,6 +30,7 @@ pub trait IsAMonster {
     fn get_props(&self) -> &Props;
     fn get_mut_props(&mut self) -> &mut Props;
     fn tick_anim(&mut self);
+    fn get_type(&self) -> SpawnerType;
 }
 
 pub trait Entity: IsAMonster + Collidable {}

@@ -3,8 +3,7 @@ use crate::player::*;
 use macroquad::experimental::animation::AnimatedSprite;
 use macroquad::prelude::*;
 
-use super::Entity;
-use super::IsAMonster;
+use super::{spawner::SpawnerType, Entity, IsAMonster};
 
 const MUSHROOM_HEALTH: f32 = 20.;
 const MUSHROOM_MAX_TRACK: f32 = 200.;
@@ -79,6 +78,10 @@ impl IsAMonster for Mushroom {
 
     fn get_mut_props(&mut self) -> &mut Props {
         &mut self.props
+    }
+
+    fn get_type(&self) -> SpawnerType {
+        SpawnerType::Mushroom
     }
 }
 

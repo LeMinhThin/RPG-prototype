@@ -3,7 +3,7 @@ use crate::player::{Collidable, Player, Props, INVUL_TIME};
 use macroquad::experimental::animation::*;
 use macroquad::prelude::*;
 
-use super::{Entity, IsAMonster};
+use super::{spawner::SpawnerType, Entity, IsAMonster};
 
 const SLIME_HEATH: f32 = 50.;
 const SLIME_SPEED: f32 = 150.;
@@ -80,6 +80,10 @@ impl IsAMonster for Slime {
 
     fn get_mut_props(&mut self) -> &mut Props {
         &mut self.props
+    }
+
+    fn get_type(&self) -> SpawnerType {
+        SpawnerType::Slime
     }
 }
 

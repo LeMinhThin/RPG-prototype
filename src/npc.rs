@@ -9,6 +9,7 @@ pub struct NPC {
     pub dialogs: Vec<String>,
     pub hitbox: Rect,
     pub anim: AnimatedSprite,
+    pub is_talking: bool,
 }
 
 impl NPC {
@@ -17,6 +18,7 @@ impl NPC {
         let path: PathBuf = diag_path.replace("..", "assets").into();
         let dialog = read_to_string(path).unwrap();
         let dialogs: Vec<String> = dialog.split("|").map(|str| str.to_string()).collect();
+        println!("{dialogs:#?}");
 
         let anim = npc_anim();
 
@@ -25,8 +27,14 @@ impl NPC {
             dialogs,
             anim,
             hitbox,
+            is_talking: false,
         }
     }
+
+    /*
+    pub fn tick(&mut self) {
+    }
+    */
 
     pub fn draw(&self, texture: &Texture2D) {
         let dest_size = Some(self.anim.frame().dest_size * SCALE_FACTOR);
@@ -47,8 +55,8 @@ impl NPC {
         )
     }
 
-    pub fn tick(&mut self) {
-        self.anim.update();
+    pub fn pos(&self) -> Vec2 {
+        self.hitbox.center()
     }
 
     pub fn draw_overlay(&self, texture: &Texture2D) {

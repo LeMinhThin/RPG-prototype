@@ -58,9 +58,60 @@ impl Game {
         if is_key_pressed(KeyCode::E) {
             self.current_state = GameState::GUI
         }
+
         if is_key_pressed(KeyCode::Escape) {
             if self.current_state == GameState::GUI {
                 self.current_state = GameState::Normal
+            }
+        }
+
+        if is_key_pressed(KeyCode::R) {
+            if let GameState::Talking(_) = self.current_state {
+                return;
+            }
+            self.talk_to_npc();
+        }
+
+        if is_mouse_button_pressed(MouseButton::Left) {
+            self.current_state = match self.current_state {
+                GameState::Talking(x) => GameState::Talking(x + 1),
+                _ => return,
+            }
+        }
+    }
+
+    // This could use a better name
+    fn talk_to_npc(&mut self) {
+        let current_map = self.maps.get_mut(&self.current_map).unwrap();
+        let npcs = &mut current_map.npcs;
+        let player_pos = self.player.pos();
+
+        for npc in npcs.iter_mut() {
+            if npc.pos().distance(player_pos) < STANDARD_SQUARE {
+                self.current_state = GameState::Talking(0);
+                npc.is_talking = true
+            }
+        }
+    }
+
+    // I can not think of a better name for the love of god
+    fn conversation(&mut self) {
+        let index = match self.current_state {
+            GameState::Talking(x) => x,
+            _ => return,
+        };
+        let current_map = self.maps.get_mut(&self.current_map).unwrap();
+        let talking_npc = current_map
+            .npcs
+            .iter_mut()
+            .find(|npc| npc.is_talking)
+            .unwrap();
+
+        match talking_npc.dialogs.get(index) {
+            Some(_) => return,
+            None => {
+                self.current_state = GameState::Normal;
+                talking_npc.is_talking = false
             }
         }
     }
@@ -69,8 +120,13 @@ impl Game {
         self.new_camera_offset();
         self.key_event_handler();
         self.anim_tick();
-        if self.current_state != GameState::Normal {
-            return;
+        match self.current_state {
+            GameState::Talking(_) => {
+                self.conversation();
+                return;
+            }
+            GameState::GUI => return,
+            GameState::Normal => (),
         }
         self.move_through_gate();
 
@@ -83,9 +139,6 @@ impl Game {
         }
         for spawner in current_map.spawners.iter_mut() {
             spawner.tick(&mut current_map.enemies)
-        }
-        for npcs in current_map.npcs.iter_mut() {
-            npcs.tick()
         }
 
         current_map.clean_up();
@@ -102,13 +155,18 @@ impl Game {
 
     fn anim_tick(&mut self) {
         self.player.props.animation.update();
+
         let current_map = self.maps.get_mut(&self.current_map).unwrap();
-        for monsters in current_map.enemies.iter_mut() {
-            monsters.get_mut().tick_anim();
+        for monster in current_map.enemies.iter_mut() {
+            monster.get_mut().tick_anim();
+        }
+
+        for npc in current_map.npcs.iter_mut() {
+            npc.anim.update()
         }
     }
 
-    fn get_monster_list(&mut self) -> &mut Vec<Monster> {
+    fn get_monster_list(&mut self) -> &mut [Monster] {
         &mut self.maps.get_mut(&self.current_map).unwrap().enemies
     }
 

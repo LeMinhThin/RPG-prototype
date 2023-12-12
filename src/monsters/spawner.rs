@@ -65,19 +65,20 @@ impl Spawner {
 
             match self.kind {
                 SpawnerType::Slime => {
-                    let new_mob = Monster::Slime(Slime::from(self.x + x_offset, self.y + y_offset));
+                    let slime = Slime::from(self.x + x_offset, self.y + y_offset);
+                    let new_mob = Monster(Box::new(slime));
                     monsters.push(new_mob);
                 }
                 SpawnerType::Mushroom => {
-                    let new_mob =
-                        Monster::Mushroom(Mushroom::from(self.x + x_offset, self.y + y_offset));
+                    let mushroom = Mushroom::from(self.x + x_offset, self.y + y_offset);
+                    let new_mob = Monster(Box::new(mushroom));
                     monsters.push(new_mob)
                 }
             }
         }
     }
 
-    fn count_mob(&self, mobs: &Vec<Monster>) -> u32 {
+    fn count_mob(&self, mobs: &[Monster]) -> u32 {
         let spawner_detect_box = Rect::new(
             self.x - self.spawn_radius,
             self.y - self.spawn_radius,
@@ -100,10 +101,7 @@ impl Spawner {
     }
 
     fn is_same_type(&self, mob: &Monster) -> bool {
-        let mob_type = match mob {
-            Monster::Mushroom(_) => SpawnerType::Mushroom,
-            Monster::Slime(_) => SpawnerType::Slime,
-        };
+        let mob_type = mob.get().get_type();
         mob_type == self.kind
     }
 }

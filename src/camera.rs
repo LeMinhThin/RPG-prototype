@@ -3,8 +3,10 @@ use std::collections::HashMap;
 use macroquad::prelude::*;
 
 use crate::monsters::*;
+use crate::npc::NPC;
 use crate::player::Collidable;
 use crate::{logic::*, map::Area};
+use spawner::SpawnerType;
 
 const CAM_SPEED: f32 = 1. / 10.;
 
@@ -94,7 +96,7 @@ impl Game {
         set_camera(&camera);
 
         let current_map = &self.maps[&self.current_map];
-        let player_pos = self.player.hitbox().center();
+        let player_pos = self.player.pos();
 
         self.hud();
         self.draw_terrain(current_map);
@@ -104,8 +106,10 @@ impl Game {
         self.draw_decorations(current_map);
         self.draw_npcs(current_map, player_pos);
 
-        if self.current_state == GameState::GUI {
-            self.player.show_inv(&self.textures["ui"]);
+        match self.current_state {
+            GameState::Normal => (),
+            GameState::Talking(_) => self.draw_dialog(&current_map.npcs),
+            GameState::GUI => self.player.show_inv(&self.textures["ui"]),
         }
     }
 
@@ -156,6 +160,39 @@ impl Game {
                 npc.draw_overlay(&self.textures["ui"]);
             }
         }
+    }
+
+    fn draw_dialog(&self, npc: &[NPC]) {
+        let index = match self.current_state {
+            GameState::Talking(x) => x,
+            _ => return,
+        };
+
+        let npc = npc.iter().find(|npc| npc.is_talking).unwrap();
+        let text = &npc.dialogs[index];
+        let diag_box = self.diag_box();
+        let font_size = 60.;
+        self.draw_diag_box();
+        draw_text(text, diag_box.x, diag_box.y + font_size, font_size, WHITE)
+    }
+
+    fn draw_diag_box(&self) {
+        let diag_box = self.diag_box();
+
+        draw_rectangle(diag_box.x, diag_box.y, diag_box.w, diag_box.h, GRAY);
+    }
+
+    fn diag_box(&self) -> Rect {
+        let cam_box = self.cam_box();
+        let diag_width = 1000.;
+        let diag_height = 300.;
+
+        Rect::new(
+            cam_box.center().x - diag_width / 2.,
+            cam_box.bottom() - diag_height,
+            diag_width,
+            diag_height,
+        )
     }
 }
 
@@ -270,9 +307,10 @@ fn gen_draw_params(source_id: u8) -> DrawTextureParams {
 
 impl Monster {
     pub fn draw(&self, texture: &HashMap<String, Texture2D>) {
-        match self {
-            Monster::Slime(slime) => slime.draw(&texture["slime"]),
-            Monster::Mushroom(mushroom) => mushroom.draw(&texture["mushroom"]),
+        let monster = self.get();
+        match monster.get_type() {
+            SpawnerType::Slime => monster.draw(&texture["slime"]),
+            SpawnerType::Mushroom => monster.draw(&texture["mushroom"]),
         }
     }
 }

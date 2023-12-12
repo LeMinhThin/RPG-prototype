@@ -91,7 +91,7 @@ impl Collidable for Player {
     }
 
     fn pos(&self) -> Vec2 {
-        vec2(self.props.x, self.props.y)
+        self.hitbox().center()
     }
 }
 
