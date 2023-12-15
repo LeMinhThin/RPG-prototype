@@ -7,7 +7,6 @@ use crate::monsters::*;
 use crate::npc::NPC;
 use spawner::*;
 
-const GATE_HITBOX_SCALE: f32 = 0.2;
 pub const RATIO: f32 = STANDARD_SQUARE / TERRAIN_TILE_SIZE;
 
 pub struct Area {
@@ -33,8 +32,8 @@ pub struct Bound {
 }
 
 pub struct Meshes {
-    pub terrain: Vec<Vec<u8>>,
-    pub decorations: Vec<Vec<u8>>,
+    pub terrain: Vec<Vec<u16>>,
+    pub decorations: Vec<Vec<u16>>,
 }
 
 impl Meshes {
@@ -124,6 +123,7 @@ impl Gate {
         Gate { location, command }
     }
 
+    /*
     pub fn hitbox(&self) -> Rect {
         let x = self.location.x + self.location.w * GATE_HITBOX_SCALE;
         let y = self.location.y + self.location.h * GATE_HITBOX_SCALE;
@@ -131,17 +131,21 @@ impl Gate {
         let h = self.location.h * (1. - GATE_HITBOX_SCALE * 2.);
         Rect { x, y, w, h }
     }
+    */
+    pub fn hitbox(&self) -> Rect {
+        self.location
+    }
 }
 
 // I dont really need these to be of type Option but doing so will alow me to use the ? operator,
 // which is shorter than just writing out .unwrap()
-fn make_render_mesh(bound: &Bound, objects: &Value) -> Option<Vec<Vec<u8>>> {
+fn make_render_mesh(bound: &Bound, objects: &Value) -> Option<Vec<Vec<u16>>> {
     // Ah yes, functional programming
     let parsed = &objects["data"].as_array()?;
 
-    let temp: Vec<u8> = parsed
+    let temp: Vec<u16> = parsed
         .iter()
-        .map(|elem| elem.as_i64().unwrap() as u8)
+        .map(|elem| elem.as_i64().unwrap() as u16)
         .collect();
 
     let return_vec = temp

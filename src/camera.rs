@@ -10,7 +10,8 @@ use spawner::SpawnerType;
 
 const CAM_SPEED: f32 = 1. / 10.;
 
-const SHEET_SIZE: u8 = 12;
+const SHEET_SIZE: u16 = 12;
+const BLANK_TILE: u16 = 0;
 pub const TERRAIN_TILE_SIZE: f32 = 16.;
 
 impl Game {
@@ -102,7 +103,7 @@ impl Game {
         self.draw_terrain(current_map);
         self.draw_monsters(current_map);
         self.draw_player();
-        self.draw_gates(current_map);
+        //self.draw_gates(current_map);
         self.draw_decorations(current_map);
         self.draw_npcs(current_map, player_pos);
 
@@ -135,6 +136,8 @@ impl Game {
         self.player.draw(&self.textures["player"])
     }
 
+    #[allow(dead_code)]
+    // Used for debugging
     fn draw_gates(&self, map: &Area) {
         let gates = &map.gates;
 
@@ -155,7 +158,6 @@ impl Game {
         for npc in npcs {
             npc.draw(&self.textures[&npc.name]);
 
-            npc.hitbox.draw();
             if npc.hitbox.center().distance(player_pos) < STANDARD_SQUARE {
                 npc.draw_overlay(&self.textures["ui"]);
             }
@@ -171,9 +173,8 @@ impl Game {
         let npc = npc.iter().find(|npc| npc.is_talking).unwrap();
         let text = &npc.dialogs[index];
         let diag_box = self.diag_box();
-        let font_size = 60.;
         self.draw_diag_box();
-        draw_text(text, diag_box.x, diag_box.y + font_size, font_size, WHITE)
+        render_text(diag_box, text, &self.font);
     }
 
     fn draw_diag_box(&self) {
@@ -184,8 +185,8 @@ impl Game {
 
     fn diag_box(&self) -> Rect {
         let cam_box = self.cam_box();
-        let diag_width = 1000.;
-        let diag_height = 300.;
+        let diag_width = 1200.;
+        let diag_height = 400.;
 
         Rect::new(
             cam_box.center().x - diag_width / 2.,
@@ -196,7 +197,7 @@ impl Game {
     }
 }
 
-fn to_index(point: u8) -> (f32, f32) {
+fn to_index(point: u16) -> (f32, f32) {
     let x;
     let y;
     if point % SHEET_SIZE == 0 {
@@ -265,16 +266,18 @@ impl Draw for Rect {
 impl Area {
     fn draw_tiles(&self, texture: &Texture2D, screen_center: Vec2, to_draw: &str) {
         let cam_box = screen_box(screen_center);
+
         let mesh = match to_draw {
             "terrain" => &self.draw_mesh.terrain,
             "decorations" => &self.draw_mesh.decorations,
             x => panic!("you forgot to account for {x}"),
         };
+
         for y_coord in 0..self.bound.y {
             for x_coord in 0..self.bound.x {
                 let source_id = mesh[y_coord][x_coord];
-                // Id of 0 indicate that the tile is blank
-                if source_id == 0 {
+
+                if source_id == BLANK_TILE {
                     continue;
                 }
                 let params = gen_draw_params(source_id);
@@ -288,7 +291,7 @@ impl Area {
     }
 }
 
-fn gen_draw_params(source_id: u8) -> DrawTextureParams {
+fn gen_draw_params(source_id: u16) -> DrawTextureParams {
     let dest_size = Some(vec2(STANDARD_SQUARE, STANDARD_SQUARE));
     let (x_index, y_index) = to_index(source_id);
 
@@ -302,6 +305,23 @@ fn gen_draw_params(source_id: u8) -> DrawTextureParams {
         dest_size,
         source,
         ..Default::default()
+    }
+}
+
+fn render_text(diag_box: Rect, content: &str, font: &Font) {
+    let lines: Vec<&str> = content.split("\n").collect();
+    let font_size = 48;
+
+    let params = TextParams {
+        font_size,
+        font: Some(&font),
+        ..Default::default()
+    };
+    
+    let mut offset = 0.;
+    for line in lines {
+        offset += font_size as f32 + 30.;
+        draw_text_ex(line, diag_box.x, diag_box.y + offset, params.clone())
     }
 }
 

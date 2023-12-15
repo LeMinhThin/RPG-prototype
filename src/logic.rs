@@ -13,6 +13,8 @@ pub const SCALE_FACTOR: f32 = 6.;
 pub const STANDARD_SQUARE: f32 = TILE_SIZE * SCALE_FACTOR;
 const KNOCKBACK: f32 = 10000.;
 
+type Textures = HashMap<String, Texture2D>;
+
 pub struct Game {
     pub player: Player,
     pub maps: HashMap<String, Area>,
@@ -21,6 +23,7 @@ pub struct Game {
     pub cam_offset_y: f32,
     pub textures: HashMap<String, Texture2D>,
     pub current_state: GameState,
+    pub font: Font,
 }
 
 #[derive(PartialEq)]
@@ -31,7 +34,7 @@ pub enum GameState {
 }
 
 impl Game {
-    pub fn new(textures: HashMap<String, Texture2D>) -> Self {
+    pub fn new(textures: Textures, font: Font) -> Self {
         let mut area: HashMap<String, Area> = HashMap::new();
         // TODO unhardcode this value
         let current_map = "Village".to_string();
@@ -51,6 +54,7 @@ impl Game {
             cam_offset_x: 0.,
             cam_offset_y: 0.,
             current_state: GameState::Normal,
+            font,
         }
     }
 

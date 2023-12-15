@@ -1,0 +1,12 @@
+{
+    "dialog": [
+        "Hi,this is a demo of my very \nincomplete game",
+        "As you can see,this dialog bubble \nis just a gray rectangle",
+        "There are still a lot of rough edges \nthat still need to be ironed out",
+        "And by the way, you can press space \nor click your mouse to swing your\nweapon",
+        "And if you were to press E, a WIP \ninventory would pop up",
+        "It doesn't do anything at the moment \nthough so that's a bit of a bummer",
+        "Just take a look for yourself to see \nwhat's implemented and what's not",
+        "Have fun exploring."
+    ]
+}

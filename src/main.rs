@@ -24,7 +24,8 @@ fn window_conf() -> Conf {
 #[macroquad::main(window_conf)]
 async fn main() {
     let textures = load_textures().await;
-    let mut game_state = Game::new(textures);
+    let font = load_font().await;
+    let mut game_state = Game::new(textures, font);
     loop {
         game_state.tick();
         game_state.draw();
@@ -47,6 +48,10 @@ async fn load_textures() -> HashMap<String, Texture2D> {
         textures.insert(name, texture);
     }
     textures
+}
+
+async fn load_font() -> Font {
+    load_ttf_font("assets/font/Monocraft.otf").await.unwrap()
 }
 
 fn to_name(path: &PathBuf) -> String {

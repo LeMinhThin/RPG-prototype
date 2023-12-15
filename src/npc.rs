@@ -1,6 +1,7 @@
 use crate::logic::*;
 use macroquad::experimental::animation::AnimatedSprite;
 use macroquad::prelude::*;
+use serde_json::Value;
 use std::fs::read_to_string;
 use std::path::PathBuf;
 
@@ -16,8 +17,7 @@ impl NPC {
     pub fn new(name: &str, diag_path: &str, hitbox: Rect) -> Self {
         // Because cross platform lol
         let path: PathBuf = diag_path.replace("..", "assets").into();
-        let dialog = read_to_string(path).unwrap();
-        let dialogs: Vec<String> = dialog.split("|").map(|str| str.to_string()).collect();
+        let dialogs: Vec<String> = make_dialog(path).unwrap();
 
         let anim = npc_anim();
 
@@ -92,4 +92,18 @@ fn npc_anim() -> AnimatedSprite {
         ],
         true,
     )
+}
+
+fn make_dialog(path: PathBuf) -> Option<Vec<String>> {
+    let mut dialog = vec![];
+
+    let json_string = read_to_string(path).unwrap();
+    let parsed: Value = serde_json::from_str(&json_string).unwrap();
+    let arr = parsed["dialog"].as_array()?;
+
+    for item in arr {
+        dialog.push(item.as_str()?.to_string())
+    }
+
+    Some(dialog)
 }
