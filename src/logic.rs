@@ -13,8 +13,8 @@ pub const SCALE_FACTOR: f32 = 6.;
 pub const STANDARD_SQUARE: f32 = TILE_SIZE * SCALE_FACTOR;
 const KNOCKBACK: f32 = 10000.;
 
-type Textures = HashMap<String, Texture2D>;
-type Maps = HashMap<String, Area>;
+pub type Textures = HashMap<String, Texture2D>;
+pub type Maps = HashMap<String, Area>;
 
 pub struct Game {
     pub player: Player,
@@ -31,7 +31,7 @@ pub enum GameState {
     Normal,
     GUI,
     Talking(usize),
-    Transition(Timer),
+    Transition(Timer, bool),
 }
 
 #[derive(PartialEq, Clone, Copy)]
@@ -55,10 +55,6 @@ impl Timer {
 
     fn is_done(&self) -> bool {
         self.time < 0.
-    }
-
-    fn repeat(&mut self) {
-        self.time = self.duration;
     }
 }
 
@@ -157,8 +153,8 @@ impl Game {
                 self.conversation();
                 return;
             }
-            GameState::Transition(mut timer) => {
-                self.timer_progress(&mut timer);
+            GameState::Transition(mut timer, mut moved) => {
+                self.timer_progress(&mut timer, &mut moved);
                 return;
             }
             GameState::GUI => return,
@@ -186,14 +182,15 @@ impl Game {
 
         for gate in gates {
             if gate.hitbox().overlaps(&player_hitbox) {
-                let timer = Timer::new(0.8);
-                self.current_state = GameState::Transition(timer)
+                let timer = Timer::new(0.7);
+                self.current_state = GameState::Transition(timer, false)
             }
         }
     }
 
-    fn transition(&mut self, timer:&Timer) {
-        if timer.time > timer.duration / 2. {
+    fn transition(&mut self, timer: &Timer, moved: &mut bool) {
+        if should_move(timer, self.cam_box()) && !*moved {
+            *moved = true;
             let gates = self.maps[&self.current_map].gates.clone();
             let player_hitbox = self.player.hitbox();
             let gate = gates
@@ -206,14 +203,14 @@ impl Game {
         }
     }
 
-    fn timer_progress(&mut self, timer:&mut Timer) {
+    fn timer_progress(&mut self, timer: &mut Timer, moved: &mut bool) {
         timer.tick();
-        self.transition(timer);
+        self.transition(timer, moved);
 
         if timer.is_done() {
             self.current_state = GameState::Normal
         } else {
-            self.current_state = GameState::Transition(*timer)
+            self.current_state = GameState::Transition(*timer, *moved)
         }
     }
 
@@ -261,9 +258,15 @@ impl Game {
     fn move_map(&mut self, command: &str) {
         let commands: Vec<&str> = command.split_whitespace().map(|x| x.trim()).collect();
 
+        let pos_x = commands[1].parse::<f32>().unwrap() * STANDARD_SQUARE;
+        let pos_y = commands[2].parse::<f32>().unwrap() * STANDARD_SQUARE;
+
+        //self.cam_offset.x = pos_x * screen_width();
+        //self.cam_offset.y = -pos_y * screen_height();
+        self.player.props.x = pos_x;
+        self.player.props.y = pos_y;
+
         self.current_map = commands[0].to_string();
-        self.player.props.x = commands[1].parse::<f32>().unwrap() * STANDARD_SQUARE;
-        self.player.props.y = commands[2].parse::<f32>().unwrap() * STANDARD_SQUARE
     }
 }
 
@@ -288,4 +291,18 @@ pub fn make_anim(name: &str, row: u32, frames: u32, fps: u32) -> Animation {
         frames,
         fps,
     }
+}
+
+fn should_move(timer: &Timer, screen: Rect) -> bool {
+    let top_right = vec2(screen.right(), screen.top());
+    let timer_progress: f32 = (timer.time / timer.duration) * 2. - 1.;
+    let new_width = screen.w * 2.0;
+    let rect = Rect::new(
+        screen.left() - new_width * timer_progress,
+        screen.top(),
+        new_width,
+        screen.h,
+    );
+
+    rect.contains(top_right)
 }

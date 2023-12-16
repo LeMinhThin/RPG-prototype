@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use macroquad::prelude::*;
 
 use crate::monsters::*;
@@ -111,7 +109,7 @@ impl Game {
             GameState::Normal => (),
             GameState::Talking(_) => self.draw_dialog(&current_map.npcs),
             GameState::GUI => self.show_inv(),
-            GameState::Transition(timer) => draw_transition(self.cam_box(), timer),
+            GameState::Transition(timer, _) => draw_transition(self.cam_box(), timer),
         }
     }
 
@@ -123,14 +121,14 @@ impl Game {
 
     fn draw_terrain(&self, map: &Area) {
         let draw_type = "terrain";
-        let screen_center = self.cam_box().center();
-        map.draw_tiles(&self.textures[draw_type], screen_center, draw_type);
+        let cam_box = self.cam_box().shift(STANDARD_SQUARE, STANDARD_SQUARE);
+        map.draw_tiles(&self.textures[draw_type], cam_box, draw_type);
     }
 
     fn draw_decorations(&self, map: &Area) {
         let draw_type = "decorations";
-        let screen_center = self.cam_box().center();
-        map.draw_tiles(&self.textures["terrain"], screen_center, draw_type);
+        let cam_box = self.cam_box().shift(STANDARD_SQUARE, STANDARD_SQUARE);
+        map.draw_tiles(&self.textures["terrain"], cam_box, draw_type);
     }
 
     fn draw_player(&self) {
@@ -217,31 +215,15 @@ fn to_coord(x: usize, y: usize) -> (f32, f32) {
     let y = y as f32 * STANDARD_SQUARE;
     (x, y)
 }
-
-fn screen_box(screen_center: Vec2) -> Rect {
-    let center = screen_center;
-
-    let screen_width = screen_width();
-    let screen_height = screen_height();
-
-    // I don't know why you need to multiply everything by 2 for it to work,
-    // It just works ok, don't ask
-    Rect {
-        x: center.x - screen_width * 1.2,
-        y: center.y - screen_height * 1.2,
-        w: screen_width * 2.4,
-        h: screen_height * 2.4,
-    }
-}
-
 // For debugging and prototyping purposes
 
 #[allow(dead_code)]
-pub trait Draw {
+pub trait Utils {
     fn draw(&self);
+    fn shift(&self, x: f32, y: f32) -> Self;
 }
 
-impl Draw for Rect {
+impl Utils for Rect {
     fn draw(&self) {
         draw_line(self.left(), self.top(), self.left(), self.bottom(), 3., RED);
         draw_line(self.left(), self.top(), self.right(), self.top(), 3., RED);
@@ -262,12 +244,19 @@ impl Draw for Rect {
             RED,
         )
     }
+
+    fn shift(&self, x: f32, y: f32) -> Self {
+        Self {
+            x: self.x - x,
+            y: self.y - y,
+            w: self.w + x,
+            h: self.h + x,
+        }
+    }
 }
 
 impl Area {
-    fn draw_tiles(&self, texture: &Texture2D, screen_center: Vec2, to_draw: &str) {
-        let cam_box = screen_box(screen_center);
-
+    fn draw_tiles(&self, texture: &Texture2D, cam_box: Rect, to_draw: &str) {
         let mesh = match to_draw {
             "terrain" => &self.draw_mesh.terrain,
             "decorations" => &self.draw_mesh.decorations,
@@ -328,17 +317,18 @@ fn render_text(diag_box: Rect, content: &str, font: &Font) {
 
 fn draw_transition(screen: Rect, timer: &Timer) {
     let timer_progress: f32 = (timer.time / timer.duration) * 2. - 1.;
+    let new_width = screen.w * 2.0;
     draw_rectangle(
-        screen.left() - screen.w * timer_progress,
+        screen.left() - new_width * timer_progress,
         screen.top(),
-        screen.w,
+        new_width,
         screen.h,
         BLACK,
     )
 }
 
 impl Monster {
-    pub fn draw(&self, texture: &HashMap<String, Texture2D>) {
+    pub fn draw(&self, texture: &Textures) {
         let monster = self.get();
         match monster.get_type() {
             SpawnerType::Slime => monster.draw(&texture["slime"]),
