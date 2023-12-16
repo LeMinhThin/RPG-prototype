@@ -14,14 +14,14 @@ pub const STANDARD_SQUARE: f32 = TILE_SIZE * SCALE_FACTOR;
 const KNOCKBACK: f32 = 10000.;
 
 type Textures = HashMap<String, Texture2D>;
+type Maps = HashMap<String, Area>;
 
 pub struct Game {
     pub player: Player,
-    pub maps: HashMap<String, Area>,
+    pub maps: Maps,
     pub current_map: String,
-    pub cam_offset_x: f32,
-    pub cam_offset_y: f32,
-    pub textures: HashMap<String, Texture2D>,
+    pub cam_offset: Vec2,
+    pub textures: Textures,
     pub current_state: GameState,
     pub font: Font,
 }
@@ -31,11 +31,40 @@ pub enum GameState {
     Normal,
     GUI,
     Talking(usize),
+    Transition(Timer),
+}
+
+#[derive(PartialEq, Clone, Copy)]
+pub struct Timer {
+    pub time: f32,
+    pub duration: f32,
+}
+
+impl Timer {
+    // If I were to made this tick down to 0 like a normal timer, it wouldn't work for some reason
+    fn new(dur: f32) -> Self {
+        Timer {
+            time: dur,
+            duration: dur,
+        }
+    }
+
+    fn tick(&mut self) {
+        self.time -= get_frame_time();
+    }
+
+    fn is_done(&self) -> bool {
+        self.time < 0.
+    }
+
+    fn repeat(&mut self) {
+        self.time = self.duration;
+    }
 }
 
 impl Game {
     pub fn new(textures: Textures, font: Font) -> Self {
-        let mut area: HashMap<String, Area> = HashMap::new();
+        let mut area: Maps = HashMap::new();
         // TODO unhardcode this value
         let current_map = "Village".to_string();
 
@@ -51,8 +80,7 @@ impl Game {
             maps: area,
             current_map,
             textures,
-            cam_offset_x: 0.,
-            cam_offset_y: 0.,
+            cam_offset: vec2(0., 0.),
             current_state: GameState::Normal,
             font,
         }
@@ -129,10 +157,14 @@ impl Game {
                 self.conversation();
                 return;
             }
+            GameState::Transition(mut timer) => {
+                self.timer_progress(&mut timer);
+                return;
+            }
             GameState::GUI => return,
             GameState::Normal => (),
         }
-        self.move_through_gate();
+        self.is_touching_gate();
 
         self.damage_monster();
         let current_map = self.maps.get_mut(&self.current_map).unwrap();
@@ -148,12 +180,40 @@ impl Game {
         current_map.clean_up();
     }
 
-    fn move_through_gate(&mut self) {
-        let gates = self.maps[&self.current_map].gates.clone();
+    fn is_touching_gate(&mut self) {
+        let gates = &self.maps[&self.current_map].gates;
+        let player_hitbox = self.player.hitbox();
+
         for gate in gates {
-            if let Some(_) = self.player.hitbox().intersect(gate.hitbox()) {
-                self.move_map(&gate.command)
+            if gate.hitbox().overlaps(&player_hitbox) {
+                let timer = Timer::new(0.8);
+                self.current_state = GameState::Transition(timer)
             }
+        }
+    }
+
+    fn transition(&mut self, timer:&Timer) {
+        if timer.time > timer.duration / 2. {
+            let gates = self.maps[&self.current_map].gates.clone();
+            let player_hitbox = self.player.hitbox();
+            let gate = gates
+                .iter()
+                .find(|gate| gate.hitbox().overlaps(&player_hitbox));
+
+            if let Some(gate) = gate {
+                self.move_map(&gate.command);
+            }
+        }
+    }
+
+    fn timer_progress(&mut self, timer:&mut Timer) {
+        timer.tick();
+        self.transition(timer);
+
+        if timer.is_done() {
+            self.current_state = GameState::Normal
+        } else {
+            self.current_state = GameState::Transition(*timer)
         }
     }
 

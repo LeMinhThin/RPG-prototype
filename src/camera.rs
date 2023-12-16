@@ -51,13 +51,13 @@ impl Game {
         let screen_height = screen_height();
 
         let curent_offset = vec2(
-            -self.cam_offset_x * screen_width,
-            self.cam_offset_y * screen_height,
+            -self.cam_offset.x * screen_width,
+            self.cam_offset.y * screen_height,
         );
 
         // Because S M O O T H
-        self.cam_offset_x += (curent_offset.x - new_offset.x) / screen_width * CAM_SPEED;
-        self.cam_offset_y -= (curent_offset.y - new_offset.y) / screen_height * CAM_SPEED;
+        self.cam_offset.x += (curent_offset.x - new_offset.x) / screen_width * CAM_SPEED;
+        self.cam_offset.y -= (curent_offset.y - new_offset.y) / screen_height * CAM_SPEED;
     }
 
     fn bound_box(&self) -> Rect {
@@ -73,8 +73,8 @@ impl Game {
         let screen_width = screen_width();
         let screen_height = screen_height();
 
-        let cam_pos_x = -self.cam_offset_x * screen_width;
-        let cam_pos_y = self.cam_offset_y * screen_height;
+        let cam_pos_x = -self.cam_offset.x * screen_width;
+        let cam_pos_y = self.cam_offset.y * screen_height;
 
         Rect::new(
             cam_pos_x - screen_width,
@@ -89,7 +89,7 @@ impl Game {
         let zoom_x = 1. / screen_width();
         let zoom_y = 1. / screen_height();
         let camera: Camera2D = Camera2D {
-            offset: vec2(self.cam_offset_x, self.cam_offset_y),
+            offset: self.cam_offset,
             target: vec2(0., 0.),
             zoom: vec2(zoom_x, zoom_y),
             ..Default::default()
@@ -107,10 +107,11 @@ impl Game {
         self.draw_decorations(current_map);
         self.draw_npcs(current_map, player_pos);
 
-        match self.current_state {
+        match &self.current_state {
             GameState::Normal => (),
             GameState::Talking(_) => self.draw_dialog(&current_map.npcs),
             GameState::GUI => self.show_inv(),
+            GameState::Transition(timer) => draw_transition(self.cam_box(), timer),
         }
     }
 
@@ -317,12 +318,23 @@ fn render_text(diag_box: Rect, content: &str, font: &Font) {
         font: Some(&font),
         ..Default::default()
     };
-    
+
     let mut offset = 0.;
     for line in lines {
         offset += font_size as f32 + 30.;
         draw_text_ex(line, diag_box.x, diag_box.y + offset, params.clone())
     }
+}
+
+fn draw_transition(screen: Rect, timer: &Timer) {
+    let timer_progress: f32 = (timer.time / timer.duration) * 2. - 1.;
+    draw_rectangle(
+        screen.left() - screen.w * timer_progress,
+        screen.top(),
+        screen.w,
+        screen.h,
+        BLACK,
+    )
 }
 
 impl Monster {

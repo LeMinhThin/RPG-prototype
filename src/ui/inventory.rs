@@ -29,11 +29,14 @@ impl Game {
         let screen_width = screen_width();
         let screen_height = screen_height();
 
-        let offset_x = -self.cam_offset_x * screen_width;
-        let offset_y = self.cam_offset_y * screen_height;
+        let offset_x = -self.cam_offset.x * screen_width;
+        let offset_y = self.cam_offset.y * screen_height;
         let mouse = mouse_position_local();
 
-        vec2(mouse.x * screen_width + offset_x, mouse.y * screen_height + offset_y)
+        vec2(
+            mouse.x * screen_width + offset_x,
+            mouse.y * screen_height + offset_y,
+        )
     }
 }
 
