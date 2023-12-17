@@ -150,10 +150,12 @@ impl Game {
         self.anim_tick();
         match self.current_state {
             GameState::Talking(_) => {
+                self.player.change_anim(false);
                 self.conversation();
                 return;
             }
             GameState::Transition(mut timer, mut moved) => {
+                self.player.change_anim(false);
                 self.timer_progress(&mut timer, &mut moved);
                 return;
             }
@@ -164,8 +166,8 @@ impl Game {
 
         self.damage_monster();
         let current_map = self.maps.get_mut(&self.current_map).unwrap();
-
         self.player.tick(&current_map.walls);
+
         for monster in current_map.enemies.iter_mut() {
             monster.get_mut().tick(&mut self.player, &current_map.walls);
         }
@@ -249,8 +251,8 @@ impl Game {
                 .normalize()
                     * KNOCKBACK;
 
-                monster_props.movement_vector = knockback;
-                monster_props.heath -= damage
+                monster_props.movement_vector += knockback;
+                monster_props.health -= damage
             }
         }
     }
@@ -261,8 +263,9 @@ impl Game {
         let pos_x = commands[1].parse::<f32>().unwrap() * STANDARD_SQUARE;
         let pos_y = commands[2].parse::<f32>().unwrap() * STANDARD_SQUARE;
 
-        //self.cam_offset.x = pos_x * screen_width();
-        //self.cam_offset.y = -pos_y * screen_height();
+        //self.cam_offset.x = -pos_x / screen_width();
+        //self.cam_offset.y = pos_y / screen_height();
+
         self.player.props.x = pos_x;
         self.player.props.y = pos_y;
 

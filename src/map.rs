@@ -110,7 +110,7 @@ impl Area {
     pub fn clean_up(&mut self) {
         let mut index = 0;
         while index < self.enemies.len() {
-            if self.enemies[index].get().get_props().heath <= 0. {
+            if self.enemies[index].get().get_props().health <= 0. {
                 self.enemies.remove(index);
             }
             index += 1;

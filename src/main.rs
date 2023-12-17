@@ -32,7 +32,7 @@ async fn main() {
         next_frame().await;
 
         // game over if health <= 0
-        if game_state.player.props.heath <= 0. {
+        if game_state.player.props.health <= 0. {
             break;
         }
     }

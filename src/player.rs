@@ -9,7 +9,7 @@ pub const INVUL_TIME: f32 = 1.0;
 const PLAYER_VELOCITY: f32 = 350.;
 const PLAYER_HEATH: f32 = 100.;
 const FRICTION: f32 = 1. / 2.;
-const ONE_PIXEL: f32 = (1. / TILE_SIZE) * STANDARD_SQUARE;
+pub const ONE_PIXEL: f32 = (1. / TILE_SIZE) * STANDARD_SQUARE;
 
 #[derive(Clone)]
 pub struct Player {
@@ -24,7 +24,7 @@ pub struct Player {
 #[derive(Clone)]
 pub struct Props {
     pub movement_vector: Vec2,
-    pub heath: f32,
+    pub health: f32,
     pub animation: AnimatedSprite,
     pub x: f32,
     pub y: f32,
@@ -99,7 +99,7 @@ impl Props {
     pub fn from(x: f32, y: f32, heath: f32, animation: AnimatedSprite) -> Self {
         Props {
             movement_vector: vec2(0., 0.),
-            heath,
+            health: heath,
             animation,
             x,
             y,
@@ -122,17 +122,20 @@ impl Props {
         let vector = vec2(point.x - self.x, point.y - self.y).normalize() * speed;
         self.movement_vector += vector
     }
+    fn is_moving(&self) -> bool {
+        self.movement_vector.length() > 10.
+    }
 }
 
 impl Player {
     pub fn new() -> Self {
         let animation = player_animations();
         Player {
+            attack_cooldown: 0.,
+            invul_time: 0.,
             props: Props::from(0., 0., PLAYER_HEATH, animation),
             held_weapon: Weapon::sword(),
-            attack_cooldown: 0.,
             facing: Orientation::Down,
-            invul_time: 0.,
             inventory: Inventory::empty(),
         }
     }
@@ -166,22 +169,24 @@ impl Player {
         }
         let mut movement_vector: Vec2 = vec2(0., 0.);
         if is_key_down(KeyCode::W) {
-            movement_vector.y += -1.
+            movement_vector.y += -1.;
+            self.facing = Orientation::Up;
         }
         if is_key_down(KeyCode::A) {
-            movement_vector.x += -1.
+            movement_vector.x += -1.;
+            self.facing = Orientation::Left;
         }
         if is_key_down(KeyCode::S) {
-            movement_vector.y += 1.
+            movement_vector.y += 1.;
+            self.facing = Orientation::Down;
         }
         if is_key_down(KeyCode::D) {
-            movement_vector.x += 1.
+            movement_vector.x += 1.;
+            self.facing = Orientation::Right;
         }
-        self.new_orientation(&movement_vector);
-        if movement_vector == Vec2::ZERO {
-            return;
+        if movement_vector != Vec2::ZERO {
+            movement_vector = movement_vector.normalize() * PLAYER_VELOCITY;
         }
-        movement_vector = movement_vector.normalize() * PLAYER_VELOCITY;
         self.props.movement_vector += movement_vector;
 
         self.props.new_pos();
@@ -190,6 +195,7 @@ impl Player {
     pub fn tick(&mut self, walls: &[Rect]) {
         let delta_time = get_frame_time();
         self.new_pos();
+        self.change_anim(self.props.is_moving());
         self.wall_collsion(walls);
         if self.attack_cooldown > 0. {
             self.attack_cooldown -= delta_time;
@@ -199,28 +205,20 @@ impl Player {
         }
     }
 
-    fn new_orientation(&mut self, movement_vector: &Vec2) {
-        let dy = movement_vector.y as i8;
-        let dx = movement_vector.x as i8;
-        let row;
-        if dy == 0 && dx == 0 {
-            row = match self.facing {
-                Orientation::Down => 0,
-                Orientation::Left => 1,
-                Orientation::Up => 2,
-                Orientation::Right => 3,
-            };
-        } else {
-            let facing = facing(&dy, &dx);
-            self.facing = facing;
-            row = match self.facing {
-                Orientation::Down => 4,
-                Orientation::Left => 5,
-                Orientation::Up => 6,
-                Orientation::Right => 7,
-            };
-        }
-        self.props.animation.set_animation(row)
+    pub fn change_anim(&mut self, is_moving: bool) {
+        let extra_row = match is_moving {
+            true => 4,
+            false => 0,
+        };
+
+        let row = match self.facing {
+            Orientation::Down => 0,
+            Orientation::Left => 1,
+            Orientation::Up => 2,
+            Orientation::Right => 3,
+        };
+
+        self.props.animation.set_animation(row + extra_row)
     }
 
     fn get_weapon_angle(&self) -> f32 {
@@ -390,22 +388,6 @@ pub enum Orientation {
     Right,
     Down,
     Up,
-}
-
-fn facing(dy: &i8, dx: &i8) -> Orientation {
-    if *dx != 0 {
-        match dx {
-            1 => Orientation::Right,
-            -1 => Orientation::Left,
-            _ => panic!("fuck"),
-        }
-    } else {
-        match dy {
-            -1 => Orientation::Up,
-            1 => Orientation::Down,
-            _ => panic!("fuck"),
-        }
-    }
 }
 
 fn player_animations() -> AnimatedSprite {

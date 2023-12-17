@@ -17,7 +17,7 @@ impl Game {
 
         root_ui().window(hash!(), vec2(0., 0.), vec2(250., 50.), |ui| {
             ui.label(vec2(10., 10.), "Health");
-            let player_heath = self.player.props.heath;
+            let player_heath = self.player.props.health;
             let rect = Rect::new(60., 10., player_heath, 30.);
             ui.canvas().rect(rect, RED, GREEN)
         });

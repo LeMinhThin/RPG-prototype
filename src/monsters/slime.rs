@@ -5,7 +5,7 @@ use macroquad::prelude::*;
 
 use super::{spawner::SpawnerType, Entity, IsAMonster};
 
-const SLIME_HEATH: f32 = 50.;
+const SLIME_HEALTH: f32 = 50.;
 const SLIME_SPEED: f32 = 150.;
 const SLIME_MAX_TRACKING: f32 = 500.;
 
@@ -30,6 +30,10 @@ impl IsAMonster for Slime {
         self.props.animation.update();
     }
 
+    fn max_health(&self) -> f32 {
+        SLIME_HEALTH
+    }
+
     fn move_to(&mut self, player_pos: Vec2) {
         // May looks dawnting but it's just the Pythagoras theorem
         let dist =
@@ -49,19 +53,26 @@ impl IsAMonster for Slime {
         let player_hitbox = player.hitbox();
 
         if let Some(_) = self_hitbox.intersect(player_hitbox) {
-            player.props.heath -= self.damage;
+            player.props.health -= self.damage;
             player.invul_time = INVUL_TIME
         }
     }
 
-    fn draw(&self, texture: &Texture2D) {
+    fn draw(&self, texture: &Textures) {
         let dest_size = Some(self.props.animation.frame().dest_size * SCALE_FACTOR);
         let draw_param = DrawTextureParams {
             source: Some(self.props.animation.frame().source_rect),
             dest_size,
             ..Default::default()
         };
-        draw_texture_ex(&texture, self.props.x, self.props.y, WHITE, draw_param);
+        draw_texture_ex(
+            &texture["slime"],
+            self.props.x,
+            self.props.y,
+            WHITE,
+            draw_param,
+        );
+        self.draw_health_bar(&texture["ui"])
     }
 
     fn change_anim(&mut self) {
@@ -90,7 +101,7 @@ impl IsAMonster for Slime {
 impl Slime {
     pub fn from(x: f32, y: f32) -> Self {
         let animation = slime_animations();
-        let props = Props::from(x, y, SLIME_HEATH, animation);
+        let props = Props::from(x, y, SLIME_HEALTH, animation);
         Slime { props, damage: 10. }
     }
 }

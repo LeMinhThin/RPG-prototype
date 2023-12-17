@@ -30,6 +30,10 @@ impl IsAMonster for Mushroom {
         self.props.animation.update()
     }
 
+    fn max_health(&self) -> f32 {
+        MUSHROOM_HEALTH
+    }
+
     fn move_to(&mut self, player_pos: Vec2) {
         let dist = self.props.get_pos().distance(player_pos);
         if dist > MUSHROOM_MAX_TRACK {
@@ -45,19 +49,26 @@ impl IsAMonster for Mushroom {
         }
 
         if let Some(_) = self.hitbox().intersect(player.hitbox()) {
-            player.props.heath -= self.damage;
+            player.props.health -= self.damage;
             player.invul_time = INVUL_TIME;
         }
     }
 
-    fn draw(&self, texture: &Texture2D) {
+    fn draw(&self, texture: &Textures) {
         let dest_size = Some(self.props.animation.frame().dest_size * SCALE_FACTOR);
         let draw_param = DrawTextureParams {
             source: Some(self.props.animation.frame().source_rect),
             dest_size,
             ..Default::default()
         };
-        draw_texture_ex(&texture, self.props.x, self.props.y, WHITE, draw_param);
+        draw_texture_ex(
+            &texture["mushroom"],
+            self.props.x,
+            self.props.y,
+            WHITE,
+            draw_param,
+        );
+        self.draw_health_bar(&texture["ui"]);
     }
 
     fn change_anim(&mut self) {

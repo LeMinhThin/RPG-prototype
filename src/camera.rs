@@ -1,10 +1,8 @@
 use macroquad::prelude::*;
 
-use crate::monsters::*;
 use crate::npc::NPC;
 use crate::player::Collidable;
 use crate::{logic::*, map::Area};
-use spawner::SpawnerType;
 
 const CAM_SPEED: f32 = 1. / 10.;
 
@@ -115,7 +113,7 @@ impl Game {
 
     fn draw_monsters(&self, map: &Area) {
         for monster in map.enemies.iter() {
-            monster.draw(&self.textures)
+            monster.get().draw(&self.textures)
         }
     }
 
@@ -325,14 +323,4 @@ fn draw_transition(screen: Rect, timer: &Timer) {
         screen.h,
         BLACK,
     )
-}
-
-impl Monster {
-    pub fn draw(&self, texture: &Textures) {
-        let monster = self.get();
-        match monster.get_type() {
-            SpawnerType::Slime => monster.draw(&texture["slime"]),
-            SpawnerType::Mushroom => monster.draw(&texture["mushroom"]),
-        }
-    }
 }
