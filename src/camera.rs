@@ -96,11 +96,11 @@ impl Game {
         let player_pos = self.player.pos();
 
         self.hud();
-        self.draw_terrain(current_map);
+        self.draw_terrain();
         self.draw_monsters(current_map);
         self.draw_player();
         //self.draw_gates(current_map);
-        self.draw_decorations(current_map);
+        self.draw_decorations();
         self.draw_npcs(current_map, player_pos);
 
         match &self.current_state {
@@ -117,16 +117,18 @@ impl Game {
         }
     }
 
-    fn draw_terrain(&self, map: &Area) {
-        let draw_type = "terrain";
-        let cam_box = self.cam_box().shift(STANDARD_SQUARE, STANDARD_SQUARE);
-        map.draw_tiles(&self.textures[draw_type], cam_box, draw_type);
+    fn draw_terrain(&self) {
+        let screen = self.cam_box().shift(STANDARD_SQUARE, STANDARD_SQUARE);
+        let mesh = &self.maps[&self.current_map].draw_mesh.terrain;
+        let texture = &self.textures["terrain"];
+        draw_tiles(mesh, vec2(0., 0.), texture, screen)
     }
 
-    fn draw_decorations(&self, map: &Area) {
-        let draw_type = "decorations";
-        let cam_box = self.cam_box().shift(STANDARD_SQUARE, STANDARD_SQUARE);
-        map.draw_tiles(&self.textures["terrain"], cam_box, draw_type);
+    fn draw_decorations(&self) {
+        let screen = self.cam_box().shift(STANDARD_SQUARE, STANDARD_SQUARE);
+        let mesh = &self.maps[&self.current_map].draw_mesh.decorations;
+        let texture = &self.textures["terrain"];
+        draw_tiles(mesh, vec2(0., 0.), texture, screen);
     }
 
     fn draw_player(&self) {
@@ -194,7 +196,7 @@ impl Game {
     }
 }
 
-fn to_index(point: u16) -> (f32, f32) {
+fn to_index(point: &u16) -> (f32, f32) {
     let x;
     let y;
     if point % SHEET_SIZE == 0 {
@@ -208,11 +210,6 @@ fn to_index(point: u16) -> (f32, f32) {
     (x * TERRAIN_TILE_SIZE, y * TERRAIN_TILE_SIZE)
 }
 
-fn to_coord(x: usize, y: usize) -> (f32, f32) {
-    let x = x as f32 * STANDARD_SQUARE;
-    let y = y as f32 * STANDARD_SQUARE;
-    (x, y)
-}
 // For debugging and prototyping purposes
 
 #[allow(dead_code)]
@@ -253,33 +250,7 @@ impl Utils for Rect {
     }
 }
 
-impl Area {
-    fn draw_tiles(&self, texture: &Texture2D, cam_box: Rect, to_draw: &str) {
-        let mesh = match to_draw {
-            "terrain" => &self.draw_mesh.terrain,
-            "decorations" => &self.draw_mesh.decorations,
-            x => panic!("you forgot to account for {x}"),
-        };
-
-        for y_coord in 0..self.bound.y {
-            for x_coord in 0..self.bound.x {
-                let source_id = mesh[y_coord][x_coord];
-
-                if source_id == BLANK_TILE {
-                    continue;
-                }
-                let params = gen_draw_params(source_id);
-                let (x, y) = to_coord(x_coord, y_coord);
-
-                if cam_box.contains(vec2(x, y)) {
-                    draw_texture_ex(texture, x, y, WHITE, params)
-                }
-            }
-        }
-    }
-}
-
-fn gen_draw_params(source_id: u16) -> DrawTextureParams {
+fn gen_draw_params(source_id: &u16) -> DrawTextureParams {
     let dest_size = Some(vec2(STANDARD_SQUARE, STANDARD_SQUARE));
     let (x_index, y_index) = to_index(source_id);
 
@@ -323,4 +294,30 @@ fn draw_transition(screen: Rect, timer: &Timer) {
         screen.h,
         BLACK,
     )
+}
+
+fn draw_tiles(mesh: &Vec<Vec<u16>>, origin: Vec2, texture: &Texture2D, screen: Rect) {
+    let mut row_num = 0.;
+    let mut col_num = 0.;
+    for slice in mesh {
+        for cell in slice {
+            let draw_pos = vec2(col_num * STANDARD_SQUARE, row_num * STANDARD_SQUARE);
+            if cell == &BLANK_TILE || !screen.contains(draw_pos) {
+                col_num += 1.;
+                continue;
+            }
+            let params = gen_draw_params(cell);
+
+            draw_texture_ex(
+                &texture,
+                origin.x + col_num * STANDARD_SQUARE,
+                origin.y + row_num * STANDARD_SQUARE,
+                WHITE,
+                params,
+            );
+            col_num += 1.
+        }
+        col_num = 0.;
+        row_num += 1.;
+    }
 }
