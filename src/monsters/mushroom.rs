@@ -3,10 +3,10 @@ use crate::player::*;
 use macroquad::experimental::animation::AnimatedSprite;
 use macroquad::prelude::*;
 
-use super::{spawner::SpawnerType, Entity, IsAMonster};
+use super::{spawner::MobType, Entity, IsAMonster};
 
 const MUSHROOM_HEALTH: f32 = 20.;
-const MUSHROOM_MAX_TRACK: f32 = 200.;
+const MUSHROOM_TRACKING_RANGE: f32 = 500.;
 const MUSHROOM_SPEED: f32 = 100.;
 
 #[derive(Clone)]
@@ -36,7 +36,7 @@ impl IsAMonster for Mushroom {
 
     fn move_to(&mut self, player_pos: Vec2) {
         let dist = self.props.get_pos().distance(player_pos);
-        if dist > MUSHROOM_MAX_TRACK {
+        if dist > MUSHROOM_TRACKING_RANGE {
             return;
         }
 
@@ -91,8 +91,8 @@ impl IsAMonster for Mushroom {
         &mut self.props
     }
 
-    fn get_type(&self) -> SpawnerType {
-        SpawnerType::Mushroom
+    fn get_type(&self) -> MobType {
+        MobType::Mushroom
     }
 }
 

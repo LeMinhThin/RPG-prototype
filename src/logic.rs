@@ -34,7 +34,7 @@ pub enum GameState {
     Transition(Timer, bool),
 }
 
-#[derive(PartialEq, Clone, Copy)]
+#[derive(PartialEq, Clone, Copy, Debug)]
 pub struct Timer {
     pub time: f32,
     pub duration: f32,
@@ -42,19 +42,23 @@ pub struct Timer {
 
 impl Timer {
     // If I were to made this tick down to 0 like a normal timer, it wouldn't work for some reason
-    fn new(dur: f32) -> Self {
+    pub fn new(dur: f32) -> Self {
         Timer {
             time: dur,
             duration: dur,
         }
     }
 
-    fn tick(&mut self) {
+    pub fn tick(&mut self) {
         self.time -= get_frame_time();
     }
 
-    fn is_done(&self) -> bool {
+    pub fn is_done(&self) -> bool {
         self.time < 0.
+    }
+
+    pub fn repeat(&mut self) {
+        self.time = self.duration
     }
 }
 
@@ -159,7 +163,10 @@ impl Game {
                 self.timer_progress(&mut timer, &mut moved);
                 return;
             }
-            GameState::GUI => return,
+            GameState::GUI => {
+                self.player.change_anim(false);
+                return;
+            }
             GameState::Normal => (),
         }
         self.is_touching_gate();
@@ -242,7 +249,7 @@ impl Game {
         let player_pos = &self.player.props.get_pos();
 
         for monster in self.get_monster_list() {
-            if let Some(_) = damage_zone.intersect(monster.get().hitbox()) {
+            if damage_zone.overlaps(&monster.get().hitbox()) {
                 let monster_props = monster.get_mut().get_mut_props();
                 let knockback = vec2(
                     monster_props.x - player_pos.x,

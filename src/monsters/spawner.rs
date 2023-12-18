@@ -1,6 +1,8 @@
 use macroquad::prelude::*;
 use macroquad::rand::*;
 
+use crate::logic::Timer;
+
 use super::mushroom::Mushroom;
 use super::slime::Slime;
 use super::Monster;
@@ -10,24 +12,23 @@ use super::Monster;
 // dealing with so "radius" remains for now.
 #[derive(Debug)]
 pub struct Spawner {
-    kind: SpawnerType,
+    kind: MobType,
     pub spawn_radius: f32,
     max_mob: u32,
-    cooldown: f32,
-    max_cooldown: f32,
+    timer: Timer,
     pub x: f32,
     pub y: f32,
 }
 
 #[derive(PartialEq, Debug)]
-pub enum SpawnerType {
+pub enum MobType {
     Slime,
     Mushroom,
 }
 
 impl Spawner {
     pub fn new(
-        kind: SpawnerType,
+        kind: MobType,
         spawn_radius: f32,
         max_mob: u32,
         max_cooldown: f32,
@@ -38,20 +39,18 @@ impl Spawner {
             kind,
             spawn_radius,
             max_mob,
-            max_cooldown,
-            cooldown: max_cooldown,
+            timer: Timer::new(max_cooldown),
             x,
             y,
         }
     }
 
     pub fn tick(&mut self, monsters: &mut Vec<Monster>) {
-        if self.cooldown > 0. {
-            self.cooldown -= get_frame_time();
+        self.timer.tick();
+        if !self.timer.is_done() {
             return;
         }
-
-        self.cooldown = self.max_cooldown;
+        self.timer.repeat();
 
         if self.count_mob(&monsters) > self.max_mob {
             return;
@@ -64,12 +63,12 @@ impl Spawner {
             let y_offset = gen_range(-self.spawn_radius, self.spawn_radius);
 
             match self.kind {
-                SpawnerType::Slime => {
+                MobType::Slime => {
                     let slime = Slime::from(self.x + x_offset, self.y + y_offset);
                     let new_mob = Monster(Box::new(slime));
                     monsters.push(new_mob);
                 }
-                SpawnerType::Mushroom => {
+                MobType::Mushroom => {
                     let mushroom = Mushroom::from(self.x + x_offset, self.y + y_offset);
                     let new_mob = Monster(Box::new(mushroom));
                     monsters.push(new_mob)
@@ -93,7 +92,7 @@ impl Spawner {
                 continue;
             }
 
-            if let Some(_) = spawner_detect_box.intersect(mob_hitbox) {
+            if spawner_detect_box.overlaps(&mob_hitbox) {
                 num_mobs += 1;
             }
         }

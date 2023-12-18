@@ -193,12 +193,12 @@ fn make_spawners(objects: &Value) -> Option<Vec<Spawner>> {
 // String kind
 // int max_mob
 
-fn get_props(objects: &Value) -> Option<(f32, f32, SpawnerType, u32)> {
+fn get_props(objects: &Value) -> Option<(f32, f32, MobType, u32)> {
     let props = objects["properties"].as_array()?;
     // Default values
     let mut cooldown = 30.;
     let mut spawn_radius = 3. * STANDARD_SQUARE;
-    let mut kind = SpawnerType::Slime;
+    let mut kind = MobType::Slime;
     let mut max_mob = 3;
 
     for prop in props {
@@ -216,10 +216,10 @@ fn get_props(objects: &Value) -> Option<(f32, f32, SpawnerType, u32)> {
     Some((cooldown, spawn_radius, kind, max_mob))
 }
 
-fn what_kind(name: &str) -> SpawnerType {
+fn what_kind(name: &str) -> MobType {
     match name {
-        "slime" => SpawnerType::Slime,
-        "mushroom" => SpawnerType::Mushroom,
+        "slime" => MobType::Slime,
+        "mushroom" => MobType::Mushroom,
         x => panic!("you forgot to account for {x}"),
     }
 }

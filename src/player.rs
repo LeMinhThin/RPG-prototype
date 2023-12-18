@@ -6,10 +6,10 @@ use macroquad::rand::rand;
 use std::f32::consts::PI;
 
 pub const INVUL_TIME: f32 = 1.0;
-const PLAYER_VELOCITY: f32 = 350.;
-const PLAYER_HEATH: f32 = 100.;
-const FRICTION: f32 = 1. / 2.;
 pub const ONE_PIXEL: f32 = (1. / TILE_SIZE) * STANDARD_SQUARE;
+pub const PLAYER_HEALTH: f32 = 100.;
+const PLAYER_VELOCITY: f32 = 350.;
+const FRICTION: f32 = 1. / 2.;
 
 #[derive(Clone)]
 pub struct Player {
@@ -133,7 +133,7 @@ impl Player {
         Player {
             attack_cooldown: 0.,
             invul_time: 0.,
-            props: Props::from(0., 0., PLAYER_HEATH, animation),
+            props: Props::from(0., 0., PLAYER_HEALTH, animation),
             held_weapon: Weapon::sword(),
             facing: Orientation::Down,
             inventory: Inventory::empty(),

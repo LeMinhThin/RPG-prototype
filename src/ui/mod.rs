@@ -1,27 +1,35 @@
 use macroquad::prelude::*;
-use macroquad::ui::{hash, root_ui, Skin};
 
-use crate::logic::Game;
+use crate::logic::{Game, STANDARD_SQUARE, TILE_SIZE};
+use crate::player::{ONE_PIXEL, PLAYER_HEALTH};
 
 mod inventory;
 
 impl Game {
     pub fn hud(&self) {
-        let transparent = root_ui().style_builder().background(Image::empty()).build();
-        let skin = Skin {
-            window_style: transparent,
-            ..root_ui().default_skin()
+        self.draw_health_bar();
+    }
+
+    fn draw_health_bar(&self) {
+        let screen = self.cam_box();
+
+        let health_percentage = self.player.props.health / PLAYER_HEALTH;
+        draw_rectangle(
+            screen.x + 3. * ONE_PIXEL,
+            screen.y + 3. * ONE_PIXEL,
+            66. * ONE_PIXEL * health_percentage,
+            4. * ONE_PIXEL,
+            RED,
+        );
+
+        let texture = &self.textures["ui"];
+        let dest_size = Some(vec2(STANDARD_SQUARE * 3., STANDARD_SQUARE));
+        let source = Some(Rect::new(0., TILE_SIZE, TILE_SIZE * 3., TILE_SIZE));
+        let params = DrawTextureParams {
+            source,
+            dest_size,
+            ..Default::default()
         };
-
-        root_ui().push_skin(&skin);
-
-        root_ui().window(hash!(), vec2(0., 0.), vec2(250., 50.), |ui| {
-            ui.label(vec2(10., 10.), "Health");
-            let player_heath = self.player.props.health;
-            let rect = Rect::new(60., 10., player_heath, 30.);
-            ui.canvas().rect(rect, RED, GREEN)
-        });
-
-        root_ui().pop_skin();
+        draw_texture_ex(texture, screen.x, screen.y, WHITE, params)
     }
 }

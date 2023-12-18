@@ -95,13 +95,13 @@ impl Game {
         let current_map = &self.maps[&self.current_map];
         let player_pos = self.player.pos();
 
-        self.hud();
         self.draw_terrain();
         self.draw_monsters(current_map);
         self.draw_player();
         //self.draw_gates(current_map);
         self.draw_decorations();
         self.draw_npcs(current_map, player_pos);
+        self.hud();
 
         match &self.current_state {
             GameState::Normal => (),

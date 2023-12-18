@@ -1,6 +1,6 @@
 use crate::{logic::*, player::*};
 use macroquad::prelude::*;
-use spawner::SpawnerType;
+use spawner::MobType;
 
 pub mod mushroom;
 pub mod slime;
@@ -30,7 +30,7 @@ pub trait IsAMonster {
     fn change_anim(&mut self);
     fn get_props(&self) -> &Props;
     fn get_mut_props(&mut self) -> &mut Props;
-    fn get_type(&self) -> SpawnerType;
+    fn get_type(&self) -> MobType;
     fn max_health(&self) -> f32;
     fn draw_health_bar(&self, texture: &Texture2D) {
         let props = self.get_props();
