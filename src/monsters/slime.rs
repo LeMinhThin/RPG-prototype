@@ -1,5 +1,5 @@
 use crate::logic::*;
-use crate::player::{Collidable, Player, Props, INVUL_TIME};
+use crate::player::{Collidable, Player, Props};
 use macroquad::experimental::animation::*;
 use macroquad::prelude::*;
 
@@ -46,7 +46,7 @@ impl IsAMonster for Slime {
     }
 
     fn damage_player(&self, player: &mut Player) {
-        if player.invul_time > 0. {
+        if !player.invul_time.is_done() {
             return;
         }
         let self_hitbox = self.hitbox();
@@ -54,7 +54,7 @@ impl IsAMonster for Slime {
 
         if let Some(_) = self_hitbox.intersect(player_hitbox) {
             player.props.health -= self.damage;
-            player.invul_time = INVUL_TIME
+            player.invul_time.repeat()
         }
     }
 

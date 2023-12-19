@@ -173,7 +173,9 @@ impl Game {
 
         self.damage_monster();
         let current_map = self.maps.get_mut(&self.current_map).unwrap();
-        self.player.tick(&current_map.walls);
+
+        self.player.tick();
+        self.player.wall_collsion(&current_map.walls);
 
         for monster in current_map.enemies.iter_mut() {
             monster.get_mut().tick(&mut self.player, &current_map.walls);
@@ -192,7 +194,8 @@ impl Game {
         for gate in gates {
             if gate.hitbox().overlaps(&player_hitbox) {
                 let timer = Timer::new(0.7);
-                self.current_state = GameState::Transition(timer, false)
+                self.current_state = GameState::Transition(timer, false);
+                self.player.state = PlayerState::Transition;
             }
         }
     }
@@ -204,11 +207,10 @@ impl Game {
             let player_hitbox = self.player.hitbox();
             let gate = gates
                 .iter()
-                .find(|gate| gate.hitbox().overlaps(&player_hitbox));
+                .find(|gate| gate.hitbox().overlaps(&player_hitbox))
+                .unwrap();
 
-            if let Some(gate) = gate {
-                self.move_map(&gate.command);
-            }
+            self.move_map(&gate.command);
         }
     }
 
@@ -217,7 +219,8 @@ impl Game {
         self.transition(timer, moved);
 
         if timer.is_done() {
-            self.current_state = GameState::Normal
+            self.player.state = PlayerState::Normal;
+            self.current_state = GameState::Normal;
         } else {
             self.current_state = GameState::Transition(*timer, *moved)
         }

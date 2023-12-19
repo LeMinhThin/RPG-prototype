@@ -11,14 +11,19 @@ pub const PLAYER_HEALTH: f32 = 100.;
 const PLAYER_VELOCITY: f32 = 350.;
 const FRICTION: f32 = 1. / 2.;
 
+#[derive(Clone, PartialEq)]
+pub enum PlayerState {
+    Transition,
+    Normal,
+    Attacking(Timer),
+}
 #[derive(Clone)]
 pub struct Player {
     pub props: Props,
     pub held_weapon: Weapon,
-    pub attack_cooldown: f32,
+    pub state: PlayerState,
+    pub invul_time: Timer,
     pub facing: Orientation,
-    pub invul_time: f32,
-    pub inventory: Inventory,
 }
 
 #[derive(Clone)]
@@ -28,19 +33,6 @@ pub struct Props {
     pub animation: AnimatedSprite,
     pub x: f32,
     pub y: f32,
-}
-
-#[derive(Clone)]
-pub struct Inventory {
-    pub mouse_over: Vec<bool>,
-}
-
-impl Inventory {
-    fn empty() -> Self {
-        Inventory {
-            mouse_over: [false; 18].to_vec(),
-        }
-    }
 }
 
 pub trait Collidable {
@@ -131,12 +123,11 @@ impl Player {
     pub fn new() -> Self {
         let animation = player_animations();
         Player {
-            attack_cooldown: 0.,
-            invul_time: 0.,
+            state: PlayerState::Normal,
+            invul_time: Timer::new(INVUL_TIME),
             props: Props::from(0., 0., PLAYER_HEALTH, animation),
             held_weapon: Weapon::sword(),
             facing: Orientation::Down,
-            inventory: Inventory::empty(),
         }
     }
 
@@ -159,7 +150,7 @@ impl Player {
     }
 
     pub fn new_pos(&mut self) {
-        if self.attack_cooldown > 0. {
+        if self.state != PlayerState::Normal {
             return;
         }
         let mut movement_vector: Vec2 = vec2(0., 0.);
@@ -187,17 +178,22 @@ impl Player {
         self.props.new_pos();
     }
 
-    pub fn tick(&mut self, walls: &[Rect]) {
-        let delta_time = get_frame_time();
+    pub fn tick(&mut self) {
+        if let PlayerState::Attacking(mut timer) = self.state {
+            timer.tick();
+            self.state = match timer.is_done() {
+                true => PlayerState::Normal,
+                false => PlayerState::Attacking(timer),
+            };
+            self.change_anim(false);
+            return;
+        }
+        if self.state == PlayerState::Transition {
+            return;
+        }
+        self.invul_time.tick();
         self.new_pos();
         self.change_anim(self.props.is_moving());
-        self.wall_collsion(walls);
-        if self.attack_cooldown > 0. {
-            self.attack_cooldown -= delta_time;
-        }
-        if self.invul_time > 0. {
-            self.invul_time -= delta_time
-        }
     }
 
     pub fn change_anim(&mut self, is_moving: bool) {
@@ -216,10 +212,18 @@ impl Player {
         self.props.animation.set_animation(row + extra_row)
     }
 
+    fn get_attack_cooldown(&self) -> f32 {
+        match self.state {
+            PlayerState::Attacking(timer) => timer.time,
+            _ => panic!("called get_attack_cooldown while not in attacking state"),
+        }
+    }
+
     fn get_weapon_angle(&self) -> f32 {
+        let cooldown = self.get_attack_cooldown();
         let mut angle = self.current_angle() + PI;
 
-        let elapsed_time = self.held_weapon.cooldown - self.attack_cooldown;
+        let elapsed_time = self.held_weapon.cooldown - cooldown;
         if elapsed_time < 3. * get_frame_time() {
             angle += PI
         }
@@ -229,14 +233,14 @@ impl Player {
 
     // This is so unbelievably messy that I don't even want to begin to explain
     fn get_draw_pos(&self) -> Vec2 {
-        let elapsed_time = self.held_weapon.cooldown - self.attack_cooldown;
+        let elapsed_time = self.held_weapon.cooldown - self.get_attack_cooldown();
         let player_hitbox = self.abs_hitbox();
 
         #[rustfmt::skip]
         let up    = vec2(player_hitbox.left() - 4. * PIXEL, player_hitbox.top() - STANDARD_SQUARE);
         let right = vec2(player_hitbox.right(), player_hitbox.top());
-        let left  = vec2(player_hitbox.left() - STANDARD_SQUARE, player_hitbox.top());
-        let down  = vec2(player_hitbox.left() - 4. * PIXEL, player_hitbox.bottom());
+        let left = vec2(player_hitbox.left() - STANDARD_SQUARE, player_hitbox.top());
+        let down = vec2(player_hitbox.left() - 4. * PIXEL, player_hitbox.bottom());
 
         if elapsed_time < 3. * get_frame_time() {
             return match self.facing {
@@ -301,15 +305,15 @@ impl Player {
     }
 
     pub fn should_attack(&mut self) -> bool {
-        if self.attack_cooldown > 0. {
+        if let PlayerState::Attacking(_) = self.state {
             return false;
         }
         if is_key_pressed(KeyCode::Space) {
-            self.attack_cooldown = self.held_weapon.cooldown;
+            self.state = PlayerState::Attacking(Timer::new(self.held_weapon.cooldown));
             return true;
         }
         if is_mouse_button_pressed(MouseButton::Left) {
-            self.attack_cooldown = self.held_weapon.cooldown;
+            self.state = PlayerState::Attacking(Timer::new(self.held_weapon.cooldown));
             return true;
         }
         false
@@ -317,7 +321,7 @@ impl Player {
 
     pub fn draw(&self, texture: &Texture2D) {
         // Basicly this makes the player flash after it's hurt
-        if self.invul_time > 0. {
+        if !self.invul_time.is_done() {
             if rand() % 3 == 0 {
                 return;
             }
@@ -329,8 +333,9 @@ impl Player {
             ..Default::default()
         };
         draw_texture_ex(texture, self.props.x, self.props.y, WHITE, draw_param);
-        if self.attack_cooldown > 0. {
-            self.draw_weapon(texture);
+
+        if let PlayerState::Attacking(_) = self.state {
+            self.draw_weapon(texture)
         }
     }
 

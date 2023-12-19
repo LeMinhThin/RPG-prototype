@@ -58,10 +58,10 @@ pub trait IsAMonster {
         );
         let health_percentage = props.health / self.max_health();
         let heath_bar = Rect::new(
-            props.x + ONE_PIXEL,
-            props.y - ONE_PIXEL,
-            22. * health_percentage * ONE_PIXEL,
-            2. * ONE_PIXEL,
+            props.x + PIXEL,
+            props.y - PIXEL,
+            22. * health_percentage * PIXEL,
+            2. * PIXEL,
         );
 
         draw_rectangle(heath_bar.x, heath_bar.y, heath_bar.w, heath_bar.h, RED)

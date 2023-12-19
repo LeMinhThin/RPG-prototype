@@ -44,13 +44,13 @@ impl IsAMonster for Mushroom {
     }
 
     fn damage_player(&self, player: &mut Player) {
-        if player.invul_time > 0. {
+        if !player.invul_time.is_done() {
             return;
         }
 
         if let Some(_) = self.hitbox().intersect(player.hitbox()) {
             player.props.health -= self.damage;
-            player.invul_time = INVUL_TIME;
+            player.invul_time.repeat()
         }
     }
 

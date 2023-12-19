@@ -25,7 +25,7 @@ impl Game {
         draw_slots(right_box, self.get_mouse_pos());
     }
 
-    fn get_mouse_pos(&self) -> Vec2 {
+    pub fn get_mouse_pos(&self) -> Vec2 {
         let screen_width = screen_width();
         let screen_height = screen_height();
 
