@@ -171,11 +171,8 @@ impl Game {
         }
         self.is_touching_gate();
 
-        self.damage_monster();
+        self.tick_player();
         let current_map = self.maps.get_mut(&self.current_map).unwrap();
-
-        self.player.tick();
-        self.player.wall_collsion(&current_map.walls);
 
         for monster in current_map.enemies.iter_mut() {
             monster.get_mut().tick(&mut self.player, &current_map.walls);
@@ -185,6 +182,15 @@ impl Game {
         }
 
         current_map.clean_up();
+    }
+
+    fn tick_player(&mut self) {
+        let walls = &self.maps[&self.current_map].walls;
+        self.player.tick(self.get_mouse_pos());
+        self.player.wall_collsion(&walls);
+        if let PlayerState::Attacking(_) = self.player.state {
+            self.damage_monster()
+        }
     }
 
     fn is_touching_gate(&mut self) {
@@ -244,9 +250,6 @@ impl Game {
     }
 
     fn damage_monster(&mut self) {
-        if !self.player.should_attack() {
-            return;
-        }
         let damage_zone = self.player.weapon_hitbox();
         let damage = self.player.held_weapon.base_damage;
         let player_pos = &self.player.props.get_pos();

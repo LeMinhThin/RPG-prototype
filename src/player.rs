@@ -15,6 +15,7 @@ const FRICTION: f32 = 1. / 2.;
 pub enum PlayerState {
     Transition,
     Normal,
+    Throwing,
     Attacking(Timer),
 }
 #[derive(Clone)]
@@ -44,24 +45,19 @@ pub trait Collidable {
         let (pos_x, pos_y) = self.mut_pos();
 
         for wall in walls {
-            let rect: Rect;
-            if let Some(x) = wall.intersect(hitbox) {
-                rect = x
-            } else {
-                continue;
-            }
-
-            if rect.w < rect.h {
-                if hitbox.right() > wall.right() {
-                    *pos_x += rect.w
+            if let Some(rect) = wall.intersect(hitbox) {
+                if rect.w < rect.h {
+                    if hitbox.right() > wall.right() {
+                        *pos_x += rect.w
+                    } else {
+                        *pos_x -= rect.w
+                    }
                 } else {
-                    *pos_x -= rect.w
-                }
-            } else {
-                if hitbox.bottom() > wall.bottom() {
-                    *pos_y += rect.h
-                } else {
-                    *pos_y -= rect.h
+                    if hitbox.bottom() > wall.bottom() {
+                        *pos_y += rect.h
+                    } else {
+                        *pos_y -= rect.h
+                    }
                 }
             }
         }
@@ -178,7 +174,18 @@ impl Player {
         self.props.new_pos();
     }
 
-    pub fn tick(&mut self) {
+    pub fn tick(&mut self, mouse_pos: Vec2) {
+        self.invul_time.tick();
+        self.state_management(mouse_pos);
+        match self.state {
+            PlayerState::Attacking(_) | PlayerState::Transition => return,
+            PlayerState::Normal => self.new_pos(),
+            PlayerState::Throwing => (),
+        }
+        self.change_anim(self.props.is_moving());
+    }
+
+    fn state_management(&mut self, mouse_pos: Vec2) {
         if let PlayerState::Attacking(mut timer) = self.state {
             timer.tick();
             self.state = match timer.is_done() {
@@ -188,12 +195,21 @@ impl Player {
             self.change_anim(false);
             return;
         }
-        if self.state == PlayerState::Transition {
-            return;
+        if is_key_pressed(KeyCode::Space) {
+            self.state = PlayerState::Attacking(Timer::new(self.held_weapon.cooldown))
         }
-        self.invul_time.tick();
-        self.new_pos();
-        self.change_anim(self.props.is_moving());
+        if is_mouse_button_pressed(MouseButton::Left) {
+            let angle = angle_between(self.pos(), mouse_pos);
+            self.facing = should_face(angle);
+            self.state = PlayerState::Attacking(Timer::new(self.held_weapon.cooldown))
+        }
+
+        if is_mouse_button_pressed(MouseButton::Right) {
+            self.state = PlayerState::Throwing
+        }
+        if is_mouse_button_released(MouseButton::Right) {
+            self.state = PlayerState::Normal
+        }
     }
 
     pub fn change_anim(&mut self, is_moving: bool) {
@@ -304,21 +320,6 @@ impl Player {
         }
     }
 
-    pub fn should_attack(&mut self) -> bool {
-        if let PlayerState::Attacking(_) = self.state {
-            return false;
-        }
-        if is_key_pressed(KeyCode::Space) {
-            self.state = PlayerState::Attacking(Timer::new(self.held_weapon.cooldown));
-            return true;
-        }
-        if is_mouse_button_pressed(MouseButton::Left) {
-            self.state = PlayerState::Attacking(Timer::new(self.held_weapon.cooldown));
-            return true;
-        }
-        false
-    }
-
     pub fn draw(&self, texture: &Texture2D) {
         // Basicly this makes the player flash after it's hurt
         if !self.invul_time.is_done() {
@@ -385,20 +386,39 @@ pub enum Orientation {
     Up,
 }
 
+#[rustfmt::skip]
 fn player_animations() -> AnimatedSprite {
     AnimatedSprite::new(
         TILE_SIZE as u32,
         TILE_SIZE as u32,
         &[
-            make_anim("idle_down", 0, 6, 12),
-            make_anim("idle_left", 1, 6, 12),
-            make_anim("idle_up", 2, 6, 12),
+            make_anim("idle_down",  0, 6, 12),
+            make_anim("idle_left",  1, 6, 12),
+            make_anim("idle_up",    2, 6, 12),
             make_anim("idle_right", 3, 6, 12),
-            make_anim("walk_down", 4, 6, 12),
-            make_anim("walk_left", 5, 6, 12),
-            make_anim("walk_up", 6, 6, 12),
+            make_anim("walk_down",  4, 6, 12),
+            make_anim("walk_left",  5, 6, 12),
+            make_anim("walk_up",    6, 6, 12),
             make_anim("walk_right", 7, 6, 12),
         ],
         true,
     )
+}
+
+fn angle_between(start_point: Vec2, end_point: Vec2) -> f32 {
+    let vector = (end_point - start_point).normalize();
+    vector.angle_between(vec2(1., 0.))
+}
+
+fn should_face(angle: f32) -> Orientation {
+    // My god that's a mouthful
+    if (angle > -PI / 4. && angle < 0.) || (angle < PI / 4. && angle > 0.) {
+        Orientation::Right
+    } else if angle > PI / 4. && angle < 3. * PI / 4. {
+        Orientation::Up
+    } else if (angle > 3. * PI / 4. && angle < PI) || (angle > -PI && angle < -3. * PI / 4.) {
+        Orientation::Left
+    } else {
+        Orientation::Down
+    }
 }
