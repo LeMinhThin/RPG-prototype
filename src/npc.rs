@@ -1,3 +1,4 @@
+use crate::camera::Utils;
 use crate::logic::*;
 use macroquad::experimental::animation::AnimatedSprite;
 use macroquad::prelude::*;
@@ -30,11 +31,6 @@ impl NPC {
         }
     }
 
-    /*
-    pub fn tick(&mut self) {
-    }
-    */
-
     pub fn draw(&self, texture: &Texture2D) {
         let dest_size = Some(self.anim.frame().dest_size * SCALE_FACTOR);
         let source = Some(self.anim.frame().source_rect);
@@ -43,15 +39,10 @@ impl NPC {
             dest_size,
             ..Default::default()
         };
-        let pos = self.hitbox.center();
+        let pos = npc_draw_pos(self.hitbox);
+        self.hitbox.draw();
 
-        draw_texture_ex(
-            texture,
-            pos.x - STANDARD_SQUARE,
-            pos.y - STANDARD_SQUARE,
-            WHITE,
-            draw_param,
-        )
+        draw_texture_ex(texture, pos.x, pos.y, WHITE, draw_param)
     }
 
     pub fn pos(&self) -> Vec2 {
@@ -68,15 +59,9 @@ impl NPC {
             ..Default::default()
         };
 
-        let pos = self.hitbox.center();
+        let pos = npc_draw_pos(self.hitbox);
 
-        draw_texture_ex(
-            texture,
-            pos.x - STANDARD_SQUARE,
-            pos.y - 2. * STANDARD_SQUARE,
-            WHITE,
-            draw_param,
-        );
+        draw_texture_ex(texture, pos.x, pos.y - STANDARD_SQUARE, WHITE, draw_param);
     }
 }
 
@@ -106,4 +91,10 @@ fn make_dialog(path: PathBuf) -> Option<Vec<String>> {
     }
 
     Some(dialog)
+}
+
+fn npc_draw_pos(rect: Rect) -> Vec2 {
+    let x = rect.center().x - STANDARD_SQUARE / 2.;
+    let y = rect.bottom() - STANDARD_SQUARE;
+    vec2(x, y)
 }

@@ -1,7 +1,7 @@
 use macroquad::prelude::*;
 
 use crate::logic::{Game, STANDARD_SQUARE, TILE_SIZE};
-use crate::player::{ONE_PIXEL, PLAYER_HEALTH};
+use crate::player::{PIXEL, PLAYER_HEALTH};
 
 mod inventory;
 
@@ -15,10 +15,10 @@ impl Game {
 
         let health_percentage = self.player.props.health / PLAYER_HEALTH;
         draw_rectangle(
-            screen.x + 3. * ONE_PIXEL,
-            screen.y + 3. * ONE_PIXEL,
-            66. * ONE_PIXEL * health_percentage,
-            4. * ONE_PIXEL,
+            screen.x + 3. * PIXEL,
+            screen.y + 3. * PIXEL,
+            66. * PIXEL * health_percentage,
+            4. * PIXEL,
             RED,
         );
 

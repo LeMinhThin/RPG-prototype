@@ -6,7 +6,7 @@ use macroquad::rand::rand;
 use std::f32::consts::PI;
 
 pub const INVUL_TIME: f32 = 1.0;
-pub const ONE_PIXEL: f32 = (1. / TILE_SIZE) * STANDARD_SQUARE;
+pub const PIXEL: f32 = (1. / TILE_SIZE) * STANDARD_SQUARE;
 pub const PLAYER_HEALTH: f32 = 100.;
 const PLAYER_VELOCITY: f32 = 350.;
 const FRICTION: f32 = 1. / 2.;
@@ -79,10 +79,10 @@ pub trait Collidable {
 impl Collidable for Player {
     fn hitbox(&self) -> Rect {
         Rect {
-            x: self.props.x + 10. * ONE_PIXEL,
-            y: self.props.y + 16. * ONE_PIXEL,
-            w: 11. * ONE_PIXEL,
-            h: 6. * ONE_PIXEL,
+            x: self.props.x + 10. * PIXEL,
+            y: self.props.y + 16. * PIXEL,
+            w: 11. * PIXEL,
+            h: 6. * PIXEL,
         }
     }
 
@@ -148,16 +148,11 @@ impl Player {
             Orientation::Up | Orientation::Down => (2. * weapon_lenght, weapon_lenght),
             Orientation::Left | Orientation::Right => (weapon_lenght, 2. * weapon_lenght),
         };
+        #[rustfmt::skip]
         let (x, y) = match self.facing {
-            Orientation::Up => (
-                player_center.x - weapon_lenght,
-                player_hitbox.top() - weapon_lenght,
-            ),
-            Orientation::Left => (
-                player_hitbox.left() - weapon_lenght,
-                player_center.y - weapon_lenght,
-            ),
-            Orientation::Down => (player_center.x - weapon_lenght, player_hitbox.bottom()),
+            Orientation::Up    => (player_center.x - weapon_lenght, player_hitbox.top() - weapon_lenght),
+            Orientation::Left  => (player_hitbox.left() - weapon_lenght, player_center.y - weapon_lenght),
+            Orientation::Down  => (player_center.x - weapon_lenght, player_hitbox.bottom()),
             Orientation::Right => (player_hitbox.right(), player_center.y - weapon_lenght),
         };
         Rect::new(x, y, w, h)
@@ -172,13 +167,13 @@ impl Player {
             movement_vector.y += -1.;
             self.facing = Orientation::Up;
         }
-        if is_key_down(KeyCode::A) {
-            movement_vector.x += -1.;
-            self.facing = Orientation::Left;
-        }
         if is_key_down(KeyCode::S) {
             movement_vector.y += 1.;
             self.facing = Orientation::Down;
+        }
+        if is_key_down(KeyCode::A) {
+            movement_vector.x += -1.;
+            self.facing = Orientation::Left;
         }
         if is_key_down(KeyCode::D) {
             movement_vector.x += 1.;
@@ -237,16 +232,11 @@ impl Player {
         let elapsed_time = self.held_weapon.cooldown - self.attack_cooldown;
         let player_hitbox = self.abs_hitbox();
 
-        let up = vec2(
-            player_hitbox.left() - 4. * ONE_PIXEL,
-            player_hitbox.top() - STANDARD_SQUARE,
-        );
+        #[rustfmt::skip]
+        let up    = vec2(player_hitbox.left() - 4. * PIXEL, player_hitbox.top() - STANDARD_SQUARE);
         let right = vec2(player_hitbox.right(), player_hitbox.top());
-        let left = vec2(player_hitbox.left() - STANDARD_SQUARE, player_hitbox.top());
-        let down = vec2(
-            player_hitbox.left() - 4. * ONE_PIXEL,
-            player_hitbox.bottom(),
-        );
+        let left  = vec2(player_hitbox.left() - STANDARD_SQUARE, player_hitbox.top());
+        let down  = vec2(player_hitbox.left() - 4. * PIXEL, player_hitbox.bottom());
 
         if elapsed_time < 3. * get_frame_time() {
             return match self.facing {
@@ -281,7 +271,7 @@ impl Player {
         match self.facing {
             Orientation::Up => vec2(
                 player_center.x - STANDARD_SQUARE,
-                player_hitbox.top() - STANDARD_SQUARE + 6. * ONE_PIXEL,
+                player_hitbox.top() - STANDARD_SQUARE + 6. * PIXEL,
             ),
             Orientation::Left => vec2(
                 player_hitbox.left() - STANDARD_SQUARE - player_hitbox.w,
@@ -289,7 +279,7 @@ impl Player {
             ),
             Orientation::Down => vec2(
                 player_center.x - STANDARD_SQUARE,
-                player_hitbox.bottom() - 4. * ONE_PIXEL,
+                player_hitbox.bottom() - 4. * PIXEL,
             ),
             Orientation::Right => vec2(
                 player_hitbox.right() - player_hitbox.w,
@@ -303,10 +293,10 @@ impl Player {
     fn abs_hitbox(&self) -> Rect {
         let player_pos = &self.props;
         Rect {
-            x: player_pos.x + 9. * ONE_PIXEL,
-            y: player_pos.y + 3. * ONE_PIXEL,
-            w: 13. * ONE_PIXEL,
-            h: 19. * ONE_PIXEL,
+            x: player_pos.x + 9. * PIXEL,
+            y: player_pos.y + 3. * PIXEL,
+            w: 13. * PIXEL,
+            h: 19. * PIXEL,
         }
     }
 
