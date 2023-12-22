@@ -17,7 +17,7 @@ pub struct Mushroom {
 
 impl IsAMonster for Mushroom {
     fn tick(&mut self, player: &mut Player, walls: &[Rect]) {
-        let player_pos = player.props.get_pos();
+        let player_pos = player.pos();
         self.move_to(player_pos);
         self.damage_player(player);
         self.props.new_pos();
@@ -35,7 +35,7 @@ impl IsAMonster for Mushroom {
     }
 
     fn move_to(&mut self, player_pos: Vec2) {
-        let dist = self.props.get_pos().distance(player_pos);
+        let dist = self.pos().distance(player_pos);
         if dist > MUSHROOM_TRACKING_RANGE {
             return;
         }
@@ -94,6 +94,7 @@ impl IsAMonster for Mushroom {
     fn get_type(&self) -> MobType {
         MobType::Mushroom
     }
+
 }
 
 impl Mushroom {

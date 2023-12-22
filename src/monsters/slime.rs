@@ -16,7 +16,7 @@ pub struct Slime {
 }
 impl IsAMonster for Slime {
     fn tick(&mut self, player: &mut Player, walls: &[Rect]) {
-        let player_pos = player.props.get_pos();
+        let player_pos = player.pos();
 
         self.move_to(player_pos);
         self.damage_player(player);

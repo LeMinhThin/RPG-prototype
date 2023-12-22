@@ -57,10 +57,12 @@ impl Game {
     }
 
     fn bound_box(&self) -> Rect {
-        let bounds = &self.maps[&self.current_map].bound;
+        let mesh = &self.maps[&self.current_map].draw_mesh.terrain;
+        let bound_x = mesh[0].len();
+        let bound_y = mesh.len();
         let bounds = vec2(
-            bounds.x as f32 * STANDARD_SQUARE,
-            bounds.y as f32 * STANDARD_SQUARE,
+            bound_x as f32 * STANDARD_SQUARE,
+            bound_y as f32 * STANDARD_SQUARE,
         );
         Rect::new(0., 0., bounds.x, bounds.y)
     }
@@ -98,16 +100,25 @@ impl Game {
         self.draw_terrain();
         self.draw_monsters(current_map);
         self.draw_player();
+        self.draw_projectiles();
         //self.draw_gates(current_map);
         self.draw_decorations();
         self.draw_npcs(current_map, player_pos);
         self.hud();
 
-        match &self.current_state {
+        match &self.state {
             GameState::Normal => (),
             GameState::Talking(_) => self.draw_dialog(&current_map.npcs),
             GameState::GUI => self.show_inv(),
             GameState::Transition(timer, _) => draw_transition(self.cam_box(), timer),
+        }
+    }
+
+    fn draw_projectiles(&self) {
+        let projectiles = &self.maps[&self.current_map].projectiles;
+
+        for projectile in projectiles {
+            projectile.hitbox().draw()
         }
     }
 
@@ -132,7 +143,8 @@ impl Game {
     }
 
     fn draw_player(&self) {
-        self.player.draw(&self.textures["player"])
+        self.player
+            .draw(&self.textures["player"], self.get_mouse_pos())
     }
 
     #[allow(dead_code)]
@@ -164,7 +176,7 @@ impl Game {
     }
 
     fn draw_dialog(&self, npc: &[NPC]) {
-        let index = match self.current_state {
+        let index = match self.state {
             GameState::Talking(x) => x,
             _ => return,
         };

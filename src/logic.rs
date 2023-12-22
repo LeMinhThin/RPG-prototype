@@ -11,7 +11,7 @@ use macroquad::prelude::*;
 pub const TILE_SIZE: f32 = 24.;
 pub const SCALE_FACTOR: f32 = 6.;
 pub const STANDARD_SQUARE: f32 = TILE_SIZE * SCALE_FACTOR;
-const KNOCKBACK: f32 = 10000.;
+pub const KNOCKBACK: f32 = 1000.;
 
 pub type Textures = HashMap<String, Texture2D>;
 pub type Maps = HashMap<String, Area>;
@@ -22,7 +22,7 @@ pub struct Game {
     pub current_map: String,
     pub cam_offset: Vec2,
     pub textures: Textures,
-    pub current_state: GameState,
+    pub state: GameState,
     pub font: Font,
 }
 
@@ -81,31 +81,31 @@ impl Game {
             current_map,
             textures,
             cam_offset: vec2(0., 0.),
-            current_state: GameState::Normal,
+            state: GameState::Normal,
             font,
         }
     }
 
     fn key_event_handler(&mut self) {
         if is_key_pressed(KeyCode::E) {
-            self.current_state = GameState::GUI
+            self.state = GameState::GUI
         }
 
         if is_key_pressed(KeyCode::Escape) {
-            if self.current_state == GameState::GUI {
-                self.current_state = GameState::Normal
+            if self.state == GameState::GUI {
+                self.state = GameState::Normal
             }
         }
 
         if is_key_pressed(KeyCode::R) {
-            if let GameState::Talking(_) = self.current_state {
+            if let GameState::Talking(_) = self.state {
                 return;
             }
             self.talk_to_npc();
         }
 
         if is_mouse_button_pressed(MouseButton::Left) {
-            self.current_state = match self.current_state {
+            self.state = match self.state {
                 GameState::Talking(x) => GameState::Talking(x + 1),
                 _ => return,
             }
@@ -120,7 +120,7 @@ impl Game {
 
         for npc in npcs.iter_mut() {
             if npc.pos().distance(player_pos) < STANDARD_SQUARE {
-                self.current_state = GameState::Talking(0);
+                self.state = GameState::Talking(0);
                 npc.is_talking = true
             }
         }
@@ -128,7 +128,7 @@ impl Game {
 
     // I can not think of a better name for the love of god
     fn conversation(&mut self) {
-        let index = match self.current_state {
+        let index = match self.state {
             GameState::Talking(x) => x,
             _ => return,
         };
@@ -142,7 +142,7 @@ impl Game {
         match talking_npc.dialogs.get(index) {
             Some(_) => return,
             None => {
-                self.current_state = GameState::Normal;
+                self.state = GameState::Normal;
                 talking_npc.is_talking = false
             }
         }
@@ -152,7 +152,7 @@ impl Game {
         self.new_camera_offset();
         self.key_event_handler();
         self.anim_tick();
-        match self.current_state {
+        match self.state {
             GameState::Talking(_) => {
                 self.player.change_anim(false);
                 self.conversation();
@@ -174,6 +174,9 @@ impl Game {
         self.tick_player();
         let current_map = self.maps.get_mut(&self.current_map).unwrap();
 
+        for projectile in current_map.projectiles.iter_mut() {
+            projectile.tick(&mut current_map.enemies);
+        }
         for monster in current_map.enemies.iter_mut() {
             monster.get_mut().tick(&mut self.player, &current_map.walls);
         }
@@ -185,11 +188,28 @@ impl Game {
     }
 
     fn tick_player(&mut self) {
-        let walls = &self.maps[&self.current_map].walls;
-        self.player.tick(self.get_mouse_pos());
-        self.player.wall_collsion(&walls);
         if let PlayerState::Attacking(_) = self.player.state {
             self.damage_monster()
+        }
+        if self.state != GameState::Normal {
+            self.player.change_anim(false);
+        }
+
+        match self.state {
+            GameState::Talking(_) => self.conversation(),
+            GameState::Transition(mut timer, mut moved) => {
+                self.timer_progress(&mut timer, &mut moved)
+            }
+            GameState::GUI => (),
+            GameState::Normal => (),
+        }
+        let mouse_pos = self.get_mouse_pos();
+        let current_map = self.maps.get_mut(&self.current_map).unwrap();
+        self.player.tick(mouse_pos);
+        self.player.wall_collsion(&current_map.walls);
+
+        if is_mouse_button_released(MouseButton::Right) {
+            current_map.projectiles.push(self.player.current_projectile(mouse_pos))
         }
     }
 
@@ -200,7 +220,7 @@ impl Game {
         for gate in gates {
             if gate.hitbox().overlaps(&player_hitbox) {
                 let timer = Timer::new(0.7);
-                self.current_state = GameState::Transition(timer, false);
+                self.state = GameState::Transition(timer, false);
                 self.player.state = PlayerState::Transition;
             }
         }
@@ -226,9 +246,9 @@ impl Game {
 
         if timer.is_done() {
             self.player.state = PlayerState::Normal;
-            self.current_state = GameState::Normal;
+            self.state = GameState::Normal;
         } else {
-            self.current_state = GameState::Transition(*timer, *moved)
+            self.state = GameState::Transition(*timer, *moved)
         }
     }
 
@@ -252,20 +272,20 @@ impl Game {
     fn damage_monster(&mut self) {
         let damage_zone = self.player.weapon_hitbox();
         let damage = self.player.held_weapon.base_damage;
-        let player_pos = &self.player.props.get_pos();
+        let player_pos = &self.player.pos();
 
         for monster in self.get_monster_list() {
             if damage_zone.overlaps(&monster.get().hitbox()) {
-                let monster_props = monster.get_mut().get_mut_props();
+                let monster = monster.get_mut().get_mut_props();
                 let knockback = vec2(
-                    monster_props.x - player_pos.x,
-                    monster_props.y - player_pos.y,
+                    monster.x - player_pos.x,
+                    monster.y - player_pos.y,
                 )
                 .normalize()
                     * KNOCKBACK;
 
-                monster_props.movement_vector += knockback;
-                monster_props.health -= damage
+                monster.health -= damage;
+                monster.knockback(knockback);
             }
         }
     }

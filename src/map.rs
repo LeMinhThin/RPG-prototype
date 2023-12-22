@@ -2,9 +2,10 @@ use macroquad::prelude::*;
 use serde_json::Value;
 
 use crate::camera::TERRAIN_TILE_SIZE;
-use crate::logic::STANDARD_SQUARE;
+use crate::logic::{STANDARD_SQUARE, KNOCKBACK, Timer};
 use crate::monsters::*;
 use crate::npc::NPC;
+use crate::player::PIXEL;
 use spawner::*;
 
 pub const RATIO: f32 = STANDARD_SQUARE / TERRAIN_TILE_SIZE;
@@ -15,20 +16,22 @@ pub struct Area {
     pub gates: Vec<Gate>,
     pub spawners: Vec<Spawner>,
     pub npcs: Vec<NPC>,
-    pub bound: Bound,
+    pub projectiles: Vec<Projectile>,
     pub draw_mesh: Meshes,
 }
 
-#[derive(Clone, Debug)]
+pub struct Projectile {
+    pos: Vec2,
+    speed: Vec2,
+    damage: f32,
+    life_time: Timer,
+    should_despawn: bool,
+}
+
+#[derive(Clone)]
 pub struct Gate {
     pub command: String,
     pub location: Rect,
-}
-
-#[derive(Clone, Debug)]
-pub struct Bound {
-    pub x: usize,
-    pub y: usize,
 }
 
 pub struct Meshes {
@@ -48,11 +51,43 @@ impl Meshes {
     }
 }
 
-impl Bound {
-    fn from(table: &Value) -> Self {
-        let x = table["width"].as_u64().unwrap() as usize;
-        let y = table["height"].as_u64().unwrap() as usize;
-        Bound { x, y }
+impl Projectile {
+    pub fn new(pos: Vec2, speed: Vec2) -> Self {
+        let speed = vec2(speed.x, -speed.y);
+        Self {
+            pos,
+            life_time: Timer::new(2.),
+            should_despawn: false,
+            speed: speed * 1000.,
+            damage: 10.,
+        }
+    }
+
+    pub fn tick(&mut self, monsters: &mut Vec<Monster>) {
+        self.new_pos();
+        self.life_time.tick();
+        let hitbox = self.hitbox();
+
+        for monster in monsters.iter_mut() {
+            let monster = monster.get_mut();
+            if hitbox.overlaps(&monster.hitbox()) {
+                let props = monster.get_mut_props();
+                props.health -= self.damage;
+                props.knockback(-self.speed.normalize() * KNOCKBACK);
+                self.should_despawn = true
+            }
+        }
+        
+    }
+
+    fn new_pos(&mut self) {
+        let dt = get_frame_time();
+        self.pos.x += self.speed.x * dt;
+        self.pos.y += self.speed.y * dt;
+    }
+
+    pub fn hitbox(&self) -> Rect {
+        Rect::new(self.pos.x, self.pos.y, 11. * PIXEL, 10. * PIXEL)
     }
 }
 
@@ -60,8 +95,6 @@ impl Area {
     pub fn from(json_string: &str) -> (String, Self) {
         let parsed: Value = serde_json::from_str(json_string).unwrap();
         let name = parsed["class"].as_str().unwrap();
-
-        let bound = Bound::from(&parsed);
 
         let mut draw_mesh = Meshes::new();
         let mut walls = vec![];
@@ -72,13 +105,13 @@ impl Area {
         for layer in parsed["layers"].as_array().unwrap() {
             match layer["name"].as_str().unwrap().to_lowercase().as_str() {
                 "terrain" => {
-                    draw_mesh.terrain = make_render_mesh(&bound, layer).unwrap();
+                    draw_mesh.terrain = make_render_mesh(layer).unwrap();
                 }
                 "walls" => {
                     walls = make_walls(layer).unwrap();
                 }
                 "decorations" => {
-                    draw_mesh.decorations = make_render_mesh(&bound, layer).unwrap();
+                    draw_mesh.decorations = make_render_mesh(layer).unwrap();
                 }
                 "spawners" => {
                     spawners = make_spawners(layer).unwrap();
@@ -97,7 +130,7 @@ impl Area {
             name.to_string(),
             Area {
                 enemies: vec![],
-                bound,
+                projectiles: vec![],
                 spawners,
                 draw_mesh,
                 gates,
@@ -109,10 +142,22 @@ impl Area {
 
     pub fn clean_up(&mut self) {
         let mut index = 0;
-        while index < self.enemies.len() {
-            if self.enemies[index].get().get_props().health <= 0. {
-                self.enemies.remove(index);
+        let mobs = &mut self.enemies;
+        while index < mobs.len() {
+            if mobs[index].get().get_props().health <= 0. {
+                mobs.remove(index);
             }
+            index += 1;
+        }
+
+        index = 0;
+        let projectiles = &mut self.projectiles;
+        while index < projectiles.len() {
+            let projectile = &projectiles[index];
+            if projectile.should_despawn || projectile.life_time.is_done(){
+                projectiles.remove(index);
+            }
+
             index += 1;
         }
     }
@@ -139,19 +184,17 @@ impl Gate {
 
 // I dont really need these to be of type Option but doing so will alow me to use the ? operator,
 // which is shorter than just writing out .unwrap()
-fn make_render_mesh(bound: &Bound, objects: &Value) -> Option<Vec<Vec<u16>>> {
+fn make_render_mesh(objects: &Value) -> Option<Vec<Vec<u16>>> {
     // Ah yes, functional programming
     let parsed = &objects["data"].as_array()?;
+    let lenght = objects["width"].as_u64()? as usize;
 
     let temp: Vec<u16> = parsed
         .iter()
         .map(|elem| elem.as_i64().unwrap() as u16)
         .collect();
 
-    let return_vec = temp
-        .chunks(bound.x as usize)
-        .map(|elem| elem.into())
-        .collect();
+    let return_vec = temp.chunks(lenght).map(|elem| elem.into()).collect();
 
     Some(return_vec)
 }
