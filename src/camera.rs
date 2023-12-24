@@ -101,15 +101,14 @@ impl Game {
         self.draw_monsters(current_map);
         self.draw_player();
         self.draw_projectiles();
-        //self.draw_gates(current_map);
         self.draw_decorations();
         self.draw_npcs(current_map, player_pos);
         self.hud();
 
         match &self.state {
             GameState::Normal => (),
-            GameState::Talking(_) => self.draw_dialog(&current_map.npcs),
             GameState::GUI => self.show_inv(),
+            GameState::Talking(_) => self.draw_dialog(&current_map.npcs),
             GameState::Transition(timer, _) => draw_transition(self.cam_box(), timer),
         }
     }
@@ -118,7 +117,7 @@ impl Game {
         let projectiles = &self.maps[&self.current_map].projectiles;
 
         for projectile in projectiles {
-            projectile.hitbox().draw()
+            projectile.draw(&self.textures["player"])
         }
     }
 

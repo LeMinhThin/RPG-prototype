@@ -11,7 +11,7 @@ use macroquad::prelude::*;
 pub const TILE_SIZE: f32 = 24.;
 pub const SCALE_FACTOR: f32 = 6.;
 pub const STANDARD_SQUARE: f32 = TILE_SIZE * SCALE_FACTOR;
-pub const KNOCKBACK: f32 = 1000.;
+pub const KNOCKBACK: f32 = 5000.;
 
 pub type Textures = HashMap<String, Texture2D>;
 pub type Maps = HashMap<String, Area>;
@@ -41,7 +41,6 @@ pub struct Timer {
 }
 
 impl Timer {
-    // If I were to made this tick down to 0 like a normal timer, it wouldn't work for some reason
     pub fn new(dur: f32) -> Self {
         Timer {
             time: dur,
@@ -105,8 +104,13 @@ impl Game {
         }
 
         if is_mouse_button_pressed(MouseButton::Left) {
-            self.state = match self.state {
-                GameState::Talking(x) => GameState::Talking(x + 1),
+            match self.state {
+                GameState::Talking(x) => self.state = GameState::Talking(x + 1),
+                GameState::Normal => {
+                    self.player.face(self.get_mouse_pos());
+                    self.damage_monster();
+                    self.player.attack()
+                }
                 _ => return,
             }
         }
@@ -188,9 +192,6 @@ impl Game {
     }
 
     fn tick_player(&mut self) {
-        if let PlayerState::Attacking(_) = self.player.state {
-            self.damage_monster()
-        }
         if self.state != GameState::Normal {
             self.player.change_anim(false);
         }
@@ -209,7 +210,9 @@ impl Game {
         self.player.wall_collsion(&current_map.walls);
 
         if is_mouse_button_released(MouseButton::Right) {
-            current_map.projectiles.push(self.player.current_projectile(mouse_pos))
+            current_map
+                .projectiles
+                .push(self.player.current_projectile(mouse_pos))
         }
     }
 
@@ -277,11 +280,8 @@ impl Game {
         for monster in self.get_monster_list() {
             if damage_zone.overlaps(&monster.get().hitbox()) {
                 let monster = monster.get_mut().get_mut_props();
-                let knockback = vec2(
-                    monster.x - player_pos.x,
-                    monster.y - player_pos.y,
-                )
-                .normalize()
+                let knockback = vec2(monster.x - player_pos.x, monster.y - player_pos.y)
+                    .normalize()
                     * KNOCKBACK;
 
                 monster.health -= damage;

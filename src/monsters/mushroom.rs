@@ -94,7 +94,6 @@ impl IsAMonster for Mushroom {
     fn get_type(&self) -> MobType {
         MobType::Mushroom
     }
-
 }
 
 impl Mushroom {

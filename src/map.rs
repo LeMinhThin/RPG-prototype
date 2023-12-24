@@ -2,7 +2,7 @@ use macroquad::prelude::*;
 use serde_json::Value;
 
 use crate::camera::TERRAIN_TILE_SIZE;
-use crate::logic::{STANDARD_SQUARE, KNOCKBACK, Timer};
+use crate::logic::{Timer, KNOCKBACK, STANDARD_SQUARE, TILE_SIZE};
 use crate::monsters::*;
 use crate::npc::NPC;
 use crate::player::PIXEL;
@@ -54,6 +54,7 @@ impl Meshes {
 impl Projectile {
     pub fn new(pos: Vec2, speed: Vec2) -> Self {
         let speed = vec2(speed.x, -speed.y);
+        let pos = vec2(pos.x, pos.y + 5.*PIXEL);
         Self {
             pos,
             life_time: Timer::new(2.),
@@ -61,6 +62,27 @@ impl Projectile {
             speed: speed * 1000.,
             damage: 10.,
         }
+    }
+
+    pub fn draw(&self, texture: &Texture2D) {
+        let center = self.hitbox().center();
+        let dest_size = Some(vec2(STANDARD_SQUARE, STANDARD_SQUARE));
+        let source = Some(Rect::new(TILE_SIZE * 6., TILE_SIZE, TILE_SIZE, TILE_SIZE));
+        let rotation = self.speed.angle_between(vec2(1., 0.));
+        let params = DrawTextureParams {
+            dest_size,
+            source,
+            rotation,
+            ..Default::default()
+        };
+
+        draw_texture_ex(
+            texture,
+            center.x - STANDARD_SQUARE / 2.,
+            center.y - STANDARD_SQUARE / 2.,
+            WHITE,
+            params,
+        )
     }
 
     pub fn tick(&mut self, monsters: &mut Vec<Monster>) {
@@ -73,11 +95,10 @@ impl Projectile {
             if hitbox.overlaps(&monster.hitbox()) {
                 let props = monster.get_mut_props();
                 props.health -= self.damage;
-                props.knockback(-self.speed.normalize() * KNOCKBACK);
+                props.knockback(self.speed.normalize() * KNOCKBACK);
                 self.should_despawn = true
             }
         }
-        
     }
 
     fn new_pos(&mut self) {
@@ -141,25 +162,10 @@ impl Area {
     }
 
     pub fn clean_up(&mut self) {
-        let mut index = 0;
-        let mobs = &mut self.enemies;
-        while index < mobs.len() {
-            if mobs[index].get().get_props().health <= 0. {
-                mobs.remove(index);
-            }
-            index += 1;
-        }
-
-        index = 0;
         let projectiles = &mut self.projectiles;
-        while index < projectiles.len() {
-            let projectile = &projectiles[index];
-            if projectile.should_despawn || projectile.life_time.is_done(){
-                projectiles.remove(index);
-            }
-
-            index += 1;
-        }
+        let mobs = &mut self.enemies;
+        mobs.retain(|mob| mob.get().get_props().health > 0.);
+        projectiles.retain(|proj| !proj.should_despawn && !proj.life_time.is_done());
     }
 }
 impl Gate {
@@ -168,15 +174,6 @@ impl Gate {
         Gate { location, command }
     }
 
-    /*
-    pub fn hitbox(&self) -> Rect {
-        let x = self.location.x + self.location.w * GATE_HITBOX_SCALE;
-        let y = self.location.y + self.location.h * GATE_HITBOX_SCALE;
-        let w = self.location.w * (1. - GATE_HITBOX_SCALE * 2.);
-        let h = self.location.h * (1. - GATE_HITBOX_SCALE * 2.);
-        Rect { x, y, w, h }
-    }
-    */
     pub fn hitbox(&self) -> Rect {
         self.location
     }

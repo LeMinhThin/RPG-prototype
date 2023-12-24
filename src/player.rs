@@ -16,7 +16,7 @@ const FRICTION: f32 = 25.;
 pub enum PlayerState {
     Transition,
     Normal,
-    Throwing,
+    Throwing(f32),
     Attacking(Timer),
 }
 #[derive(Clone)]
@@ -120,7 +120,7 @@ impl Props {
     }
 
     pub fn knockback(&mut self, knockback: Vec2) {
-        self.movement_vector -= knockback
+        self.movement_vector += knockback
     }
 }
 
@@ -185,26 +185,27 @@ impl Player {
 
     pub fn tick(&mut self, mouse_pos: Vec2) {
         self.invul_time.tick();
-        self.state_management(mouse_pos);
+        self.state_management();
 
         if self.state == PlayerState::Normal {
             self.new_pos();
             self.change_anim(self.props.is_moving());
         }
-        if self.state == PlayerState::Throwing {
+        if let PlayerState::Throwing(time) = self.state {
             let angle = angle_between(self.pos(), mouse_pos);
             self.facing = should_face(angle);
-            self.change_anim(false)
+            self.change_anim(false);
+            self.state = PlayerState::Throwing(time + get_frame_time())
         }
     }
 
     pub fn current_projectile(&self, mouse_pos: Vec2) -> Projectile {
         let angle = angle_between(self.pos(), mouse_pos);
         let vec = Vec2::from_angle(angle);
-        Projectile::new(self.pos(), vec)
+        Projectile::new(self.projectile_pos(mouse_pos), vec)
     }
 
-    fn state_management(&mut self, mouse_pos: Vec2) {
+    fn state_management(&mut self) {
         if let PlayerState::Attacking(mut timer) = self.state {
             timer.tick();
             self.state = match timer.is_done() {
@@ -217,21 +218,20 @@ impl Player {
         if is_key_pressed(KeyCode::Space) {
             self.attack();
         }
-        if is_mouse_button_pressed(MouseButton::Left) {
-            let angle = angle_between(self.pos(), mouse_pos);
-            self.facing = should_face(angle);
-            self.attack();
-        }
-
         if is_mouse_button_pressed(MouseButton::Right) {
-            self.state = PlayerState::Throwing
+            self.state = PlayerState::Throwing(0.)
         }
         if is_mouse_button_released(MouseButton::Right) {
             self.state = PlayerState::Normal
         }
     }
 
-    fn attack(&mut self) {
+    pub fn face(&mut self, mouse_pos: Vec2) {
+        let angle = angle_between(self.pos(), mouse_pos);
+        self.facing = should_face(angle);
+    }
+
+    pub fn attack(&mut self) {
         self.state = PlayerState::Attacking(Timer::new(self.held_weapon.cooldown))
     }
 
@@ -344,7 +344,7 @@ impl Player {
     }
 
     pub fn draw(&self, texture: &Texture2D, mouse_pos: Vec2) {
-        // Basicly this makes the player flash after it's hurt
+        // Basicly this makes the player flash after it's been hurt
         if !self.invul_time.is_done() {
             if rand() % 3 == 0 {
                 return;
@@ -360,15 +360,56 @@ impl Player {
 
         match self.state {
             PlayerState::Attacking(_) => self.draw_weapon(texture),
-            PlayerState::Throwing => self.draw_throw_item(mouse_pos),
+            PlayerState::Throwing(time) => {
+                self.draw_throw_indicator(mouse_pos, texture, time);
+                self.draw_held_proj(texture, mouse_pos)
+            }
             _ => (),
         }
     }
 
-    fn draw_throw_item(&self, mouse_pos: Vec2) {
+    fn projectile_pos(&self, mouse_pos: Vec2) -> Vec2 {
+        let pos = self.pos();
+        let angle = angle_between(pos, mouse_pos);
+        let front = vec2(pos.x - 2. * PIXEL, pos.y - 14. * PIXEL);
+        let back = vec2(pos.x - 21. * PIXEL, pos.y - 14. * PIXEL);
+        if (angle < PI / 2. && angle > 0.) || (angle > -PI / 2. && angle < 0.) {
+            return front;
+        } else {
+            return back;
+        }
+    }
+
+    fn draw_held_proj(&self, texture: &Texture2D, mouse_pos: Vec2) {
+        let pos = self.projectile_pos(mouse_pos);
+        let source = Some(Rect::new(TILE_SIZE * 6., TILE_SIZE, TILE_SIZE, TILE_SIZE));
+        let dest_size = Some(vec2(STANDARD_SQUARE, STANDARD_SQUARE));
+        let params = DrawTextureParams {
+            source,
+            dest_size,
+            ..Default::default()
+        };
+        draw_texture_ex(texture, pos.x, pos.y, WHITE, params)
+    }
+
+    fn draw_throw_indicator(&self, mouse_pos: Vec2, texture: &Texture2D, time: f32) {
         let pos = self.pos();
         let vec = (mouse_pos - pos).normalize() * 500.;
-        draw_rectangle(pos.x + vec.x, pos.y + vec.y, 50., 50., RED)
+        let pos = vec2(
+            pos.x + vec.x - STANDARD_SQUARE / 2.,
+            pos.y + vec.y - STANDARD_SQUARE / 2.,
+        );
+
+        let source = Some(Rect::new(TILE_SIZE * 7., TILE_SIZE, TILE_SIZE, TILE_SIZE));
+        let dest_size = Some(vec2(STANDARD_SQUARE, STANDARD_SQUARE));
+        let rotation = time * 2. * PI;
+        let params = DrawTextureParams {
+            source,
+            dest_size,
+            rotation,
+            ..Default::default()
+        };
+        draw_texture_ex(texture, pos.x, pos.y, WHITE, params)
     }
 
     fn draw_weapon(&self, texture: &Texture2D) {
