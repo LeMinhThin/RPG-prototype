@@ -6,18 +6,17 @@ pub mod mushroom;
 pub mod slime;
 pub mod spawner;
 
-pub struct Monster(Box<dyn Entity>);
+pub struct Monster { content: Box<dyn Entity> }
 
 impl Monster {
     pub fn get(&self) -> &Box<(dyn Entity)> {
-        match self {
-            Monster(val) => return val,
-        }
+        &self.content
     }
     pub fn get_mut(&mut self) -> &mut Box<dyn Entity> {
-        match self {
-            Monster(val) => return val,
-        }
+        &mut self.content
+    }
+    pub fn new<T:Entity + 'static>(mob: T) -> Self {
+        Monster { content: Box::new(mob) }
     }
 }
 
@@ -51,15 +50,15 @@ pub trait IsAMonster {
         };
         draw_texture_ex(
             texture,
-            props.x,
-            props.y - STANDARD_SQUARE / 2.,
+            props.pos.x,
+            props.pos.y - STANDARD_SQUARE / 2.,
             WHITE,
             draw_param,
         );
         let health_percentage = props.health / self.max_health();
         let heath_bar = Rect::new(
-            props.x + PIXEL,
-            props.y - PIXEL,
+            props.pos.x + PIXEL,
+            props.pos.y - PIXEL,
             22. * health_percentage * PIXEL,
             2. * PIXEL,
         );

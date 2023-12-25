@@ -37,7 +37,7 @@ impl IsAMonster for Slime {
     fn move_to(&mut self, player_pos: Vec2) {
         // May looks dawnting but it's just the Pythagoras theorem
         let dist =
-            ((self.props.x - player_pos.x).powi(2) + (self.props.y - player_pos.y).powi(2)).sqrt();
+            ((self.props.pos.x - player_pos.x).powi(2) + (self.props.pos.y - player_pos.y).powi(2)).sqrt();
 
         if dist > SLIME_MAX_TRACKING {
             return;
@@ -67,8 +67,8 @@ impl IsAMonster for Slime {
         };
         draw_texture_ex(
             &texture["slime"],
-            self.props.x,
-            self.props.y,
+            self.props.pos.x,
+            self.props.pos.y,
             WHITE,
             draw_param,
         );
@@ -76,7 +76,7 @@ impl IsAMonster for Slime {
     }
 
     fn change_anim(&mut self) {
-        let speed = self.props.movement_vector.length();
+        let speed = self.props.velocity.length();
 
         if speed < 1. {
             self.props.animation.set_animation(0);
@@ -99,29 +99,29 @@ impl IsAMonster for Slime {
 }
 
 impl Slime {
-    pub fn from(x: f32, y: f32) -> Self {
+    pub fn from(pos: Vec2) -> Self {
         let animation = slime_animations();
-        let props = Props::from(x, y, SLIME_HEALTH, animation);
+        let props = Props::from(pos, SLIME_HEALTH, animation);
         Slime { props, damage: 10. }
     }
 }
 
 impl Collidable for Slime {
-    fn mut_pos(&mut self) -> (&mut f32, &mut f32) {
-        (&mut self.props.x, &mut self.props.y)
+    fn mut_pos(&mut self) -> &mut Vec2 {
+        &mut self.props.pos
     }
 
     fn hitbox(&self) -> Rect {
         Rect {
-            x: self.props.x,
-            y: self.props.y,
+            x: self.props.pos.x,
+            y: self.props.pos.y,
             w: STANDARD_SQUARE,
             h: STANDARD_SQUARE,
         }
     }
 
     fn pos(&self) -> Vec2 {
-        vec2(self.props.x, self.props.y)
+        self.props.pos
     }
 }
 

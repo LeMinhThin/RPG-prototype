@@ -64,13 +64,13 @@ impl Spawner {
 
             match self.kind {
                 MobType::Slime => {
-                    let slime = Slime::from(self.x + x_offset, self.y + y_offset);
-                    let new_mob = Monster(Box::new(slime));
+                    let slime = Slime::from(vec2(self.x + x_offset, self.y + y_offset));
+                    let new_mob = Monster::new(slime);
                     monsters.push(new_mob);
                 }
                 MobType::Mushroom => {
-                    let mushroom = Mushroom::from(self.x + x_offset, self.y + y_offset);
-                    let new_mob = Monster(Box::new(mushroom));
+                    let mushroom = Mushroom::from(vec2(self.x + x_offset, self.y + y_offset));
+                    let new_mob = Monster::new(mushroom);
                     monsters.push(new_mob)
                 }
             }

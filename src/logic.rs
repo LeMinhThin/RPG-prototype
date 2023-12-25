@@ -280,7 +280,7 @@ impl Game {
         for monster in self.get_monster_list() {
             if damage_zone.overlaps(&monster.get().hitbox()) {
                 let monster = monster.get_mut().get_mut_props();
-                let knockback = vec2(monster.x - player_pos.x, monster.y - player_pos.y)
+                let knockback = vec2(monster.pos.x - player_pos.x, monster.pos.y - player_pos.y)
                     .normalize()
                     * KNOCKBACK;
 
@@ -299,8 +299,8 @@ impl Game {
         //self.cam_offset.x = -pos_x / screen_width();
         //self.cam_offset.y = pos_y / screen_height();
 
-        self.player.props.x = pos_x;
-        self.player.props.y = pos_y;
+        self.player.props.pos.x = pos_x;
+        self.player.props.pos.y = pos_y;
 
         self.current_map = commands[0].to_string();
     }

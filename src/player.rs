@@ -30,11 +30,10 @@ pub struct Player {
 
 #[derive(Clone)]
 pub struct Props {
-    pub movement_vector: Vec2,
+    pub velocity: Vec2,
     pub health: f32,
     pub animation: AnimatedSprite,
-    pub x: f32,
-    pub y: f32,
+    pub pos: Vec2,
 }
 
 #[derive(Clone, Debug)]
@@ -47,25 +46,25 @@ pub enum Orientation {
 
 pub trait Collidable {
     fn hitbox(&self) -> Rect;
-    fn mut_pos(&mut self) -> (&mut f32, &mut f32);
+    fn mut_pos(&mut self) -> &mut Vec2;
     fn pos(&self) -> Vec2;
     fn wall_collsion(&mut self, walls: &[Rect]) {
         let hitbox = self.hitbox();
-        let (pos_x, pos_y) = self.mut_pos();
+        let pos = self.mut_pos();
 
         for wall in walls {
             if let Some(rect) = wall.intersect(hitbox) {
                 if rect.w < rect.h {
                     if hitbox.right() > wall.right() {
-                        *pos_x += rect.w
+                        pos.x += rect.w
                     } else {
-                        *pos_x -= rect.w
+                        pos.x -= rect.w
                     }
                 } else {
                     if hitbox.bottom() > wall.bottom() {
-                        *pos_y += rect.h
+                        pos.y += rect.h
                     } else {
-                        *pos_y -= rect.h
+                        pos.y -= rect.h
                     }
                 }
             }
@@ -76,15 +75,15 @@ pub trait Collidable {
 impl Collidable for Player {
     fn hitbox(&self) -> Rect {
         Rect {
-            x: self.props.x + 10. * PIXEL,
-            y: self.props.y + 16. * PIXEL,
+            x: self.props.pos.x + 10. * PIXEL,
+            y: self.props.pos.y + 16. * PIXEL,
             w: 11. * PIXEL,
             h: 6. * PIXEL,
         }
     }
 
-    fn mut_pos(&mut self) -> (&mut f32, &mut f32) {
-        (&mut self.props.x, &mut self.props.y)
+    fn mut_pos(&mut self) -> &mut Vec2 {
+        &mut self.props.pos
     }
 
     fn pos(&self) -> Vec2 {
@@ -93,34 +92,33 @@ impl Collidable for Player {
 }
 
 impl Props {
-    pub fn from(x: f32, y: f32, heath: f32, animation: AnimatedSprite) -> Self {
+    pub fn from(pos: Vec2, heath: f32, animation: AnimatedSprite) -> Self {
         Props {
-            movement_vector: vec2(0., 0.),
+            velocity: vec2(0., 0.),
             health: heath,
             animation,
-            x,
-            y,
+            pos
         }
     }
 
     pub fn new_pos(&mut self) {
         let delta_time = get_frame_time();
-        self.x += self.movement_vector.x * delta_time;
-        self.y += self.movement_vector.y * delta_time;
+        self.pos.x += self.velocity.x * delta_time;
+        self.pos.y += self.velocity.y * delta_time;
 
-        self.movement_vector *= 1. - FRICTION * delta_time;
+        self.velocity *= 1. - FRICTION * delta_time;
     }
 
     pub fn move_to(&mut self, point: Vec2, speed: f32) {
-        let vector = vec2(point.x - self.x, point.y - self.y).normalize() * speed;
-        self.movement_vector += vector
+        let vector = vec2(point.x - self.pos.x, point.y - self.pos.y).normalize() * speed;
+        self.velocity += vector
     }
     fn is_moving(&self) -> bool {
-        self.movement_vector.length() > 10.
+        self.velocity.length() > 10.
     }
 
     pub fn knockback(&mut self, knockback: Vec2) {
-        self.movement_vector += knockback
+        self.velocity += knockback
     }
 }
 
@@ -130,7 +128,7 @@ impl Player {
         Player {
             state: PlayerState::Normal,
             invul_time: Timer::new(INVUL_TIME),
-            props: Props::from(0., 0., PLAYER_HEALTH, animation),
+            props: Props::from(vec2(0.,0.), PLAYER_HEALTH, animation),
             held_weapon: Weapon::sword(),
             facing: Orientation::Down,
         }
@@ -178,7 +176,7 @@ impl Player {
         if movement_vector != Vec2::ZERO {
             movement_vector = movement_vector.normalize() * PLAYER_VELOCITY;
         }
-        self.props.movement_vector += movement_vector;
+        self.props.velocity += movement_vector;
 
         self.props.new_pos();
     }
@@ -336,8 +334,8 @@ impl Player {
     fn abs_hitbox(&self) -> Rect {
         let player_pos = &self.props;
         Rect {
-            x: player_pos.x + 9. * PIXEL,
-            y: player_pos.y + 3. * PIXEL,
+            x: player_pos.pos.x + 9. * PIXEL,
+            y: player_pos.pos.y + 3. * PIXEL,
             w: 13. * PIXEL,
             h: 19. * PIXEL,
         }
@@ -356,7 +354,7 @@ impl Player {
             dest_size,
             ..Default::default()
         };
-        draw_texture_ex(texture, self.props.x, self.props.y, WHITE, draw_param);
+        draw_texture_ex(texture, self.props.pos.x, self.props.pos.y, WHITE, draw_param);
 
         match self.state {
             PlayerState::Attacking(_) => self.draw_weapon(texture),

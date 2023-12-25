@@ -63,8 +63,8 @@ impl IsAMonster for Mushroom {
         };
         draw_texture_ex(
             &texture["mushroom"],
-            self.props.x,
-            self.props.y,
+            self.props.pos.x,
+            self.props.pos.y,
             WHITE,
             draw_param,
         );
@@ -72,7 +72,7 @@ impl IsAMonster for Mushroom {
     }
 
     fn change_anim(&mut self) {
-        let movement_vector = self.props.movement_vector;
+        let movement_vector = self.props.velocity;
 
         if movement_vector.length() < 1. {
             self.props.animation.set_animation(1)
@@ -97,9 +97,9 @@ impl IsAMonster for Mushroom {
 }
 
 impl Mushroom {
-    pub fn from(x: f32, y: f32) -> Self {
+    pub fn from(pos: Vec2) -> Self {
         let animation = mushroom_animation();
-        let props = Props::from(x, y, MUSHROOM_HEALTH, animation);
+        let props = Props::from(pos, MUSHROOM_HEALTH, animation);
 
         Mushroom { props, damage: 5. }
     }
@@ -108,18 +108,18 @@ impl Mushroom {
 impl Collidable for Mushroom {
     fn hitbox(&self) -> Rect {
         Rect {
-            x: self.props.x,
-            y: self.props.y,
+            x: self.props.pos.x,
+            y: self.props.pos.y,
             w: STANDARD_SQUARE,
             h: STANDARD_SQUARE,
         }
     }
 
-    fn mut_pos(&mut self) -> (&mut f32, &mut f32) {
-        (&mut self.props.x, &mut self.props.y)
+    fn mut_pos(&mut self) -> &mut Vec2 {
+        &mut self.props.pos
     }
     fn pos(&self) -> Vec2 {
-        vec2(self.props.x, self.props.y)
+        self.props.pos
     }
 }
 
