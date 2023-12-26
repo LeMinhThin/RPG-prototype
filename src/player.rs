@@ -1,5 +1,6 @@
 use crate::logic::*;
 use crate::map::Projectile;
+use crate::ui::inventory::Inventory;
 use crate::weapons::Weapon;
 use macroquad::experimental::animation::*;
 use macroquad::prelude::*;
@@ -26,6 +27,7 @@ pub struct Player {
     pub state: PlayerState,
     pub invul_time: Timer,
     pub facing: Orientation,
+    pub inventory: Inventory,
 }
 
 #[derive(Clone)]
@@ -97,7 +99,7 @@ impl Props {
             velocity: vec2(0., 0.),
             health: heath,
             animation,
-            pos
+            pos,
         }
     }
 
@@ -128,9 +130,10 @@ impl Player {
         Player {
             state: PlayerState::Normal,
             invul_time: Timer::new(INVUL_TIME),
-            props: Props::from(vec2(0.,0.), PLAYER_HEALTH, animation),
+            props: Props::from(vec2(0., 0.), PLAYER_HEALTH, animation),
             held_weapon: Weapon::sword(),
             facing: Orientation::Down,
+            inventory: Inventory::empty(),
         }
     }
 
@@ -354,7 +357,13 @@ impl Player {
             dest_size,
             ..Default::default()
         };
-        draw_texture_ex(texture, self.props.pos.x, self.props.pos.y, WHITE, draw_param);
+        draw_texture_ex(
+            texture,
+            self.props.pos.x,
+            self.props.pos.y,
+            WHITE,
+            draw_param,
+        );
 
         match self.state {
             PlayerState::Attacking(_) => self.draw_weapon(texture),
@@ -369,7 +378,7 @@ impl Player {
     fn projectile_pos(&self, mouse_pos: Vec2) -> Vec2 {
         let pos = self.pos();
         let angle = angle_between(pos, mouse_pos);
-        let front = vec2(pos.x - 2. * PIXEL, pos.y - 14. * PIXEL);
+        let front = vec2(pos.x - PIXEL, pos.y - 14. * PIXEL);
         let back = vec2(pos.x - 21. * PIXEL, pos.y - 14. * PIXEL);
         if (angle < PI / 2. && angle > 0.) || (angle > -PI / 2. && angle < 0.) {
             return front;

@@ -1,6 +1,0 @@
-Hi, my name is John|
-I am a test npc|
-...|
-suck my balls lmao|
-This is a 2 lined dialog
-Text here

@@ -108,7 +108,7 @@ impl Game {
         match &self.state {
             GameState::Normal => (),
             GameState::GUI => self.show_inv(),
-            GameState::Talking(_) => self.draw_dialog(&current_map.npcs),
+            GameState::Talking(..) => self.draw_dialog(&current_map.npcs),
             GameState::Transition(timer, _) => draw_transition(self.cam_box(), timer),
         }
     }
@@ -175,16 +175,16 @@ impl Game {
     }
 
     fn draw_dialog(&self, npc: &[NPC]) {
-        let index = match self.state {
-            GameState::Talking(x) => x,
+        let (line, char) = match self.state {
+            GameState::Talking(line, char) => (line, char),
             _ => return,
         };
 
         let npc = npc.iter().find(|npc| npc.is_talking).unwrap();
-        let text = &npc.dialogs[index];
+        let text = &npc.dialogs[line][..char];
         let diag_box = self.diag_box();
         self.draw_diag_box();
-        render_text(diag_box, text, &self.font);
+        render_text(diag_box, text);
     }
 
     fn draw_diag_box(&self) {
@@ -278,20 +278,14 @@ fn gen_draw_params(source_id: &u16) -> DrawTextureParams {
     }
 }
 
-fn render_text(diag_box: Rect, content: &str, font: &Font) {
-    let lines: Vec<&str> = content.split("\n").collect();
-    let font_size = 48;
-
-    let params = TextParams {
-        font_size,
-        font: Some(&font),
-        ..Default::default()
-    };
+fn render_text(diag_box: Rect, content: &str) {
+    let lines = textwrap::wrap(content, 37);
+    let font_size = 75.;
 
     let mut offset = 0.;
     for line in lines {
-        offset += font_size as f32 + 30.;
-        draw_text_ex(line, diag_box.x, diag_box.y + offset, params.clone())
+        offset += font_size;
+        draw_text(&line, diag_box.x, diag_box.y + offset, font_size, WHITE);
     }
 }
 

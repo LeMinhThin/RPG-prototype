@@ -1,9 +1,40 @@
-use crate::logic::Game;
+use crate::logic::{Game, TILE_SIZE};
+use crate::player::Player;
 use macroquad::prelude::*;
 
+use super::items::Item;
+
+const ROW: u8 = 3;
 const COL: f32 = 4.;
-const ROW: f32 = 3.;
-const SIZE: f32 = 120.;
+const SIZE: f32 = 144.;
+
+#[derive(Clone)]
+pub struct Inventory {
+    content: [Option<Item>; 13],
+}
+
+impl Inventory {
+    pub fn empty() -> Self {
+        Self {
+            // Idk man
+            content: [
+                Some(Item::slime()),
+                None,
+                None,
+                None,
+                None,
+                None,
+                None,
+                None,
+                None,
+                None,
+                None,
+                None,
+                None,
+            ],
+        }
+    }
+}
 
 impl Game {
     pub fn show_inv(&self) {
@@ -12,17 +43,13 @@ impl Game {
         let height = 1200.;
         let margin = 50.;
 
-        let (left_box, right_box) = dual_box(screen_center, width, height, margin);
+        let (l_box, r_box) = dual_box(screen_center, width, height, margin);
 
-        draw_rectangle(left_box.x, left_box.y, left_box.w, left_box.h, LIGHTGRAY);
-        draw_rectangle(
-            right_box.x,
-            right_box.y,
-            right_box.w,
-            right_box.h,
-            LIGHTGRAY,
-        );
-        draw_slots(right_box, self.get_mouse_pos());
+        #[rustfmt::skip]
+        draw_rectangle(l_box.x, l_box.y, l_box.w, l_box.h, LIGHTGRAY);
+        draw_rectangle(r_box.x, r_box.y, r_box.w, r_box.h, LIGHTGRAY);
+        draw_slots(r_box, &self.textures["ui"]);
+        self.player.draw_items(r_box, &self.textures["ui"])
     }
 
     pub fn get_mouse_pos(&self) -> Vec2 {
@@ -40,33 +67,61 @@ impl Game {
     }
 }
 
-fn draw_slots(container: Rect, mouse_pos: Vec2) {
-    let margin_x = (container.w - (COL * SIZE)) / (COL + 1.);
-    let margin_y = (container.h - (ROW * SIZE)) / (ROW + 1.) / 2.;
-    let margin = min(margin_x, margin_y);
+impl Player {
+    fn draw_items(&self, window: Rect, texture: &Texture2D) {
+        let margin = (window.w - (COL * SIZE)) / (COL + 1.);
+        let height = window.h - ((COL - 1.) * SIZE + COL * margin);
+        let starting_pos = vec2(window.left(), window.top() + height);
 
-    let max_row = ROW as u8;
-    let max_col = COL as u8;
+        let max_col = COL as u8;
+        let max_row = ROW;
+        let mut item = 0;
 
-    let starting_pos = vec2(container.right(), container.bottom());
-
-    for row in 0..max_row {
-        let row = row as f32;
         for col in 0..max_col {
             let col = col as f32;
+            for row in 0..max_row {
+                let row = row as f32;
+                let dest_size = vec2(SIZE, SIZE) * 0.8;
+                let source = source_rect(self.inventory.content[item].as_ref());
+                if source == None {
+                    item += 1;
+                    continue;
+                }
+                let params = DrawTextureParams {
+                    dest_size: Some(dest_size),
+                    source,
+                    ..Default::default()
+                };
+                let pos = vec2(
+                    starting_pos.x + (col + 1.) * margin + col * SIZE + dest_size.x / 8.,
+                    starting_pos.y + (row + 1.) * margin + row * SIZE + dest_size.y / 8.,
+                );
+                draw_texture_ex(texture, pos.x, pos.y, WHITE, params);
 
-            let rect = Rect::new(
-                starting_pos.x - col * (margin + 1.) - (col + 1.) * SIZE - margin,
-                starting_pos.y - row * (margin + 1.) - (row + 1.) * SIZE - margin,
-                SIZE,
-                SIZE,
+                item += 1
+            }
+        }
+    }
+}
+
+fn draw_slots(window: Rect, texture: &Texture2D) {
+    let margin = (window.w - (COL * SIZE)) / (COL + 1.);
+    let height = window.h - ((COL - 1.) * SIZE + COL * margin); // What
+    let starting_pos = vec2(window.left(), window.top() + height);
+    let max_col = COL as u8;
+    let params = param();
+
+    for col in 0..max_col {
+        let col = col as f32;
+        for row in 0..ROW {
+            let row = row as f32;
+
+            let pos = vec2(
+                starting_pos.x + margin * (col + 1.) + col * SIZE,
+                starting_pos.y + margin * (row + 1.) + row * SIZE,
             );
 
-            if rect.contains(mouse_pos) {
-                draw_rectangle(rect.x, rect.y, rect.w, rect.h, GREEN)
-            } else {
-                draw_rectangle(rect.x, rect.y, rect.w, rect.h, RED)
-            }
+            draw_texture_ex(texture, pos.x, pos.y, WHITE, params.clone())
         }
     }
 }
@@ -85,6 +140,24 @@ fn dual_box(screen_center: Vec2, width: f32, height: f32, margin: f32) -> (Rect,
     (left_box, right_box)
 }
 
+fn param() -> DrawTextureParams {
+    let dest_size = Some(vec2(SIZE, SIZE));
+    let source = Some(Rect::new(0., 0., TILE_SIZE, TILE_SIZE));
+
+    DrawTextureParams {
+        dest_size,
+        source,
+        ..Default::default()
+    }
+}
+
+fn source_rect(item: Option<&Item>) -> Option<Rect> {
+    return match item?.name().as_str() {
+        "slime" => Some(Rect::new(0., TILE_SIZE * 2., TILE_SIZE, TILE_SIZE)),
+        _ => None,
+    };
+}
+
 /*
 fn single_box(screen_center: Vec2, width: f32, height: f32) -> Rect {
     Rect::new(
@@ -95,12 +168,3 @@ fn single_box(screen_center: Vec2, width: f32, height: f32) -> Rect {
     )
 }
 */
-
-// IDK why there isn't any min/max function for f32
-fn min<T: std::cmp::PartialOrd>(x: T, y: T) -> T {
-    if x < y {
-        return x;
-    } else {
-        return y;
-    }
-}

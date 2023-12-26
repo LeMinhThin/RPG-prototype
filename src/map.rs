@@ -9,6 +9,7 @@ use crate::player::PIXEL;
 use spawner::*;
 
 pub const RATIO: f32 = STANDARD_SQUARE / TERRAIN_TILE_SIZE;
+const PROJ_SPEED: f32 = 2000.;
 
 pub struct Area {
     pub enemies: Vec<Monster>,
@@ -54,12 +55,12 @@ impl Meshes {
 impl Projectile {
     pub fn new(pos: Vec2, speed: Vec2) -> Self {
         let speed = vec2(speed.x, -speed.y);
-        let pos = vec2(pos.x, pos.y + 5.*PIXEL);
+        let pos = vec2(pos.x, pos.y);
         Self {
             pos,
-            life_time: Timer::new(2.),
+            life_time: Timer::new(0.8),
             should_despawn: false,
-            speed: speed * 1000.,
+            speed: speed * PROJ_SPEED,
             damage: 10.,
         }
     }

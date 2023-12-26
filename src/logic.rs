@@ -30,7 +30,7 @@ pub struct Game {
 pub enum GameState {
     Normal,
     GUI,
-    Talking(usize),
+    Talking(usize, usize),
     Transition(Timer, bool),
 }
 
@@ -97,7 +97,7 @@ impl Game {
         }
 
         if is_key_pressed(KeyCode::R) {
-            if let GameState::Talking(_) = self.state {
+            if let GameState::Talking(..) = self.state {
                 return;
             }
             self.talk_to_npc();
@@ -105,7 +105,19 @@ impl Game {
 
         if is_mouse_button_pressed(MouseButton::Left) {
             match self.state {
-                GameState::Talking(x) => self.state = GameState::Talking(x + 1),
+                GameState::Talking(mut line, mut char) => {
+                    let npcs = &self.maps[&self.current_map].npcs;
+                    let npc = npcs.iter().find(|npc| npc.is_talking).unwrap();
+
+                    let max_char = npc.dialogs[line].len() - 1;
+                    if char >= max_char {
+                        line += 1;
+                        char = 0;
+                    } else {
+                        char = max_char;
+                    }
+                    self.state = GameState::Talking(line, char)
+                }
                 GameState::Normal => {
                     self.player.face(self.get_mouse_pos());
                     self.damage_monster();
@@ -124,7 +136,7 @@ impl Game {
 
         for npc in npcs.iter_mut() {
             if npc.pos().distance(player_pos) < STANDARD_SQUARE {
-                self.state = GameState::Talking(0);
+                self.state = GameState::Talking(0, 0);
                 npc.is_talking = true
             }
         }
@@ -132,8 +144,8 @@ impl Game {
 
     // I can not think of a better name for the love of god
     fn conversation(&mut self) {
-        let index = match self.state {
-            GameState::Talking(x) => x,
+        let (line, mut char) = match self.state {
+            GameState::Talking(line, char) => (line, char),
             _ => return,
         };
         let current_map = self.maps.get_mut(&self.current_map).unwrap();
@@ -143,8 +155,15 @@ impl Game {
             .find(|npc| npc.is_talking)
             .unwrap();
 
-        match talking_npc.dialogs.get(index) {
-            Some(_) => return,
+        match talking_npc.dialogs.get(line) {
+            Some(_) => {
+                if talking_npc.dialogs[line].len() <= char {
+                    char = talking_npc.dialogs[line].len() - 1;
+                } else {
+                    char += 1;
+                }
+                self.state = GameState::Talking(line, char)
+            }
             None => {
                 self.state = GameState::Normal;
                 talking_npc.is_talking = false
@@ -157,7 +176,7 @@ impl Game {
         self.key_event_handler();
         self.anim_tick();
         match self.state {
-            GameState::Talking(_) => {
+            GameState::Talking(..) => {
                 self.player.change_anim(false);
                 self.conversation();
                 return;
@@ -197,7 +216,7 @@ impl Game {
         }
 
         match self.state {
-            GameState::Talking(_) => self.conversation(),
+            GameState::Talking(..) => self.conversation(),
             GameState::Transition(mut timer, mut moved) => {
                 self.timer_progress(&mut timer, &mut moved)
             }

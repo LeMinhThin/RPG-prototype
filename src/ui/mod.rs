@@ -3,7 +3,8 @@ use macroquad::prelude::*;
 use crate::logic::{Game, STANDARD_SQUARE, TILE_SIZE};
 use crate::player::{PIXEL, PLAYER_HEALTH};
 
-mod inventory;
+pub mod inventory;
+pub mod items;
 
 impl Game {
     pub fn hud(&self) {
