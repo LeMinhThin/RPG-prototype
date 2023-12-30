@@ -18,7 +18,11 @@ impl Item {
         }
     }
 
-    pub fn name(&self) -> String {
-        self.name.to_lowercase()
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    pub fn description(&self) -> &str {
+        &self.description
     }
 }

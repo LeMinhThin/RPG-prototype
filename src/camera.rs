@@ -131,14 +131,14 @@ impl Game {
         let screen = self.cam_box().shift(STANDARD_SQUARE, STANDARD_SQUARE);
         let mesh = &self.maps[&self.current_map].draw_mesh.terrain;
         let texture = &self.textures["terrain"];
-        draw_tiles(mesh, vec2(0., 0.), texture, screen, TERRAIN_TILE_SIZE)
+        draw_tiles(mesh, vec2(0., 0.), texture, Some(screen), TERRAIN_TILE_SIZE)
     }
 
     fn draw_decorations(&self) {
         let screen = self.cam_box().shift(STANDARD_SQUARE, STANDARD_SQUARE);
         let mesh = &self.maps[&self.current_map].draw_mesh.decorations;
         let texture = &self.textures["terrain"];
-        draw_tiles(mesh, vec2(0., 0.), texture, screen, TERRAIN_TILE_SIZE);
+        draw_tiles(mesh, vec2(0., 0.), texture, Some(screen), TERRAIN_TILE_SIZE);
     }
 
     fn draw_player(&self) {
@@ -184,7 +184,12 @@ impl Game {
         let text = &npc.dialogs[line][..char];
         let diag_box = self.diag_box();
         self.draw_diag_box();
-        render_text(diag_box, text, &self.font);
+        let params = TextParams {
+            font_size: 48,
+            font: Some(&self.font),
+            ..Default::default()
+        };
+        render_text(diag_box, text, params);
     }
 
     fn draw_diag_box(&self) {
@@ -274,19 +279,11 @@ fn gen_draw_params(source_id: &u16, tile_size: f32) -> DrawTextureParams {
     }
 }
 
-fn render_text(diag_box: Rect, content: &str, font: &Font) {
+pub fn render_text(diag_box: Rect, content: &str, params: TextParams) {
     let lines = textwrap::wrap(content, 37);
-    let font_size = 48.;
-
-    let params = TextParams {
-        font: Some(&font),
-        font_size: font_size as u16,
-        ..Default::default()
-    };
-
     let mut offset = 0.;
     for line in lines {
-        offset += font_size + 20.;
+        offset += params.font_size as f32 + 20.;
         draw_text_ex(&line, diag_box.x, diag_box.y + offset, params.clone())
     }
 }
@@ -307,7 +304,7 @@ pub fn draw_tiles(
     mesh: &Vec<Vec<u16>>,
     origin: Vec2,
     texture: &Texture2D,
-    screen: Rect,
+    screen: Option<Rect>,
     tile_size: f32,
 ) {
     let mut row_num = 0.;
@@ -315,7 +312,7 @@ pub fn draw_tiles(
     for slice in mesh {
         for cell in slice {
             let draw_pos = vec2(col_num * STANDARD_SQUARE, row_num * STANDARD_SQUARE);
-            if cell == &BLANK_TILE || !screen.contains(draw_pos) {
+            if should_skip(draw_pos, screen, cell) {
                 col_num += 1.;
                 continue;
             }
@@ -333,4 +330,17 @@ pub fn draw_tiles(
         col_num = 0.;
         row_num += 1.;
     }
+}
+
+fn should_skip(point: Vec2, screen: Option<Rect>, cell: &u16) -> bool {
+    if let Some(rect) = screen {
+        if cell == &BLANK_TILE {
+            return true;
+        }
+        if !rect.contains(point) {
+            return true;
+        }
+        return false;
+    }
+    return false;
 }

@@ -1,6 +1,6 @@
-use crate::camera::draw_tiles;
-use crate::logic::{Game, TILE_SIZE};
-use crate::player::Player;
+use crate::camera::{draw_tiles, render_text};
+use crate::logic::{Game, STANDARD_SQUARE, TILE_SIZE};
+use crate::player::{Player, PIXEL};
 use macroquad::prelude::*;
 
 use super::items::Item;
@@ -50,17 +50,12 @@ impl Game {
         #[rustfmt::skip]
         let mesh = window_texture();
         draw_rectangle(l_box.x, l_box.y, l_box.w, l_box.h, LIGHTGRAY);
-        draw_tiles(
-            &mesh,
-            r_box.point(),
-            &self.textures["ui"],
-            self.cam_box(),
-            TILE_SIZE,
-        );
+        draw_tiles(&mesh, r_box.point(), &self.textures["ui"], None, TILE_SIZE);
         //draw_slots(r_box, &self.textures["ui"]);
         self.player.update_inv(r_box);
         self.player.draw_slots(&self.textures["ui"]);
-        self.player.draw_items(&self.textures["ui"])
+        self.player.draw_items(&self.textures["ui"]);
+        self.draw_description()
     }
 
     pub fn get_mouse_pos(&self) -> Vec2 {
@@ -75,6 +70,49 @@ impl Game {
             mouse.x * screen_width + offset_x,
             mouse.y * screen_height + offset_y,
         )
+    }
+
+    // I'm .... not exactly proud of this one
+    fn draw_description(&self) {
+        let mouse_pos = self.get_mouse_pos();
+        let player_inv = &self.player.inventory;
+        let mut index = 0;
+        let mut diag_rect = Rect::new(
+            mouse_pos.x + 8. * PIXEL,
+            mouse_pos.y,
+            3. * STANDARD_SQUARE,
+            2. * STANDARD_SQUARE,
+        );
+        for slot in player_inv.slot_hitboxes {
+            if !slot.contains(mouse_pos) {
+                index += 1;
+                continue;
+            }
+            let item = &player_inv.content[index];
+            if let Some(item) = item {
+                draw_tiles(
+                    &desc_diag(),
+                    mouse_pos,
+                    &self.textures["ui"],
+                    None,
+                    TILE_SIZE,
+                );
+                let name = item.name();
+                let mut param = TextParams {
+                    color: WHITE,
+                    font: Some(&self.font),
+                    font_size: 48,
+                    ..Default::default()
+                };
+                render_text(diag_rect, name, param.clone());
+                param.font_size = 32;
+                let desc = item.description();
+                diag_rect.y += 10. * PIXEL;
+                diag_rect.x -= 4. * PIXEL;
+                render_text(diag_rect, desc, param);
+
+            }
+        }
     }
 }
 
@@ -161,8 +199,8 @@ fn param() -> DrawTextureParams {
 }
 
 fn source_rect(item: Option<&Item>) -> Option<Rect> {
-    return match item?.name().as_str() {
-        "slime" => Some(Rect::new(0., TILE_SIZE * 2., TILE_SIZE, TILE_SIZE)),
+    return match item?.name() {
+        "Slime" => Some(Rect::new(0., TILE_SIZE * 2., TILE_SIZE, TILE_SIZE)),
         _ => None,
     };
 }
@@ -170,7 +208,7 @@ fn source_rect(item: Option<&Item>) -> Option<Rect> {
 #[rustfmt::skip]
 fn window_texture() -> Vec<Vec<u16>> {
     vec![
-        vec![4, 5, 5, 5, 6],
+        vec![4 ,  5,  5,  5,  6],
         vec![16, 17, 17, 17, 18],
         vec![16, 17, 17, 17, 18],
         vec![16, 17, 17, 17, 18],
@@ -179,5 +217,13 @@ fn window_texture() -> Vec<Vec<u16>> {
         vec![16, 17, 17, 17, 18],
         vec![16, 17, 17, 17, 18],
         vec![28, 29, 29, 29, 30],
+    ]
+}
+
+#[rustfmt::skip]
+fn desc_diag() -> Vec<Vec<u16>> {
+    vec![
+        vec![7 ,  8,  9],
+        vec![31, 32, 33],
     ]
 }
