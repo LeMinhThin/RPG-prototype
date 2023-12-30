@@ -11,7 +11,7 @@ const MUSHROOM_SPEED: f32 = 100.;
 
 #[derive(Clone)]
 pub struct Mushroom {
-    pub props: Props,
+    props: Props,
     damage: f32,
 }
 

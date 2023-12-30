@@ -6,21 +6,17 @@ pub mod mushroom;
 pub mod slime;
 pub mod spawner;
 
-pub struct Monster {
-    content: Box<dyn Entity>,
-}
+pub struct Monster(Box<dyn Entity>);
 
 impl Monster {
-    pub fn get(&self) -> &Box<(dyn Entity)> {
-        &self.content
+    pub fn get(&self) -> &dyn Entity {
+        self.0.as_ref()
     }
-    pub fn get_mut(&mut self) -> &mut Box<dyn Entity> {
-        &mut self.content
+    pub fn get_mut(&mut self) -> &mut dyn Entity {
+        self.0.as_mut()
     }
     pub fn new<T: Entity + 'static>(mob: T) -> Self {
-        Monster {
-            content: Box::new(mob),
-        }
+        Monster(Box::new(mob))
     }
 }
 

@@ -75,13 +75,13 @@ impl Player {
 
         let max_col = COL as u8;
         let max_row = ROW;
-        let mut item = 0;
+        let dest_size = vec2(SIZE, SIZE) * 0.8;
 
+        let mut item = 0;
         for col in 0..max_col {
             let col = col as f32;
             for row in 0..max_row {
                 let row = row as f32;
-                let dest_size = vec2(SIZE, SIZE) * 0.8;
                 let source = source_rect(self.inventory.content[item].as_ref());
                 if source == None {
                     item += 1;
@@ -157,14 +157,3 @@ fn source_rect(item: Option<&Item>) -> Option<Rect> {
         _ => None,
     };
 }
-
-/*
-fn single_box(screen_center: Vec2, width: f32, height: f32) -> Rect {
-    Rect::new(
-        screen_center.x - width / 2.,
-        screen_center.y - height / 2.,
-        width,
-        height,
-    )
-}
-*/

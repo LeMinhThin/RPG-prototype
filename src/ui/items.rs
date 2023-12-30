@@ -1,11 +1,11 @@
-use std::sync::Arc;
+use std::rc::Rc;
 
 #[allow(dead_code)]
 #[derive(Clone)]
 pub struct Item {
     // Because a guy named Logan Smith told me so
-    name: Arc<str>,
-    description: Arc<str>,
+    name: Rc<str>,
+    description: Rc<str>,
     value: u32,
 }
 

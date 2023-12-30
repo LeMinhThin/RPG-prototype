@@ -1,5 +1,6 @@
 use macroquad::prelude::*;
 use serde_json::Value;
+use std::rc::Rc;
 
 use crate::camera::TERRAIN_TILE_SIZE;
 use crate::logic::{Timer, KNOCKBACK, STANDARD_SQUARE, TILE_SIZE};
@@ -31,7 +32,7 @@ pub struct Projectile {
 
 #[derive(Clone)]
 pub struct Gate {
-    pub command: String,
+    pub command: Rc<str>,
     pub location: Rect,
 }
 
@@ -55,7 +56,7 @@ impl Meshes {
 impl Projectile {
     pub fn new(pos: Vec2, speed: Vec2) -> Self {
         let speed = vec2(speed.x, -speed.y);
-        let pos = vec2(pos.x, pos.y);
+        let pos = vec2(pos.x, pos.y + 6. * PIXEL);
         Self {
             pos,
             life_time: Timer::new(0.8),
@@ -170,9 +171,12 @@ impl Area {
     }
 }
 impl Gate {
-    fn new(x: f32, y: f32, w: f32, h: f32, command: String) -> Self {
+    fn new(x: f32, y: f32, w: f32, h: f32, command: &str) -> Self {
         let location = Rect::new(x, y, w, h);
-        Gate { location, command }
+        Gate {
+            location,
+            command: command.into(),
+        }
     }
 
     pub fn hitbox(&self) -> Rect {
@@ -221,7 +225,13 @@ fn make_spawners(objects: &Value) -> Option<Vec<Spawner>> {
         let y = spawner["y"].as_f64()? as f32;
         let (cooldown, spawn_radius, kind, max_mob) = get_props(spawner)?;
 
-        let spawner = Spawner::new(kind, spawn_radius, max_mob, cooldown, x * RATIO, y * RATIO);
+        let spawner = Spawner::new(
+            kind,
+            spawn_radius,
+            max_mob,
+            cooldown,
+            vec2(x * RATIO, y * RATIO),
+        );
 
         spawners.push(spawner)
     }
@@ -283,13 +293,13 @@ fn make_gates(objects: &Value) -> Option<Vec<Gate>> {
     Some(gates)
 }
 
-fn get_command(objects: &Value) -> Option<String> {
+fn get_command(objects: &Value) -> Option<&str> {
     let commands = objects.as_array().unwrap();
 
-    let mut string = String::new();
+    let mut string = "";
     for i in commands {
         if i["name"].as_str()? == "to" {
-            string = i["value"].as_str()?.to_string();
+            string = i["value"].as_str()?;
         }
     }
     if string.is_empty() {

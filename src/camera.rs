@@ -184,7 +184,7 @@ impl Game {
         let text = &npc.dialogs[line][..char];
         let diag_box = self.diag_box();
         self.draw_diag_box();
-        render_text(diag_box, text);
+        render_text(diag_box, text, &self.font);
     }
 
     fn draw_diag_box(&self) {
@@ -262,7 +262,8 @@ impl Utils for Rect {
 }
 
 fn gen_draw_params(source_id: &u16) -> DrawTextureParams {
-    let dest_size = Some(vec2(STANDARD_SQUARE, STANDARD_SQUARE));
+    // Scale it by a really small factor
+    let dest_size = Some(vec2(STANDARD_SQUARE, STANDARD_SQUARE) * 1.01f32);
     let (x_index, y_index) = to_index(source_id);
 
     let source = Some(Rect::new(
@@ -278,14 +279,20 @@ fn gen_draw_params(source_id: &u16) -> DrawTextureParams {
     }
 }
 
-fn render_text(diag_box: Rect, content: &str) {
+fn render_text(diag_box: Rect, content: &str, font: &Font) {
     let lines = textwrap::wrap(content, 37);
-    let font_size = 75.;
+    let font_size = 48.;
+
+    let params = TextParams {
+        font: Some(&font),
+        font_size: font_size as u16,
+        ..Default::default()
+    };
 
     let mut offset = 0.;
     for line in lines {
-        offset += font_size;
-        draw_text(&line, diag_box.x, diag_box.y + offset, font_size, WHITE);
+        offset += font_size + 20.;
+        draw_text_ex(&line, diag_box.x, diag_box.y + offset, params.clone())
     }
 }
 

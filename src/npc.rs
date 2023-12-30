@@ -23,7 +23,7 @@ impl NPC {
         let anim = npc_anim();
 
         NPC {
-            name: name.to_string(),
+            name: name.into(),
             dialogs,
             anim,
             hitbox,

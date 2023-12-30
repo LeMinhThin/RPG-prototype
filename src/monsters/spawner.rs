@@ -16,8 +16,7 @@ pub struct Spawner {
     pub spawn_radius: f32,
     max_mob: u32,
     timer: Timer,
-    pub x: f32,
-    pub y: f32,
+    pos: Vec2,
 }
 
 #[derive(PartialEq, Debug)]
@@ -32,16 +31,14 @@ impl Spawner {
         spawn_radius: f32,
         max_mob: u32,
         max_cooldown: f32,
-        x: f32,
-        y: f32,
+        pos: Vec2,
     ) -> Self {
         Spawner {
             kind,
             spawn_radius,
             max_mob,
             timer: Timer::new(max_cooldown),
-            x,
-            y,
+            pos,
         }
     }
 
@@ -64,12 +61,13 @@ impl Spawner {
 
             match self.kind {
                 MobType::Slime => {
-                    let slime = Slime::from(vec2(self.x + x_offset, self.y + y_offset));
+                    let slime = Slime::from(vec2(self.pos.x + x_offset, self.pos.y + y_offset));
                     let new_mob = Monster::new(slime);
                     monsters.push(new_mob);
                 }
                 MobType::Mushroom => {
-                    let mushroom = Mushroom::from(vec2(self.x + x_offset, self.y + y_offset));
+                    let mushroom =
+                        Mushroom::from(vec2(self.pos.x + x_offset, self.pos.y + y_offset));
                     let new_mob = Monster::new(mushroom);
                     monsters.push(new_mob)
                 }
@@ -79,8 +77,8 @@ impl Spawner {
 
     fn count_mob(&self, mobs: &[Monster]) -> u32 {
         let spawner_detect_box = Rect::new(
-            self.x - self.spawn_radius,
-            self.y - self.spawn_radius,
+            self.pos.x - self.spawn_radius,
+            self.pos.y - self.spawn_radius,
             self.spawn_radius * 2.,
             self.spawn_radius * 2.,
         );

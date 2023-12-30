@@ -11,7 +11,7 @@ const SLIME_MAX_TRACKING: f32 = 500.;
 
 #[derive(Clone)]
 pub struct Slime {
-    pub props: Props,
+    props: Props,
     damage: f32,
 }
 impl IsAMonster for Slime {
@@ -35,10 +35,7 @@ impl IsAMonster for Slime {
     }
 
     fn move_to(&mut self, player_pos: Vec2) {
-        // May looks dawnting but it's just the Pythagoras theorem
-        let dist = ((self.props.pos.x - player_pos.x).powi(2)
-            + (self.props.pos.y - player_pos.y).powi(2))
-        .sqrt();
+        let dist = self.pos().distance(player_pos);
 
         if dist > SLIME_MAX_TRACKING {
             return;
