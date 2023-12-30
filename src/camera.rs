@@ -131,14 +131,14 @@ impl Game {
         let screen = self.cam_box().shift(STANDARD_SQUARE, STANDARD_SQUARE);
         let mesh = &self.maps[&self.current_map].draw_mesh.terrain;
         let texture = &self.textures["terrain"];
-        draw_tiles(mesh, vec2(0., 0.), texture, screen)
+        draw_tiles(mesh, vec2(0., 0.), texture, screen, TERRAIN_TILE_SIZE)
     }
 
     fn draw_decorations(&self) {
         let screen = self.cam_box().shift(STANDARD_SQUARE, STANDARD_SQUARE);
         let mesh = &self.maps[&self.current_map].draw_mesh.decorations;
         let texture = &self.textures["terrain"];
-        draw_tiles(mesh, vec2(0., 0.), texture, screen);
+        draw_tiles(mesh, vec2(0., 0.), texture, screen, TERRAIN_TILE_SIZE);
     }
 
     fn draw_player(&self) {
@@ -207,7 +207,7 @@ impl Game {
     }
 }
 
-fn to_index(point: &u16) -> (f32, f32) {
+fn to_index(point: &u16, tile_size: f32) -> (f32, f32) {
     let x;
     let y;
     if point % SHEET_SIZE == 0 {
@@ -218,7 +218,7 @@ fn to_index(point: &u16) -> (f32, f32) {
         y = (point / SHEET_SIZE) as f32;
     }
 
-    (x * TERRAIN_TILE_SIZE, y * TERRAIN_TILE_SIZE)
+    (x * tile_size, y * tile_size)
 }
 
 // For debugging and prototyping purposes
@@ -261,17 +261,12 @@ impl Utils for Rect {
     }
 }
 
-fn gen_draw_params(source_id: &u16) -> DrawTextureParams {
+fn gen_draw_params(source_id: &u16, tile_size: f32) -> DrawTextureParams {
     // Scale it by a really small factor
     let dest_size = Some(vec2(STANDARD_SQUARE, STANDARD_SQUARE) * 1.01f32);
-    let (x_index, y_index) = to_index(source_id);
+    let (x_index, y_index) = to_index(source_id, tile_size);
 
-    let source = Some(Rect::new(
-        x_index,
-        y_index,
-        TERRAIN_TILE_SIZE,
-        TERRAIN_TILE_SIZE,
-    ));
+    let source = Some(Rect::new(x_index, y_index, tile_size, tile_size));
     DrawTextureParams {
         dest_size,
         source,
@@ -308,7 +303,13 @@ fn draw_transition(screen: Rect, timer: &Timer) {
     )
 }
 
-fn draw_tiles(mesh: &Vec<Vec<u16>>, origin: Vec2, texture: &Texture2D, screen: Rect) {
+pub fn draw_tiles(
+    mesh: &Vec<Vec<u16>>,
+    origin: Vec2,
+    texture: &Texture2D,
+    screen: Rect,
+    tile_size: f32,
+) {
     let mut row_num = 0.;
     let mut col_num = 0.;
     for slice in mesh {
@@ -318,7 +319,7 @@ fn draw_tiles(mesh: &Vec<Vec<u16>>, origin: Vec2, texture: &Texture2D, screen: R
                 col_num += 1.;
                 continue;
             }
-            let params = gen_draw_params(cell);
+            let params = gen_draw_params(cell, tile_size);
 
             draw_texture_ex(
                 &texture,

@@ -1,3 +1,4 @@
+use crate::camera::draw_tiles;
 use crate::logic::{Game, TILE_SIZE};
 use crate::player::Player;
 use macroquad::prelude::*;
@@ -6,11 +7,12 @@ use super::items::Item;
 
 const ROW: u8 = 3;
 const COL: f32 = 4.;
-const SIZE: f32 = 144.;
+const SIZE: f32 = 140.;
 
 #[derive(Clone)]
 pub struct Inventory {
-    content: [Option<Item>; 13],
+    content: [Option<Item>; 12],
+    slot_hitboxes: [Rect; 12],
 }
 
 impl Inventory {
@@ -30,26 +32,35 @@ impl Inventory {
                 None,
                 None,
                 None,
-                None,
             ],
+            slot_hitboxes: [Rect::new(0., 0., 0., 0.); 12],
         }
     }
 }
 
 impl Game {
-    pub fn show_inv(&self) {
+    pub fn show_inv(&mut self) {
         let screen_center = self.cam_box().center();
-        let width = 700.;
-        let height = 1200.;
+        let width = 720.;
+        let height = 1296.;
         let margin = 50.;
 
         let (l_box, r_box) = dual_box(screen_center, width, height, margin);
 
         #[rustfmt::skip]
+        let mesh = window_texture();
         draw_rectangle(l_box.x, l_box.y, l_box.w, l_box.h, LIGHTGRAY);
-        draw_rectangle(r_box.x, r_box.y, r_box.w, r_box.h, LIGHTGRAY);
-        draw_slots(r_box, &self.textures["ui"]);
-        self.player.draw_items(r_box, &self.textures["ui"])
+        draw_tiles(
+            &mesh,
+            r_box.point(),
+            &self.textures["ui"],
+            self.cam_box(),
+            TILE_SIZE,
+        );
+        //draw_slots(r_box, &self.textures["ui"]);
+        self.player.update_inv(r_box);
+        self.player.draw_slots(&self.textures["ui"]);
+        self.player.draw_items(&self.textures["ui"])
     }
 
     pub fn get_mouse_pos(&self) -> Vec2 {
@@ -68,60 +79,58 @@ impl Game {
 }
 
 impl Player {
-    fn draw_items(&self, window: Rect, texture: &Texture2D) {
+    fn update_inv(&mut self, window: Rect) {
         let margin = (window.w - (COL * SIZE)) / (COL + 1.);
         let height = window.h - ((COL - 1.) * SIZE + COL * margin);
-        let starting_pos = vec2(window.left(), window.top() + height);
-
         let max_col = COL as u8;
         let max_row = ROW;
-        let dest_size = vec2(SIZE, SIZE) * 0.8;
 
-        let mut item = 0;
+        let mut index = 0;
+        let starting_pos = vec2(window.left(), window.top() + height);
+
         for col in 0..max_col {
             let col = col as f32;
             for row in 0..max_row {
                 let row = row as f32;
-                let source = source_rect(self.inventory.content[item].as_ref());
-                if source == None {
-                    item += 1;
-                    continue;
-                }
-                let params = DrawTextureParams {
-                    dest_size: Some(dest_size),
-                    source,
-                    ..Default::default()
-                };
-                let pos = vec2(
-                    starting_pos.x + (col + 1.) * margin + col * SIZE + dest_size.x / 8.,
-                    starting_pos.y + (row + 1.) * margin + row * SIZE + dest_size.y / 8.,
+                let hitbox = Rect::new(
+                    starting_pos.x + (col + 1.) * margin + col * SIZE,
+                    starting_pos.y + (row + 1.) * margin + row * SIZE,
+                    SIZE,
+                    SIZE,
                 );
-                draw_texture_ex(texture, pos.x, pos.y, WHITE, params);
-
-                item += 1
+                self.inventory.slot_hitboxes[index] = hitbox;
+                index += 1
             }
         }
     }
-}
 
-fn draw_slots(window: Rect, texture: &Texture2D) {
-    let margin = (window.w - (COL * SIZE)) / (COL + 1.);
-    let height = window.h - ((COL - 1.) * SIZE + COL * margin); // What
-    let starting_pos = vec2(window.left(), window.top() + height);
-    let max_col = COL as u8;
-    let params = param();
+    fn draw_items(&self, texture: &Texture2D) {
+        let mut index = 0;
+        for slot in self.inventory.slot_hitboxes {
+            let source = source_rect(self.inventory.content[index].as_ref());
+            if source == None {
+                index += 1;
+                continue;
+            }
+            let dest_size = vec2(SIZE, SIZE) * 0.8f32;
+            let padd_x = (SIZE - dest_size.x) / 2.;
+            let padd_y = (SIZE - dest_size.y) / 2.;
 
-    for col in 0..max_col {
-        let col = col as f32;
-        for row in 0..ROW {
-            let row = row as f32;
+            let params = DrawTextureParams {
+                source,
+                dest_size: Some(dest_size),
+                ..Default::default()
+            };
 
-            let pos = vec2(
-                starting_pos.x + margin * (col + 1.) + col * SIZE,
-                starting_pos.y + margin * (row + 1.) + row * SIZE,
-            );
+            draw_texture_ex(texture, slot.x + padd_x, slot.y + padd_y, WHITE, params);
+            index += 1;
+        }
+    }
 
-            draw_texture_ex(texture, pos.x, pos.y, WHITE, params.clone())
+    fn draw_slots(&self, texture: &Texture2D) {
+        for slot in self.inventory.slot_hitboxes {
+            let params = param();
+            draw_texture_ex(texture, slot.x, slot.y, WHITE, params);
         }
     }
 }
@@ -156,4 +165,19 @@ fn source_rect(item: Option<&Item>) -> Option<Rect> {
         "slime" => Some(Rect::new(0., TILE_SIZE * 2., TILE_SIZE, TILE_SIZE)),
         _ => None,
     };
+}
+
+#[rustfmt::skip]
+fn window_texture() -> Vec<Vec<u16>> {
+    vec![
+        vec![4, 5, 5, 5, 6],
+        vec![16, 17, 17, 17, 18],
+        vec![16, 17, 17, 17, 18],
+        vec![16, 17, 17, 17, 18],
+        vec![16, 17, 17, 17, 18],
+        vec![16, 17, 17, 17, 18],
+        vec![16, 17, 17, 17, 18],
+        vec![16, 17, 17, 17, 18],
+        vec![28, 29, 29, 29, 30],
+    ]
 }
