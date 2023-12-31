@@ -210,10 +210,8 @@ impl Game {
             if !item.hitbox.overlaps(&self.player.hitbox()) {
                 continue;
             }
-            if let Some(slot) = self.player.inventory.has_empty_slot() {
-                self.player.inventory.content[slot] = Some(item.item.clone());
-                item.should_delete = true
-            }
+            self.player.inventory.append(item.item.clone());
+            item.should_delete = true
         }
 
         current_map.clean_up();

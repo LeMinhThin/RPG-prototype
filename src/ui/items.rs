@@ -10,6 +10,7 @@ pub struct Item {
     name: Rc<str>,
     description: Rc<str>,
     value: u32,
+    pub count: u8,
 }
 
 #[derive(Debug)]
@@ -20,11 +21,12 @@ pub struct ItemEntity {
 }
 
 impl Item {
-    pub fn slime() -> Self {
+    pub fn slime(count: u8) -> Self {
         Item {
             name: "Slime".into(),
             value: 5,
             description: "It's quite slimy".into(),
+            count,
         }
     }
 
@@ -34,6 +36,10 @@ impl Item {
 
     pub fn description(&self) -> &str {
         &self.description
+    }
+
+    pub fn is_same_type(&self, item: &Item) -> bool {
+        self.name() == item.name()
     }
 }
 impl ItemEntity {

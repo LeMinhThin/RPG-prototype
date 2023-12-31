@@ -111,10 +111,6 @@ impl Game {
 
     fn draw_items(&self) {
         let items = &self.maps[&self.current_map].items;
-        if is_key_pressed(KeyCode::F3) {
-            info!("item: {:?}", items);
-            info!("player pos: {}", self.player.pos())
-        }
 
         for item in items {
             item.draw(&self.textures["ui"])

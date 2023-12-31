@@ -172,7 +172,7 @@ impl Area {
         for mob in mobs.iter() {
             let mob = mob.get();
             if mob.get_props().health <= 0. {
-                self.items.push(ItemEntity::new(Item::slime(), mob.pos()))
+                self.items.push(ItemEntity::new(Item::slime(1), mob.pos()))
             }
         }
         let items = &mut self.items;

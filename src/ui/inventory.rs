@@ -1,4 +1,4 @@
-use crate::camera::{draw_tiles, render_text};
+use crate::camera::{draw_tiles, render_text, Utils};
 use crate::logic::{Game, STANDARD_SQUARE, TILE_SIZE};
 use crate::player::{Player, PIXEL};
 use macroquad::prelude::*;
@@ -13,7 +13,7 @@ const SIZE: f32 = 140.;
 pub struct Inventory {
     pub content: [Option<Item>; 12],
     slot_hitboxes: [Rect; 12],
-    holding: (Option<Item>, usize),
+    holding: Option<Item>,
 }
 
 impl Inventory {
@@ -21,7 +21,7 @@ impl Inventory {
         Self {
             // Idk man
             content: [
-                Some(Item::slime()),
+                Some(Item::slime(1)),
                 None,
                 None,
                 None,
@@ -35,19 +35,33 @@ impl Inventory {
                 None,
             ],
             slot_hitboxes: [Rect::new(0., 0., 0., 0.); 12],
-            holding: (None, 0),
+            holding: None,
         }
     }
 
-    pub fn has_empty_slot(&self) -> Option<usize> {
+    pub fn first_of_type(&self, item: &Item) -> Option<usize> {
         let mut index = 0;
         for slot in &self.content {
-            if slot.is_none() {
+            if let Some(content) = slot {
+                if content.name() == item.name() {
+                    return Some(index);
+                }
+            } else {
                 return Some(index);
             }
             index += 1;
         }
         return None;
+    }
+
+    pub fn append(&mut self, item: Item) {
+        if let Some(slot) = self.first_of_type(&item) {
+            if self.content[slot].is_none() {
+                self.content[slot] = Some(item);
+                return;
+            }
+            self.content[slot].as_mut().unwrap().count += 1
+        }
     }
 }
 
@@ -66,8 +80,8 @@ impl Game {
         draw_tiles(&mesh, r_box.point(), &self.textures["ui"], None, TILE_SIZE);
         //draw_slots(r_box, &self.textures["ui"]);
         self.player.update_inv(r_box);
-        self.player.draw_slots(&self.textures["ui"]);
-        self.player.draw_items(&self.textures["ui"]);
+        self.draw_slots();
+        self.render_items();
         self.draw_description();
         self.inv_click_detection();
         self.draw_held_item()
@@ -143,11 +157,20 @@ impl Game {
                 index += 1;
                 continue;
             }
-            if let Some(item) = &player_inv.holding.0 {
+            if let Some(item) = &player_inv.holding {
+                let slot = player_inv.content[index].as_mut();
+                if let Some(slot) = slot {
+                    if slot.is_same_type(item) {
+                        slot.count += item.count;
+                        player_inv.holding = None;
+                        return;
+                    }
+                }
                 player_inv.content[index] = Some(item.clone());
-                player_inv.holding = (None, 0)
+                player_inv.holding = None;
+                return;
             } else {
-                player_inv.holding = (player_inv.content[index].clone(), index);
+                player_inv.holding = player_inv.content[index].clone();
                 player_inv.content[index] = None
             }
             index += 1;
@@ -155,9 +178,9 @@ impl Game {
     }
 
     fn draw_held_item(&self) {
-        if let Some(item) = &self.player.inventory.holding.0 {
+        if let Some(item) = &self.player.inventory.holding {
             let mouse_pos = self.get_mouse_pos();
-            let source = source_rect(Some(&item));
+            let source = source_rect(Some(item));
             if source == None {
                 error!("Like how even?")
             }
@@ -178,6 +201,57 @@ impl Game {
                 WHITE,
                 params,
             );
+        }
+    }
+
+    fn render_items(&self) {
+        let mut index = 0;
+        let player_inv = &self.player.inventory;
+        for slot in player_inv.slot_hitboxes {
+            let item = &player_inv.content[index];
+            if item.is_none() {
+                index += 1;
+                continue;
+            }
+            let source = source_rect(item.as_ref());
+            let dest_size = vec2(SIZE, SIZE) * 0.8f32;
+            let padd_x = (SIZE - dest_size.x) / 2.;
+            let padd_y = (SIZE - dest_size.y) / 2.;
+
+            let params = DrawTextureParams {
+                source,
+                dest_size: Some(dest_size),
+                ..Default::default()
+            };
+
+            draw_texture_ex(
+                &self.textures["ui"],
+                slot.x + padd_x,
+                slot.y + padd_y,
+                WHITE,
+                params,
+            );
+
+            index += 1;
+            let item = item.as_ref().unwrap();
+            if item.count == 1 {
+                continue;
+            }
+
+            let params = TextParams {
+                font: Some(&self.font),
+                font_size: 24,
+                ..Default::default()
+            };
+
+            render_text(slot.shift(-24., 0.), &format!("{}", item.count), params);
+        }
+    }
+
+    fn draw_slots(&self) {
+        for slot in self.player.inventory.slot_hitboxes {
+            let params = param();
+            draw_texture_ex(&self.textures["ui"], slot.x, slot.y, WHITE, params);
         }
     }
 }
@@ -205,36 +279,6 @@ impl Player {
                 self.inventory.slot_hitboxes[index] = hitbox;
                 index += 1
             }
-        }
-    }
-
-    fn draw_items(&self, texture: &Texture2D) {
-        let mut index = 0;
-        for slot in self.inventory.slot_hitboxes {
-            let source = source_rect(self.inventory.content[index].as_ref());
-            if source == None {
-                index += 1;
-                continue;
-            }
-            let dest_size = vec2(SIZE, SIZE) * 0.8f32;
-            let padd_x = (SIZE - dest_size.x) / 2.;
-            let padd_y = (SIZE - dest_size.y) / 2.;
-
-            let params = DrawTextureParams {
-                source,
-                dest_size: Some(dest_size),
-                ..Default::default()
-            };
-
-            draw_texture_ex(texture, slot.x + padd_x, slot.y + padd_y, WHITE, params);
-            index += 1;
-        }
-    }
-
-    fn draw_slots(&self, texture: &Texture2D) {
-        for slot in self.inventory.slot_hitboxes {
-            let params = param();
-            draw_texture_ex(texture, slot.x, slot.y, WHITE, params);
         }
     }
 }
