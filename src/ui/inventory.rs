@@ -11,8 +11,9 @@ const SIZE: f32 = 140.;
 
 #[derive(Clone)]
 pub struct Inventory {
-    content: [Option<Item>; 12],
+    pub content: [Option<Item>; 12],
     slot_hitboxes: [Rect; 12],
+    holding: (Option<Item>, usize),
 }
 
 impl Inventory {
@@ -34,7 +35,19 @@ impl Inventory {
                 None,
             ],
             slot_hitboxes: [Rect::new(0., 0., 0., 0.); 12],
+            holding: (None, 0),
         }
+    }
+
+    pub fn has_empty_slot(&self) -> Option<usize> {
+        let mut index = 0;
+        for slot in &self.content {
+            if slot.is_none() {
+                return Some(index);
+            }
+            index += 1;
+        }
+        return None;
     }
 }
 
@@ -49,13 +62,15 @@ impl Game {
 
         #[rustfmt::skip]
         let mesh = window_texture();
-        draw_rectangle(l_box.x, l_box.y, l_box.w, l_box.h, LIGHTGRAY);
+        draw_tiles(&mesh, l_box.point(), &self.textures["ui"], None, TILE_SIZE);
         draw_tiles(&mesh, r_box.point(), &self.textures["ui"], None, TILE_SIZE);
         //draw_slots(r_box, &self.textures["ui"]);
         self.player.update_inv(r_box);
         self.player.draw_slots(&self.textures["ui"]);
         self.player.draw_items(&self.textures["ui"]);
-        self.draw_description()
+        self.draw_description();
+        self.inv_click_detection();
+        self.draw_held_item()
     }
 
     pub fn get_mouse_pos(&self) -> Vec2 {
@@ -99,7 +114,7 @@ impl Game {
                 );
                 let name = item.name();
                 let mut param = TextParams {
-                    color: WHITE,
+                    color: BLACK,
                     font: Some(&self.font),
                     font_size: 48,
                     ..Default::default()
@@ -110,8 +125,59 @@ impl Game {
                 diag_rect.y += 10. * PIXEL;
                 diag_rect.x -= 4. * PIXEL;
                 render_text(diag_rect, desc, param);
-
             }
+            index += 1;
+        }
+    }
+
+    fn inv_click_detection(&mut self) {
+        if !is_mouse_button_pressed(MouseButton::Left) {
+            return;
+        }
+        let mouse_pos = self.get_mouse_pos();
+        let player_inv = &mut self.player.inventory;
+
+        let mut index = 0;
+        for slot in player_inv.slot_hitboxes {
+            if !slot.contains(mouse_pos) {
+                index += 1;
+                continue;
+            }
+            if let Some(item) = &player_inv.holding.0 {
+                player_inv.content[index] = Some(item.clone());
+                player_inv.holding = (None, 0)
+            } else {
+                player_inv.holding = (player_inv.content[index].clone(), index);
+                player_inv.content[index] = None
+            }
+            index += 1;
+        }
+    }
+
+    fn draw_held_item(&self) {
+        if let Some(item) = &self.player.inventory.holding.0 {
+            let mouse_pos = self.get_mouse_pos();
+            let source = source_rect(Some(&item));
+            if source == None {
+                error!("Like how even?")
+            }
+            let dest_size = vec2(SIZE, SIZE) * 0.8;
+            let padd_x = (SIZE - dest_size.x) / 2.;
+            let padd_y = (SIZE - dest_size.y) / 2.;
+
+            let params = DrawTextureParams {
+                source,
+                dest_size: Some(dest_size),
+                ..Default::default()
+            };
+
+            draw_texture_ex(
+                &self.textures["ui"],
+                mouse_pos.x + padd_x,
+                mouse_pos.y + padd_y,
+                WHITE,
+                params,
+            );
         }
     }
 }
@@ -126,10 +192,10 @@ impl Player {
         let mut index = 0;
         let starting_pos = vec2(window.left(), window.top() + height);
 
-        for col in 0..max_col {
-            let col = col as f32;
-            for row in 0..max_row {
-                let row = row as f32;
+        for row in 0..max_row {
+            let row = row as f32;
+            for col in 0..max_col {
+                let col = col as f32;
                 let hitbox = Rect::new(
                     starting_pos.x + (col + 1.) * margin + col * SIZE,
                     starting_pos.y + (row + 1.) * margin + row * SIZE,
@@ -198,7 +264,7 @@ fn param() -> DrawTextureParams {
     }
 }
 
-fn source_rect(item: Option<&Item>) -> Option<Rect> {
+pub fn source_rect(item: Option<&Item>) -> Option<Rect> {
     return match item?.name() {
         "Slime" => Some(Rect::new(0., TILE_SIZE * 2., TILE_SIZE, TILE_SIZE)),
         _ => None,
@@ -208,15 +274,15 @@ fn source_rect(item: Option<&Item>) -> Option<Rect> {
 #[rustfmt::skip]
 fn window_texture() -> Vec<Vec<u16>> {
     vec![
-        vec![4 ,  5,  5,  5,  6],
-        vec![16, 17, 17, 17, 18],
-        vec![16, 17, 17, 17, 18],
-        vec![16, 17, 17, 17, 18],
-        vec![16, 17, 17, 17, 18],
-        vec![16, 17, 17, 17, 18],
-        vec![16, 17, 17, 17, 18],
-        vec![16, 17, 17, 17, 18],
-        vec![28, 29, 29, 29, 30],
+        vec![7 ,  8,  8,  8,  9],
+        vec![19, 20, 20, 20, 21],
+        vec![19, 20, 20, 20, 21],
+        vec![19, 20, 20, 20, 21],
+        vec![19, 20, 20, 20, 21],
+        vec![19, 20, 20, 20, 21],
+        vec![19, 20, 20, 20, 21],
+        vec![19, 20, 20, 20, 21],
+        vec![31, 32, 32, 32, 33],
     ]
 }
 

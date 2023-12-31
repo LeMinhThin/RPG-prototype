@@ -7,6 +7,7 @@ use crate::logic::{Timer, KNOCKBACK, STANDARD_SQUARE, TILE_SIZE};
 use crate::monsters::*;
 use crate::npc::NPC;
 use crate::player::PIXEL;
+use crate::ui::items::*;
 use spawner::*;
 
 pub const RATIO: f32 = STANDARD_SQUARE / TERRAIN_TILE_SIZE;
@@ -20,6 +21,7 @@ pub struct Area {
     pub npcs: Vec<NPC>,
     pub projectiles: Vec<Projectile>,
     pub draw_mesh: Meshes,
+    pub items: Vec<ItemEntity>,
 }
 
 pub struct Projectile {
@@ -154,6 +156,7 @@ impl Area {
             Area {
                 enemies: vec![],
                 projectiles: vec![],
+                items: vec![],
                 spawners,
                 draw_mesh,
                 gates,
@@ -166,8 +169,16 @@ impl Area {
     pub fn clean_up(&mut self) {
         let projectiles = &mut self.projectiles;
         let mobs = &mut self.enemies;
+        for mob in mobs.iter() {
+            let mob = mob.get();
+            if mob.get_props().health <= 0. {
+                self.items.push(ItemEntity::new(Item::slime(), mob.pos()))
+            }
+        }
+        let items = &mut self.items;
         mobs.retain(|mob| mob.get().get_props().health > 0.);
         projectiles.retain(|proj| !proj.should_despawn && !proj.life_time.is_done());
+        items.retain(|item| !item.should_delete);
     }
 }
 impl Gate {
@@ -188,7 +199,7 @@ impl Gate {
 // which is shorter than just writing out .unwrap()
 fn make_render_mesh(objects: &Value) -> Option<Vec<Vec<u16>>> {
     // Ah yes, functional programming
-    let parsed = &objects["data"].as_array()?;
+    let parsed = objects["data"].as_array()?;
     let lenght = objects["width"].as_u64()? as usize;
 
     let temp: Vec<u16> = parsed

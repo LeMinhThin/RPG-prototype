@@ -1,8 +1,6 @@
-use macroquad::prelude::*;
-
-use crate::npc::NPC;
 use crate::player::Collidable;
 use crate::{logic::*, map::Area};
+use macroquad::prelude::*;
 
 const CAM_SPEED: f32 = 1. / 10.;
 
@@ -94,22 +92,32 @@ impl Game {
         };
         set_camera(&camera);
 
-        let current_map = &self.maps[&self.current_map];
-        let player_pos = self.player.pos();
-
         self.draw_terrain();
-        self.draw_monsters(current_map);
+        self.draw_monsters();
         self.draw_player();
         self.draw_projectiles();
         self.draw_decorations();
-        self.draw_npcs(current_map, player_pos);
+        self.draw_npcs();
+        self.draw_items();
         self.hud();
 
         match &self.state {
             GameState::Normal => (),
             GameState::GUI => self.show_inv(),
-            GameState::Talking(..) => self.draw_dialog(&current_map.npcs),
+            GameState::Talking(..) => self.draw_dialog(),
             GameState::Transition(timer, _) => draw_transition(self.cam_box(), timer),
+        }
+    }
+
+    fn draw_items(&self) {
+        let items = &self.maps[&self.current_map].items;
+        if is_key_pressed(KeyCode::F3) {
+            info!("item: {:?}", items);
+            info!("player pos: {}", self.player.pos())
+        }
+
+        for item in items {
+            item.draw(&self.textures["ui"])
         }
     }
 
@@ -121,7 +129,8 @@ impl Game {
         }
     }
 
-    fn draw_monsters(&self, map: &Area) {
+    fn draw_monsters(&self) {
+        let map = &self.maps[&self.current_map];
         for monster in map.enemies.iter() {
             monster.get().draw(&self.textures)
         }
@@ -162,7 +171,9 @@ impl Game {
         }
     }
 
-    fn draw_npcs(&self, map: &Area, player_pos: Vec2) {
+    fn draw_npcs(&self) {
+        let player_pos = self.player.pos();
+        let map = &self.maps[&self.current_map];
         let npcs = &map.npcs;
 
         for npc in npcs {
@@ -174,13 +185,14 @@ impl Game {
         }
     }
 
-    fn draw_dialog(&self, npc: &[NPC]) {
+    fn draw_dialog(&self) {
         let (line, char) = match self.state {
             GameState::Talking(line, char) => (line, char),
             _ => return,
         };
 
-        let npc = npc.iter().find(|npc| npc.is_talking).unwrap();
+        let npcs = &self.maps[&self.current_map].npcs;
+        let npc = npcs.iter().find(|npc| npc.is_talking).unwrap();
         let text = &npc.dialogs[line][..char];
         let diag_box = self.diag_box();
         self.draw_diag_box();

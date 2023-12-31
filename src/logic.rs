@@ -206,6 +206,15 @@ impl Game {
         for spawner in current_map.spawners.iter_mut() {
             spawner.tick(&mut current_map.enemies)
         }
+        for item in current_map.items.iter_mut() {
+            if !item.hitbox.overlaps(&self.player.hitbox()) {
+                continue;
+            }
+            if let Some(slot) = self.player.inventory.has_empty_slot() {
+                self.player.inventory.content[slot] = Some(item.item.clone());
+                item.should_delete = true
+            }
+        }
 
         current_map.clean_up();
     }
