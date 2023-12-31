@@ -5,9 +5,10 @@ use macroquad::prelude::*;
 use serde_json::Value;
 use std::fs::read_to_string;
 use std::path::PathBuf;
+use std::rc::Rc;
 
 pub struct NPC {
-    pub name: String,
+    pub name: Rc<str>,
     pub dialogs: Vec<String>,
     pub hitbox: Rect,
     pub anim: AnimatedSprite,

@@ -20,8 +20,8 @@ pub struct Area {
     pub spawners: Vec<Spawner>,
     pub npcs: Vec<NPC>,
     pub projectiles: Vec<Projectile>,
-    pub draw_mesh: Meshes,
     pub items: Vec<ItemEntity>,
+    pub draw_mesh: Meshes,
 }
 
 pub struct Projectile {
@@ -117,7 +117,7 @@ impl Projectile {
 }
 
 impl Area {
-    pub fn from(json_string: &str) -> (String, Self) {
+    pub fn from(json_string: &str) -> (Rc<str>, Self) {
         let parsed: Value = serde_json::from_str(json_string).unwrap();
         let name = parsed["class"].as_str().unwrap();
 
@@ -133,7 +133,7 @@ impl Area {
                     draw_mesh.terrain = make_render_mesh(layer).unwrap();
                 }
                 "walls" => {
-                    walls = make_walls(layer).unwrap();
+                    walls = make_walls(layer);
                 }
                 "decorations" => {
                     draw_mesh.decorations = make_render_mesh(layer).unwrap();
@@ -152,7 +152,7 @@ impl Area {
         }
 
         (
-            name.to_string(),
+            name.into(),
             Area {
                 enemies: vec![],
                 projectiles: vec![],
@@ -212,20 +212,32 @@ fn make_render_mesh(objects: &Value) -> Option<Vec<Vec<u16>>> {
     Some(return_vec)
 }
 
-fn make_walls(objects: &Value) -> Option<Vec<Rect>> {
-    let raw_data = objects["objects"].as_array()?;
+fn make_walls(objects: &Value) -> Vec<Rect> {
+    let raw_data;
+    // Some thing is telling me I can do better than this
+    if let Some(value) = objects.get("objects") {
+        if let Some(arr) = value.as_array() {
+            raw_data = arr
+        } else {
+            error!("make_walls [ERROR] field object is not of type array");
+            return vec![];
+        }
+    } else {
+        error!("make_walls [ERROR] field objects does not exist");
+        return vec![];
+    }
+
     let mut walls: Vec<Rect> = vec![];
     for wall in raw_data {
-        let x = wall["x"].as_f64()? as f32;
-        let y = wall["y"].as_f64()? as f32;
-        let w = wall["width"].as_f64()? as f32;
-        let h = wall["height"].as_f64()? as f32;
+        let mut wall_cons = Rect::new(0., 0., 0., 0.);
+        wall_cons.x = get_pos(wall, "x");
+        wall_cons.y = get_pos(wall, "y");
+        wall_cons.w = get_pos(wall, "width");
+        wall_cons.h = get_pos(wall, "height");
 
-        let wall = Rect::new(x * RATIO, y * RATIO, w * RATIO, h * RATIO);
-
-        walls.push(wall);
+        walls.push(wall_cons);
     }
-    Some(walls)
+    walls
 }
 
 fn make_spawners(objects: &Value) -> Option<Vec<Spawner>> {
@@ -271,7 +283,7 @@ fn get_props(objects: &Value) -> Option<(f32, f32, MobType, u32)> {
             "spawn_radius" => {
                 spawn_radius = prop["value"].as_f64()? as f32 * STANDARD_SQUARE;
             }
-            x => panic!("you forgot to account for {x}"),
+            x => warn!("[WARN] unrecognised field name {x}"),
         }
     }
 
@@ -282,7 +294,10 @@ fn what_kind(name: &str) -> MobType {
     match name {
         "slime" => MobType::Slime,
         "mushroom" => MobType::Mushroom,
-        x => panic!("you forgot to account for {x}"),
+        x => {
+            warn!("[WARN] unrecognised mob type {x}, falling back to slime");
+            MobType::Slime
+        }
     }
 }
 
@@ -291,10 +306,10 @@ fn make_gates(objects: &Value) -> Option<Vec<Gate>> {
 
     let props = objects["objects"].as_array()?;
     for gate in props {
-        let x = gate["x"].as_f64()? as f32 * RATIO;
-        let y = gate["y"].as_f64()? as f32 * RATIO;
-        let w = gate["width"].as_f64()? as f32 * RATIO;
-        let h = gate["height"].as_f64()? as f32 * RATIO;
+        let x = get_pos(gate, "x") * RATIO;
+        let y = get_pos(gate, "y") * RATIO;
+        let w = get_pos(gate, "width") * RATIO;
+        let h = get_pos(gate, "height") * RATIO;
 
         let command = get_command(&gate["properties"]).unwrap();
 
@@ -328,11 +343,9 @@ fn make_npcs(objects: &Value) -> Option<Vec<NPC>> {
         let mut diag_path = "";
         let name = item["name"].as_str()?;
 
-        let x = item["x"].as_f64()? as f32;
-        let y = item["y"].as_f64()? as f32;
-        let w = item["width"].as_f64()? as f32;
-        let h = item["height"].as_f64()? as f32;
-        let hitbox = Rect::new(x * RATIO, y * RATIO, w * RATIO, h * RATIO);
+        let x = get_pos(item, "x");
+        let y = get_pos(item, "y");
+        let hitbox = Rect::new(x * RATIO, y * RATIO, 100., 100.);
 
         let props = item["properties"].as_array()?;
 
@@ -346,4 +359,23 @@ fn make_npcs(objects: &Value) -> Option<Vec<NPC>> {
     }
 
     Some(npcs)
+}
+
+fn get_pos(table: &Value, value: &str) -> f32 {
+    if let Some(result) = table.get(value) {
+        if let Some(x) = result.as_f64() {
+            return x as f32;
+        } else {
+            error!(
+                "fn get_pos [WARN] Field {} isn't of type float, falling back to 0 as default",
+                value
+            )
+        }
+    } else {
+        error!(
+            "fn get_pos [WARN] Field {} doesn't exist, falling back to 0 as default",
+            value
+        )
+    }
+    0.
 }

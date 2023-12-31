@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::fs::{read_dir, read_to_string};
 use std::path::PathBuf;
+use std::rc::Rc;
 
 use crate::map::*;
 use crate::monsters::Monster;
@@ -13,13 +14,13 @@ pub const SCALE_FACTOR: f32 = 6.;
 pub const STANDARD_SQUARE: f32 = TILE_SIZE * SCALE_FACTOR;
 pub const KNOCKBACK: f32 = 5000.;
 
-pub type Textures = HashMap<String, Texture2D>;
-pub type Maps = HashMap<String, Area>;
+pub type Textures = HashMap<Rc<str>, Texture2D>;
+pub type Maps = HashMap<Rc<str>, Area>;
 
 pub struct Game {
     pub player: Player,
     pub maps: Maps,
-    pub current_map: String,
+    pub current_map: Rc<str>,
     pub cam_offset: Vec2,
     pub textures: Textures,
     pub state: GameState,
@@ -65,7 +66,7 @@ impl Game {
     pub fn new(textures: Textures, font: Font) -> Self {
         let mut area: Maps = HashMap::new();
         // TODO unhardcode this value
-        let current_map = "Village".to_string();
+        let current_map = "Village".into();
 
         let map_list = get_path("assets/maps/", ".json");
         for map in map_list {
@@ -328,7 +329,7 @@ impl Game {
         self.player.props.pos.x = pos_x;
         self.player.props.pos.y = pos_y;
 
-        self.current_map = commands[0].to_string();
+        self.current_map = commands[0].into();
     }
 }
 

@@ -1,3 +1,4 @@
+use std::rc::Rc;
 use std::{collections::HashMap, path::PathBuf};
 
 use logic::*;
@@ -38,8 +39,8 @@ async fn main() {
     }
 }
 
-async fn load_textures() -> HashMap<String, Texture2D> {
-    let mut textures: HashMap<String, Texture2D> = HashMap::new();
+async fn load_textures() -> HashMap<Rc<str>, Texture2D> {
+    let mut textures: HashMap<Rc<str>, Texture2D> = HashMap::new();
     let paths = get_path("res/", ".png");
     for path in paths {
         let texture = load_texture(path.to_str().unwrap()).await.unwrap();
@@ -54,7 +55,7 @@ async fn load_font() -> Font {
     load_ttf_font("assets/font/Monocraft.otf").await.unwrap()
 }
 
-fn to_name(path: &PathBuf) -> String {
+fn to_name(path: &PathBuf) -> Rc<str> {
     path.file_name()
         .unwrap()
         .to_str()
@@ -62,5 +63,5 @@ fn to_name(path: &PathBuf) -> String {
         .split_once(".")
         .unwrap()
         .0
-        .to_string()
+        .into()
 }
