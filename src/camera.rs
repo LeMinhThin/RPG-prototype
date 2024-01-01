@@ -1,6 +1,7 @@
 use crate::player::Collidable;
 use crate::{logic::*, map::Area};
 use macroquad::prelude::*;
+use textwrap::Options;
 
 const CAM_SPEED: f32 = 1. / 10.;
 
@@ -130,13 +131,16 @@ impl Game {
         for monster in map.enemies.iter() {
             monster.get().draw(&self.textures)
         }
+        for wall in map.walls.iter() {
+            wall.draw()
+        }
     }
 
     fn draw_terrain(&self) {
         let screen = self.cam_box().shift(STANDARD_SQUARE, STANDARD_SQUARE);
         let mesh = &self.maps[&self.current_map].draw_mesh.terrain;
         let texture = &self.textures["terrain"];
-        draw_tiles(mesh, vec2(0., 0.), texture, Some(screen), TERRAIN_TILE_SIZE)
+        draw_tiles(mesh, vec2(0., 0.), texture, Some(screen), TERRAIN_TILE_SIZE);
     }
 
     fn draw_decorations(&self) {
@@ -288,7 +292,9 @@ fn gen_draw_params(source_id: &u16, tile_size: f32) -> DrawTextureParams {
 }
 
 pub fn render_text(diag_box: Rect, content: &str, params: TextParams) {
-    let lines = textwrap::wrap(content, 37);
+    let width = (diag_box.w / params.font_size as f32) * 1.5;
+    let max_width = Options::new(width as usize);
+    let lines = textwrap::wrap(content, max_width);
     let mut offset = 0.;
     for line in lines {
         offset += params.font_size as f32 + 20.;

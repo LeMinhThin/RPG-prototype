@@ -1,7 +1,9 @@
 use crate::logic::*;
 use crate::player::*;
+use crate::ui::items::Item;
 use macroquad::experimental::animation::AnimatedSprite;
 use macroquad::prelude::*;
+use macroquad::rand::rand;
 
 use super::{spawner::MobType, Entity, IsAMonster};
 
@@ -93,6 +95,14 @@ impl IsAMonster for Mushroom {
 
     fn get_type(&self) -> MobType {
         MobType::Mushroom
+    }
+
+    fn loot(&self) -> Option<Item> {
+        let count = (rand() % 2) as u8;
+        if count == 0 {
+            return None;
+        }
+        Some(Item::mushroom(count))
     }
 }
 

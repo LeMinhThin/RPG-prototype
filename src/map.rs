@@ -118,6 +118,9 @@ impl Projectile {
 
 impl Area {
     pub fn from(json_string: &str) -> (Rc<str>, Self) {
+        // Now I could go ahead and handle all of these potential errors like a good developer but
+        // instead, I chose to ignore it. Now that the code is a tangled mess, it is quite
+        // difficult to handle all of the errors
         let parsed: Value = serde_json::from_str(json_string).unwrap();
         let name = parsed["class"].as_str().unwrap();
 
@@ -169,10 +172,15 @@ impl Area {
     pub fn clean_up(&mut self) {
         let projectiles = &mut self.projectiles;
         let mobs = &mut self.enemies;
+        // Spawn loot for every dying mob
         for mob in mobs.iter() {
             let mob = mob.get();
-            if mob.get_props().health <= 0. {
-                self.items.push(ItemEntity::new(Item::slime(1), mob.pos()))
+            if mob.get_props().health > 0. {
+                continue;
+            }
+            let loot = mob.loot();
+            if let Some(loot) = loot {
+                self.items.push(ItemEntity::new(loot, mob.pos()))
             }
         }
         let items = &mut self.items;
@@ -230,10 +238,10 @@ fn make_walls(objects: &Value) -> Vec<Rect> {
     let mut walls: Vec<Rect> = vec![];
     for wall in raw_data {
         let mut wall_cons = Rect::new(0., 0., 0., 0.);
-        wall_cons.x = get_pos(wall, "x");
-        wall_cons.y = get_pos(wall, "y");
-        wall_cons.w = get_pos(wall, "width");
-        wall_cons.h = get_pos(wall, "height");
+        wall_cons.x = get_pos(wall, "x", "make_walls") * RATIO;
+        wall_cons.y = get_pos(wall, "y", "make_walls") * RATIO;
+        wall_cons.w = get_pos(wall, "width", "make_walls") * RATIO;
+        wall_cons.h = get_pos(wall, "height", "make_walls") * RATIO;
 
         walls.push(wall_cons);
     }
@@ -306,10 +314,10 @@ fn make_gates(objects: &Value) -> Option<Vec<Gate>> {
 
     let props = objects["objects"].as_array()?;
     for gate in props {
-        let x = get_pos(gate, "x") * RATIO;
-        let y = get_pos(gate, "y") * RATIO;
-        let w = get_pos(gate, "width") * RATIO;
-        let h = get_pos(gate, "height") * RATIO;
+        let x = get_pos(gate, "x", "make_gates") * RATIO;
+        let y = get_pos(gate, "y", "make_gates") * RATIO;
+        let w = get_pos(gate, "width", "make_gates") * RATIO;
+        let h = get_pos(gate, "height", "make_gates") * RATIO;
 
         let command = get_command(&gate["properties"]).unwrap();
 
@@ -343,8 +351,8 @@ fn make_npcs(objects: &Value) -> Option<Vec<NPC>> {
         let mut diag_path = "";
         let name = item["name"].as_str()?;
 
-        let x = get_pos(item, "x");
-        let y = get_pos(item, "y");
+        let x = get_pos(item, "x", "make_npcs");
+        let y = get_pos(item, "y", "make npcs");
         let hitbox = Rect::new(x * RATIO, y * RATIO, 100., 100.);
 
         let props = item["properties"].as_array()?;
@@ -361,21 +369,20 @@ fn make_npcs(objects: &Value) -> Option<Vec<NPC>> {
     Some(npcs)
 }
 
-fn get_pos(table: &Value, value: &str) -> f32 {
-    if let Some(result) = table.get(value) {
-        if let Some(x) = result.as_f64() {
-            return x as f32;
-        } else {
-            error!(
-                "fn get_pos [WARN] Field {} isn't of type float, falling back to 0 as default",
-                value
-            )
+fn get_pos(table: &Value, value: &str, func: &str) -> f32 {
+    let result = match table.get(value) {
+        Some(value) => value,
+        None => {
+            warn!("{func} [WARN] Field {value} does not exist, falling back to 0 as default");
+            return 0.;
         }
-    } else {
-        error!(
-            "fn get_pos [WARN] Field {} doesn't exist, falling back to 0 as default",
-            value
-        )
-    }
-    0.
+    };
+    let value = match result.as_f64() {
+        Some(float) => float as f32,
+        None => {
+            warn!("{func} [WARN] Field {value} is not of type float, falling back to 0 as default");
+            return 0.;
+        }
+    };
+    value
 }

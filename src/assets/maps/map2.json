@@ -259,16 +259,6 @@
          "name":"Walls",
          "objects":[
                 {
-                 "height":14.7272727272727,
-                 "id":1,
-                 "name":"",
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "x":360.363636363636,
-                 "y":64
-                }, 
-                {
                  "height":59.9982244318182,
                  "id":2,
                  "name":"",

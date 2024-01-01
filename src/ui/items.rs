@@ -30,6 +30,16 @@ impl Item {
         }
     }
 
+    pub fn mushroom(count: u8) -> Self {
+        Item {
+            name: "Mushroom".into(),
+            value: 5,
+            description: "Contrary to popular belief, eating this will not make you grow bigger"
+                .into(),
+            count,
+        }
+    }
+
     pub fn name(&self) -> &str {
         &self.name
     }

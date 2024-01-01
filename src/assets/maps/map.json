@@ -111,8 +111,8 @@
          "name":"NPCs",
          "objects":[
                 {
-                 "height":6.25,
-                 "id":41,
+                 "height":9.25,
+                 "id":96,
                  "name":"player",
                  "properties":[
                         {
@@ -123,9 +123,9 @@
                  "rotation":0,
                  "type":"",
                  "visible":true,
-                 "width":9.875,
-                 "x":47.7069444444447,
-                 "y":106.675
+                 "width":16,
+                 "x":64,
+                 "y":86.375
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -202,7 +202,7 @@
                  "visible":true,
                  "width":0,
                  "x":640,
-                 "y":60.25
+                 "y":64
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -591,7 +591,7 @@
          "y":0
         }],
  "nextlayerid":9,
- "nextobjectid":84,
+ "nextobjectid":97,
  "orientation":"orthogonal",
  "properties":[
         {

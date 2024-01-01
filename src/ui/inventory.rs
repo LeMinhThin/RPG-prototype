@@ -109,7 +109,7 @@ impl Game {
         let mut diag_rect = Rect::new(
             mouse_pos.x + 8. * PIXEL,
             mouse_pos.y,
-            3. * STANDARD_SQUARE,
+            4. * STANDARD_SQUARE,
             2. * STANDARD_SQUARE,
         );
         for slot in player_inv.slot_hitboxes {
@@ -134,7 +134,7 @@ impl Game {
                     ..Default::default()
                 };
                 render_text(diag_rect, name, param.clone());
-                param.font_size = 32;
+                param.font_size = 28;
                 let desc = item.description();
                 diag_rect.y += 10. * PIXEL;
                 diag_rect.x -= 4. * PIXEL;
@@ -157,16 +157,19 @@ impl Game {
                 index += 1;
                 continue;
             }
-            if let Some(item) = &player_inv.holding {
+            // If an item is being held by the cursor
+            if let Some(holding) = player_inv.holding.as_mut() {
                 let slot = player_inv.content[index].as_mut();
                 if let Some(slot) = slot {
-                    if slot.is_same_type(item) {
-                        slot.count += item.count;
+                    if slot.is_same_type(holding) {
+                        slot.count += holding.count;
                         player_inv.holding = None;
                         return;
                     }
+                    (*slot, *holding) = (holding.clone(), slot.clone());
+                    return;
                 }
-                player_inv.content[index] = Some(item.clone());
+                player_inv.content[index] = Some(holding.clone());
                 player_inv.holding = None;
                 return;
             } else {
@@ -311,6 +314,7 @@ fn param() -> DrawTextureParams {
 pub fn source_rect(item: Option<&Item>) -> Option<Rect> {
     return match item?.name() {
         "Slime" => Some(Rect::new(0., TILE_SIZE * 2., TILE_SIZE, TILE_SIZE)),
+        "Mushroom" => Some(Rect::new(TILE_SIZE, TILE_SIZE * 2., TILE_SIZE, TILE_SIZE)),
         _ => None,
     };
 }
@@ -333,7 +337,7 @@ fn window_texture() -> Vec<Vec<u16>> {
 #[rustfmt::skip]
 fn desc_diag() -> Vec<Vec<u16>> {
     vec![
-        vec![7 ,  8,  9],
-        vec![31, 32, 33],
+        vec![7 ,  8, 8,  9],
+        vec![31, 32, 32, 33],
     ]
 }

@@ -1,3 +1,4 @@
+use crate::ui::items::Item;
 use crate::{logic::*, player::*};
 use macroquad::prelude::*;
 use spawner::MobType;
@@ -21,6 +22,7 @@ impl Monster {
 }
 
 pub trait IsAMonster {
+    fn loot(&self) -> Option<Item>;
     fn tick(&mut self, player: &mut Player, walls: &[Rect]);
     fn tick_anim(&mut self);
     fn damage_player(&self, player: &mut Player);
