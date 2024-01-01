@@ -1,4 +1,3 @@
-use crate::camera::Utils;
 use crate::logic::*;
 use macroquad::experimental::animation::AnimatedSprite;
 use macroquad::prelude::*;
@@ -41,7 +40,6 @@ impl NPC {
             ..Default::default()
         };
         let pos = npc_draw_pos(self.hitbox);
-        self.hitbox.draw();
 
         draw_texture_ex(texture, pos.x, pos.y, WHITE, draw_param)
     }

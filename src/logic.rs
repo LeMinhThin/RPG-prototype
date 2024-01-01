@@ -60,6 +60,10 @@ impl Timer {
     pub fn repeat(&mut self) {
         self.time = self.duration
     }
+
+    pub fn elapsed(&self) -> f32 {
+        self.duration - self.time
+    }
 }
 
 impl Game {

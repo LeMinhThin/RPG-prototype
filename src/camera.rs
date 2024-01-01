@@ -131,9 +131,6 @@ impl Game {
         for monster in map.enemies.iter() {
             monster.get().draw(&self.textures)
         }
-        for wall in map.walls.iter() {
-            wall.draw()
-        }
     }
 
     fn draw_terrain(&self) {
@@ -248,24 +245,7 @@ pub trait Utils {
 
 impl Utils for Rect {
     fn draw(&self) {
-        draw_line(self.left(), self.top(), self.left(), self.bottom(), 3., RED);
-        draw_line(self.left(), self.top(), self.right(), self.top(), 3., RED);
-        draw_line(
-            self.left(),
-            self.bottom(),
-            self.right(),
-            self.bottom(),
-            3.,
-            RED,
-        );
-        draw_line(
-            self.right(),
-            self.top(),
-            self.right(),
-            self.bottom(),
-            3.,
-            RED,
-        )
+        draw_rectangle_lines(self.x, self.y, self.w, self.h, 10., RED)
     }
 
     fn shift(&self, x: f32, y: f32) -> Self {

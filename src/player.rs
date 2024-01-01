@@ -77,7 +77,7 @@ pub trait Collidable {
 impl Collidable for Player {
     fn hitbox(&self) -> Rect {
         Rect {
-            x: self.props.pos.x + 10. * PIXEL,
+            x: self.props.pos.x + 6. * PIXEL,
             y: self.props.pos.y + 16. * PIXEL,
             w: 11. * PIXEL,
             h: 6. * PIXEL,
@@ -252,95 +252,33 @@ impl Player {
         self.props.animation.set_animation(row + extra_row)
     }
 
-    fn get_attack_cooldown(&self) -> f32 {
-        match self.state {
-            PlayerState::Attacking(timer) => timer.time,
-            _ => panic!("called get_attack_cooldown while not in attacking state"),
-        }
-    }
+    fn draw_weapon(&self, texture: &Texture2D, mouse_pos: Vec2) {
+        if let PlayerState::Attacking(timer) = self.state {
+            let angular_vel = PI / timer.duration;
+            let rotation =
+                timer.elapsed() * angular_vel - angle_between(mouse_pos, self.pos()) + PI / 2.;
+            let dest_size = Some(vec2(STANDARD_SQUARE, STANDARD_SQUARE));
+            let source = Some(Rect::new(
+                TILE_SIZE * 0.,
+                TILE_SIZE * 8.,
+                TILE_SIZE,
+                TILE_SIZE,
+            ));
 
-    fn get_weapon_angle(&self) -> f32 {
-        let cooldown = self.get_attack_cooldown();
-        let mut angle = self.current_angle() + PI;
-
-        let elapsed_time = self.held_weapon.cooldown - cooldown;
-        if elapsed_time < 3. * get_frame_time() {
-            angle += PI
-        }
-
-        angle
-    }
-
-    // This is so unbelievably messy that I don't even want to begin to explain
-    fn get_draw_pos(&self) -> Vec2 {
-        let elapsed_time = self.held_weapon.cooldown - self.get_attack_cooldown();
-        let player_hitbox = self.abs_hitbox();
-
-        #[rustfmt::skip]
-        let up    = vec2(player_hitbox.left() - 4. * PIXEL, player_hitbox.top() - STANDARD_SQUARE);
-        let right = vec2(player_hitbox.right(), player_hitbox.top());
-        let left = vec2(player_hitbox.left() - STANDARD_SQUARE, player_hitbox.top());
-        let down = vec2(player_hitbox.left() - 4. * PIXEL, player_hitbox.bottom());
-
-        if elapsed_time < 3. * get_frame_time() {
-            return match self.facing {
-                Orientation::Up => left,
-                Orientation::Left => down,
-                Orientation::Down => right,
-                Orientation::Right => up,
+            let params = DrawTextureParams {
+                dest_size,
+                source,
+                rotation: rotation + PI / 2.,
+                ..Default::default()
             };
-        }
-        match self.facing {
-            Orientation::Up => right,
-            Orientation::Left => up,
-            Orientation::Down => left,
-            Orientation::Right => down,
-        }
-    }
 
-    fn current_angle(&self) -> f32 {
-        match self.facing {
-            Orientation::Up => -PI / 2.,
-            Orientation::Left => PI,
-            Orientation::Down => PI / 2.,
-            Orientation::Right => 0.,
-        }
-    }
+            let pos = self.pos();
+            let center = vec2(
+                pos.x + (20. * PIXEL * rotation.cos()),
+                pos.y + (20. * PIXEL * rotation.sin()),
+            ) - STANDARD_SQUARE / 2.;
 
-    // When I die, delete all of these so people wouldn't know I was the author
-    fn slash_pos(&self) -> Vec2 {
-        let player_hitbox = self.abs_hitbox();
-        let player_center = player_hitbox.center();
-
-        match self.facing {
-            Orientation::Up => vec2(
-                player_center.x - STANDARD_SQUARE,
-                player_hitbox.top() - STANDARD_SQUARE + 6. * PIXEL,
-            ),
-            Orientation::Left => vec2(
-                player_hitbox.left() - STANDARD_SQUARE - player_hitbox.w,
-                player_center.y - STANDARD_SQUARE / 2.,
-            ),
-            Orientation::Down => vec2(
-                player_center.x - STANDARD_SQUARE,
-                player_hitbox.bottom() - 4. * PIXEL,
-            ),
-            Orientation::Right => vec2(
-                player_hitbox.right() - player_hitbox.w,
-                player_center.y - STANDARD_SQUARE / 2.,
-            ),
-        }
-    }
-
-    // This method only exist so that I won't have to rewrite the already confusing enough
-    // attacking code
-    fn abs_hitbox(&self) -> Rect {
-        let player_pos = &self.props;
-        Rect {
-            x: player_pos.pos.x + 9. * PIXEL,
-            y: player_pos.pos.y + 3. * PIXEL,
-            w: 13. * PIXEL,
-            h: 19. * PIXEL,
+            draw_texture_ex(texture, center.x, center.y, WHITE, params)
         }
     }
 
@@ -364,9 +302,8 @@ impl Player {
             WHITE,
             draw_param,
         );
-
         match self.state {
-            PlayerState::Attacking(_) => self.draw_weapon(texture),
+            PlayerState::Attacking(_) => self.draw_weapon(texture, mouse_pos),
             PlayerState::Throwing(time) => {
                 self.draw_throw_indicator(mouse_pos, texture, time);
                 self.draw_held_proj(texture, mouse_pos)
@@ -378,8 +315,8 @@ impl Player {
     fn projectile_pos(&self, mouse_pos: Vec2) -> Vec2 {
         let pos = self.pos();
         let angle = angle_between(pos, mouse_pos);
-        let front = vec2(pos.x - PIXEL, pos.y - 14. * PIXEL);
-        let back = vec2(pos.x - 21. * PIXEL, pos.y - 14. * PIXEL);
+        let front = vec2(pos.x - 6. * PIXEL, pos.y - 14. * PIXEL);
+        let back = vec2(pos.x - 28. * PIXEL, pos.y - 14. * PIXEL);
         if (angle < PI / 2. && angle > 0.) || (angle > -PI / 2. && angle < 0.) {
             return front;
         } else {
@@ -417,43 +354,6 @@ impl Player {
             ..Default::default()
         };
         draw_texture_ex(texture, pos.x, pos.y, WHITE, params)
-    }
-
-    fn draw_weapon(&self, texture: &Texture2D) {
-        // Oh my god this is such a spaghetti mess
-        let rotation = self.get_weapon_angle();
-        let draw_pos = self.get_draw_pos();
-        let slash_pos = self.slash_pos();
-        let draw_param = DrawTextureParams {
-            source: Some(Rect::new(
-                TILE_SIZE * 0.,
-                TILE_SIZE * 8.,
-                TILE_SIZE,
-                TILE_SIZE,
-            )),
-            rotation,
-            dest_size: Some(Vec2 {
-                x: STANDARD_SQUARE,
-                y: STANDARD_SQUARE,
-            }),
-            ..Default::default()
-        };
-        draw_texture_ex(&texture, draw_pos.x, draw_pos.y, WHITE, draw_param);
-        // draw slash sprite
-
-        let dest_size = Some(vec2(STANDARD_SQUARE * 2., STANDARD_SQUARE));
-        let draw_param = DrawTextureParams {
-            source: Some(Rect::new(
-                TILE_SIZE * 7.,
-                TILE_SIZE * 0.,
-                TILE_SIZE * 2.,
-                TILE_SIZE,
-            )),
-            rotation: self.current_angle() + PI / 2.,
-            dest_size,
-            ..Default::default()
-        };
-        draw_texture_ex(&texture, slash_pos.x, slash_pos.y, WHITE, draw_param);
     }
 }
 
