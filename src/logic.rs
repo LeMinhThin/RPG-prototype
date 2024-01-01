@@ -124,9 +124,13 @@ impl Game {
                     self.state = GameState::Talking(line, char)
                 }
                 GameState::Normal => {
-                    self.player.face(self.get_mouse_pos());
+                    if let PlayerState::Attacking(..) = self.player.state {
+                        return;
+                    }
+                    let mouse_pos = self.get_mouse_pos();
+                    self.player.face(mouse_pos);
                     self.damage_monster();
-                    self.player.attack()
+                    self.player.attack(mouse_pos)
                 }
                 _ => return,
             }

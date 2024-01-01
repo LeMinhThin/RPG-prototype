@@ -18,7 +18,7 @@ pub enum PlayerState {
     Transition,
     Normal,
     Throwing(f32),
-    Attacking(Timer),
+    Attacking(Timer, Vec2),
 }
 #[derive(Clone)]
 pub struct Player {
@@ -186,7 +186,7 @@ impl Player {
 
     pub fn tick(&mut self, mouse_pos: Vec2) {
         self.invul_time.tick();
-        self.state_management();
+        self.state_management(mouse_pos);
 
         if self.state == PlayerState::Normal {
             self.new_pos();
@@ -206,18 +206,18 @@ impl Player {
         Projectile::new(self.projectile_pos(mouse_pos), vec)
     }
 
-    fn state_management(&mut self) {
-        if let PlayerState::Attacking(mut timer) = self.state {
+    fn state_management(&mut self, mouse_pos: Vec2) {
+        if let PlayerState::Attacking(mut timer, mouse_pos) = self.state {
             timer.tick();
             self.state = match timer.is_done() {
                 true => PlayerState::Normal,
-                false => PlayerState::Attacking(timer),
+                false => PlayerState::Attacking(timer, mouse_pos),
             };
             self.change_anim(false);
             return;
         }
         if is_key_pressed(KeyCode::Space) {
-            self.attack();
+            self.attack(mouse_pos);
         }
         if is_mouse_button_pressed(MouseButton::Right) {
             self.state = PlayerState::Throwing(0.)
@@ -232,8 +232,8 @@ impl Player {
         self.facing = should_face(angle);
     }
 
-    pub fn attack(&mut self) {
-        self.state = PlayerState::Attacking(Timer::new(self.held_weapon.cooldown))
+    pub fn attack(&mut self, mouse_pos: Vec2) {
+        self.state = PlayerState::Attacking(Timer::new(self.held_weapon.cooldown), mouse_pos)
     }
 
     pub fn change_anim(&mut self, is_moving: bool) {
@@ -252,8 +252,8 @@ impl Player {
         self.props.animation.set_animation(row + extra_row)
     }
 
-    fn draw_weapon(&self, texture: &Texture2D, mouse_pos: Vec2) {
-        if let PlayerState::Attacking(timer) = self.state {
+    fn draw_weapon(&self, texture: &Texture2D) {
+        if let PlayerState::Attacking(timer, mouse_pos) = self.state {
             let angular_vel = PI / timer.duration;
             let rotation =
                 timer.elapsed() * angular_vel - angle_between(mouse_pos, self.pos()) + PI / 2.;
@@ -303,7 +303,7 @@ impl Player {
             draw_param,
         );
         match self.state {
-            PlayerState::Attacking(_) => self.draw_weapon(texture, mouse_pos),
+            PlayerState::Attacking(..) => self.draw_weapon(texture),
             PlayerState::Throwing(time) => {
                 self.draw_throw_indicator(mouse_pos, texture, time);
                 self.draw_held_proj(texture, mouse_pos)
