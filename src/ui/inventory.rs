@@ -3,7 +3,7 @@ use crate::logic::{Game, STANDARD_SQUARE, TILE_SIZE};
 use crate::player::{Player, PIXEL};
 use macroquad::prelude::*;
 
-use super::items::Item;
+use super::items::{Item, ItemType};
 
 const ROW: u8 = 3;
 const COL: f32 = 4.;
@@ -11,30 +11,18 @@ const SIZE: f32 = 140.;
 
 #[derive(Clone)]
 pub struct Inventory {
-    pub content: [Option<Item>; 12],
-    slot_hitboxes: [Rect; 12],
+    pub content: [Option<Item>; 13],
+    slot_hitboxes: [Rect; 13],
     holding: Option<Item>,
 }
 
 impl Inventory {
     pub fn empty() -> Self {
+        #[rustfmt::skip]
+        let content = [Some(Item::rusty_sword()), None, None, None, None, None, None, None, None, None, None, None, None]; // Idk
         Self {
-            // Idk man
-            content: [
-                Some(Item::slime(1)),
-                None,
-                None,
-                None,
-                None,
-                None,
-                None,
-                None,
-                None,
-                None,
-                None,
-                None,
-            ],
-            slot_hitboxes: [Rect::new(0., 0., 0., 0.); 12],
+            content,
+            slot_hitboxes: [Rect::new(0., 0., 0., 0.); 13],
             holding: None,
         }
     }
@@ -79,7 +67,7 @@ impl Game {
         draw_tiles(&mesh, l_box.point(), &self.textures["ui"], None, TILE_SIZE);
         draw_tiles(&mesh, r_box.point(), &self.textures["ui"], None, TILE_SIZE);
         //draw_slots(r_box, &self.textures["ui"]);
-        self.player.update_inv(r_box);
+        self.player.update_inv(r_box, l_box);
         self.draw_slots();
         self.render_items();
         self.draw_description();
@@ -107,7 +95,7 @@ impl Game {
         let player_inv = &self.player.inventory;
         let mut index = 0;
         let mut diag_rect = Rect::new(
-            mouse_pos.x + 8. * PIXEL,
+            mouse_pos.x + 4. * PIXEL,
             mouse_pos.y,
             4. * STANDARD_SQUARE,
             2. * STANDARD_SQUARE,
@@ -118,28 +106,29 @@ impl Game {
                 continue;
             }
             let item = &player_inv.content[index];
-            if let Some(item) = item {
-                draw_tiles(
-                    &desc_diag(),
-                    mouse_pos,
-                    &self.textures["ui"],
-                    None,
-                    TILE_SIZE,
-                );
-                let name = item.name();
-                let mut param = TextParams {
-                    color: BLACK,
-                    font: Some(&self.font),
-                    font_size: 48,
-                    ..Default::default()
-                };
-                render_text(diag_rect, name, param.clone());
-                param.font_size = 28;
-                let desc = item.description();
-                diag_rect.y += 10. * PIXEL;
-                diag_rect.x -= 4. * PIXEL;
-                render_text(diag_rect, desc, param);
-            }
+            let item = match item {
+                Some(item) => item,
+                _ => return,
+            };
+            draw_tiles(
+                &desc_diag(),
+                mouse_pos,
+                &self.textures["ui"],
+                None,
+                TILE_SIZE,
+            );
+            let name = item.name();
+            let mut param = TextParams {
+                color: BLACK,
+                font: Some(&self.font),
+                font_size: 48,
+                ..Default::default()
+            };
+            render_text(diag_rect, name, param.clone());
+            param.font_size = 28;
+            let desc = item.description();
+            diag_rect.y += 10. * PIXEL;
+            render_text(diag_rect, desc, param);
             index += 1;
         }
     }
@@ -152,7 +141,8 @@ impl Game {
         let player_inv = &mut self.player.inventory;
 
         let mut index = 0;
-        for slot in player_inv.slot_hitboxes {
+        while index < 12 {
+            let slot = player_inv.slot_hitboxes[index];
             if !slot.contains(mouse_pos) {
                 index += 1;
                 continue;
@@ -178,6 +168,22 @@ impl Game {
             }
             index += 1;
         }
+
+        // Weapon slot
+        let weapon_slot = player_inv.slot_hitboxes[12];
+        if !weapon_slot.contains(mouse_pos) {
+            return;
+        }
+        if let Some(item) = &player_inv.holding {
+            if item.class != ItemType::Weapon {
+                return;
+            }
+            player_inv.content[12] = player_inv.holding.clone();
+            player_inv.holding = None;
+            return;
+        } 
+        player_inv.holding = player_inv.content[12].clone();
+        player_inv.content[12] = None;
     }
 
     fn draw_held_item(&self) {
@@ -260,14 +266,14 @@ impl Game {
 }
 
 impl Player {
-    fn update_inv(&mut self, window: Rect) {
-        let margin = (window.w - (COL * SIZE)) / (COL + 1.);
-        let height = window.h - ((COL - 1.) * SIZE + COL * margin);
+    fn update_inv(&mut self, right_box: Rect, left_box: Rect) {
+        let margin = (right_box.w - (COL * SIZE)) / (COL + 1.);
+        let height = right_box.h - ((COL - 1.) * SIZE + COL * margin);
         let max_col = COL as u8;
         let max_row = ROW;
 
         let mut index = 0;
-        let starting_pos = vec2(window.left(), window.top() + height);
+        let starting_pos = vec2(right_box.left(), right_box.top() + height);
 
         for row in 0..max_row {
             let row = row as f32;
@@ -283,6 +289,10 @@ impl Player {
                 index += 1
             }
         }
+
+        let pos_x = left_box.left() + left_box.w / 2. - SIZE / 2.;
+        let pos_y = left_box.top() + left_box.w * 1.3;
+        self.inventory.slot_hitboxes[12] = Rect::new(pos_x, pos_y, SIZE, SIZE);
     }
 }
 
@@ -315,6 +325,7 @@ pub fn source_rect(item: Option<&Item>) -> Option<Rect> {
     return match item?.name() {
         "Slime" => Some(Rect::new(0., TILE_SIZE * 2., TILE_SIZE, TILE_SIZE)),
         "Mushroom" => Some(Rect::new(TILE_SIZE, TILE_SIZE * 2., TILE_SIZE, TILE_SIZE)),
+        "Rusty sword" => Some(Rect::new(0., 3. * TILE_SIZE, TILE_SIZE, TILE_SIZE)),
         _ => None,
     };
 }

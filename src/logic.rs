@@ -127,6 +127,10 @@ impl Game {
                     if let PlayerState::Attacking(..) = self.player.state {
                         return;
                     }
+                    // If the player has no weapon
+                    if let None = self.player.inventory.content[12] {
+                        return;
+                    }
                     let mouse_pos = self.get_mouse_pos();
                     self.player.face(mouse_pos);
                     self.damage_monster();

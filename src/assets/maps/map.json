@@ -126,6 +126,24 @@
                  "width":16,
                  "x":64,
                  "y":86.375
+                }, 
+                {
+                 "height":0,
+                 "id":97,
+                 "name":"player",
+                 "point":true,
+                 "properties":[
+                        {
+                         "name":"dialog",
+                         "type":"file",
+                         "value":"..\/dialogs\/Bob.json"
+                        }],
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":0,
+                 "x":608.606060606061,
+                 "y":237.090909090909
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -591,7 +609,7 @@
          "y":0
         }],
  "nextlayerid":9,
- "nextobjectid":97,
+ "nextobjectid":99,
  "orientation":"orthogonal",
  "properties":[
         {

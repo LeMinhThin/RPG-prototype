@@ -10,6 +10,7 @@ pub struct Item {
     name: Rc<str>,
     description: Rc<str>,
     value: u32,
+    pub class: ItemType,
     pub count: u8,
 }
 
@@ -20,6 +21,12 @@ pub struct ItemEntity {
     pub should_delete: bool,
 }
 
+#[derive(Clone, Debug, PartialEq)]
+pub enum ItemType {
+    RegularItem,
+    Weapon,
+}
+
 impl Item {
     pub fn slime(count: u8) -> Self {
         Item {
@@ -27,6 +34,7 @@ impl Item {
             value: 5,
             description: "It's quite slimy".into(),
             count,
+            class: ItemType::RegularItem,
         }
     }
 
@@ -37,6 +45,17 @@ impl Item {
             description: "Contrary to popular belief, eating this will not make you grow bigger"
                 .into(),
             count,
+            class: ItemType::RegularItem,
+        }
+    }
+
+    pub fn rusty_sword() -> Self {
+        Self {
+            name: "Rusty sword".into(),
+            description: "It is not the best sword out there".into(),
+            count: 1,
+            class: ItemType::Weapon,
+            value: 10,
         }
     }
 

@@ -1,4 +1,4 @@
-use crate::player::Collidable;
+use crate::player::{Collidable, PlayerState};
 use crate::{logic::*, map::Area};
 use macroquad::prelude::*;
 use textwrap::Options;
@@ -148,8 +148,18 @@ impl Game {
     }
 
     fn draw_player(&self) {
-        self.player
-            .draw(&self.textures["player"], self.get_mouse_pos())
+        let player = &self.player;
+
+        player.draw(&self.textures["player"]);
+        let mouse_pos = self.get_mouse_pos();
+        match self.player.state {
+            PlayerState::Attacking(..) => player.draw_weapon(&self.textures["ui"]),
+            PlayerState::Throwing(time) => {
+                player.draw_held_proj(&self.textures["player"], mouse_pos);
+                player.draw_throw_indicator(mouse_pos, &self.textures["player"], time);
+            }
+            _ => (),
+        }
     }
 
     #[allow(dead_code)]

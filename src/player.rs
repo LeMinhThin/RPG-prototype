@@ -28,6 +28,7 @@ pub struct Player {
     pub invul_time: Timer,
     pub facing: Orientation,
     pub inventory: Inventory,
+    pub combo: u8,
 }
 
 #[derive(Clone)]
@@ -134,6 +135,7 @@ impl Player {
             held_weapon: Weapon::sword(),
             facing: Orientation::Down,
             inventory: Inventory::empty(),
+            combo: 0,
         }
     }
 
@@ -186,17 +188,19 @@ impl Player {
 
     pub fn tick(&mut self, mouse_pos: Vec2) {
         self.invul_time.tick();
-        self.state_management(mouse_pos);
+        self.state_management();
 
         if self.state == PlayerState::Normal {
             self.new_pos();
             self.change_anim(self.props.is_moving());
+            return;
         }
         if let PlayerState::Throwing(time) = self.state {
             let angle = angle_between(self.pos(), mouse_pos);
             self.facing = should_face(angle);
             self.change_anim(false);
-            self.state = PlayerState::Throwing(time + get_frame_time())
+            self.state = PlayerState::Throwing(time + get_frame_time());
+            return;
         }
     }
 
@@ -206,7 +210,7 @@ impl Player {
         Projectile::new(self.projectile_pos(mouse_pos), vec)
     }
 
-    fn state_management(&mut self, mouse_pos: Vec2) {
+    fn state_management(&mut self) {
         if let PlayerState::Attacking(mut timer, mouse_pos) = self.state {
             timer.tick();
             self.state = match timer.is_done() {
@@ -215,9 +219,6 @@ impl Player {
             };
             self.change_anim(false);
             return;
-        }
-        if is_key_pressed(KeyCode::Space) {
-            self.attack(mouse_pos);
         }
         if is_mouse_button_pressed(MouseButton::Right) {
             self.state = PlayerState::Throwing(0.)
@@ -233,7 +234,8 @@ impl Player {
     }
 
     pub fn attack(&mut self, mouse_pos: Vec2) {
-        self.state = PlayerState::Attacking(Timer::new(self.held_weapon.cooldown), mouse_pos)
+        self.state = PlayerState::Attacking(Timer::new(self.held_weapon.cooldown), mouse_pos);
+        self.combo = (self.combo + 1) % 2
     }
 
     pub fn change_anim(&mut self, is_moving: bool) {
@@ -252,37 +254,50 @@ impl Player {
         self.props.animation.set_animation(row + extra_row)
     }
 
-    fn draw_weapon(&self, texture: &Texture2D) {
-        if let PlayerState::Attacking(timer, mouse_pos) = self.state {
-            let angular_vel = PI / timer.duration;
-            let rotation =
-                timer.elapsed() * angular_vel - angle_between(mouse_pos, self.pos()) + PI / 2.;
-            let dest_size = Some(vec2(STANDARD_SQUARE, STANDARD_SQUARE));
-            let source = Some(Rect::new(
-                TILE_SIZE * 0.,
-                TILE_SIZE * 8.,
-                TILE_SIZE,
-                TILE_SIZE,
-            ));
+    fn weapon_angle(&self) -> f32 {
+        let (timer, mouse_pos) = match self.state {
+            PlayerState::Attacking(timer, mouse_pos) => (timer, mouse_pos),
+            _ => return 0.,
+        };
+        let angular_velocity = PI / timer.duration;
 
-            let params = DrawTextureParams {
-                dest_size,
-                source,
-                rotation: rotation + PI / 2.,
-                ..Default::default()
-            };
-
-            let pos = self.pos();
-            let center = vec2(
-                pos.x + (20. * PIXEL * rotation.cos()),
-                pos.y + (20. * PIXEL * rotation.sin()),
-            ) - STANDARD_SQUARE / 2.;
-
-            draw_texture_ex(texture, center.x, center.y, WHITE, params)
+        let time;
+        if self.combo % 2 == 0 {
+            time = timer.elapsed()
+        } else {
+            time = timer.time
         }
+        time * angular_velocity - angle_between(mouse_pos, self.pos()) + PI / 2.
     }
 
-    pub fn draw(&self, texture: &Texture2D, mouse_pos: Vec2) {
+    pub fn draw_weapon(&self, texture: &Texture2D) {
+        match self.state {
+            PlayerState::Attacking(..) => (),
+            _ => return,
+        }
+        let source = self.weapon_texture();
+        if source.is_none() {
+            return;
+        }
+        let rotation = self.weapon_angle();
+        let dest_size = Some(vec2(STANDARD_SQUARE, STANDARD_SQUARE));
+        let params = DrawTextureParams {
+            dest_size,
+            source,
+            rotation: rotation + PI / 2.,
+            ..Default::default()
+        };
+
+        let pos = self.pos();
+        let center = vec2(
+            pos.x + (20. * PIXEL * rotation.cos()),
+            pos.y + (20. * PIXEL * rotation.sin()),
+        ) - STANDARD_SQUARE / 2.;
+
+        draw_texture_ex(texture, center.x, center.y, WHITE, params)
+    }
+
+    pub fn draw(&self, texture: &Texture2D) {
         // Basicly this makes the player flash after it's been hurt
         if !self.invul_time.is_done() {
             if rand() % 3 == 0 {
@@ -302,14 +317,6 @@ impl Player {
             WHITE,
             draw_param,
         );
-        match self.state {
-            PlayerState::Attacking(..) => self.draw_weapon(texture),
-            PlayerState::Throwing(time) => {
-                self.draw_throw_indicator(mouse_pos, texture, time);
-                self.draw_held_proj(texture, mouse_pos)
-            }
-            _ => (),
-        }
     }
 
     fn projectile_pos(&self, mouse_pos: Vec2) -> Vec2 {
@@ -324,7 +331,7 @@ impl Player {
         }
     }
 
-    fn draw_held_proj(&self, texture: &Texture2D, mouse_pos: Vec2) {
+    pub fn draw_held_proj(&self, texture: &Texture2D, mouse_pos: Vec2) {
         let pos = self.projectile_pos(mouse_pos);
         let source = Some(Rect::new(TILE_SIZE * 6., TILE_SIZE, TILE_SIZE, TILE_SIZE));
         let dest_size = Some(vec2(STANDARD_SQUARE, STANDARD_SQUARE));
@@ -336,7 +343,7 @@ impl Player {
         draw_texture_ex(texture, pos.x, pos.y, WHITE, params)
     }
 
-    fn draw_throw_indicator(&self, mouse_pos: Vec2, texture: &Texture2D, time: f32) {
+    pub fn draw_throw_indicator(&self, mouse_pos: Vec2, texture: &Texture2D, time: f32) {
         let pos = self.pos();
         let vec = (mouse_pos - pos).normalize() * 500.;
         let pos = vec2(
@@ -354,6 +361,17 @@ impl Player {
             ..Default::default()
         };
         draw_texture_ex(texture, pos.x, pos.y, WHITE, params)
+    }
+
+    fn weapon_texture(&self) -> Option<Rect> {
+        let inv = &self.inventory.content[12];
+        if let None = inv {
+            return None;
+        }
+        return match inv.as_ref().unwrap().name() {
+            "Rusty sword" => Some(Rect::new(0., 3. * TILE_SIZE, TILE_SIZE, TILE_SIZE)),
+            _ => None,
+        };
     }
 }
 

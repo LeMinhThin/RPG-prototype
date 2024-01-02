@@ -154,6 +154,10 @@ impl Area {
             }
         }
 
+        for npc in &npcs {
+            walls.push(npc.hitbox)
+        }
+
         (
             name.into(),
             Area {
@@ -353,7 +357,7 @@ fn make_npcs(objects: &Value) -> Option<Vec<NPC>> {
 
         let x = get_pos(item, "x", "make_npcs");
         let y = get_pos(item, "y", "make npcs");
-        let hitbox = Rect::new(x * RATIO, y * RATIO, 100., 100.);
+        let hitbox = Rect::new(x * RATIO, y * RATIO, 100., 50.);
 
         let props = item["properties"].as_array()?;
 
