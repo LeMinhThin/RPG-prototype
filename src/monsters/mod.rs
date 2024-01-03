@@ -28,7 +28,6 @@ pub trait IsAMonster {
     fn damage_player(&self, player: &mut Player);
     fn move_to(&mut self, player_pos: Vec2);
     fn draw(&self, texture: &Textures);
-    fn change_anim(&mut self);
     fn get_props(&self) -> &Props;
     fn get_mut_props(&mut self) -> &mut Props;
     fn get_type(&self) -> MobType;
@@ -36,6 +35,9 @@ pub trait IsAMonster {
     fn draw_health_bar(&self, texture: &Texture2D) {
         let props = self.get_props();
         if props.health == self.max_health() {
+            return;
+        }
+        if props.health <= 0. {
             return;
         }
         let source = Some(Rect::new(

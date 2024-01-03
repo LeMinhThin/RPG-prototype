@@ -18,18 +18,41 @@ pub struct Slime {
 }
 impl IsAMonster for Slime {
     fn tick(&mut self, player: &mut Player, walls: &[Rect]) {
+        if self.props.health <= 0. {
+            // Lmao wonky math
+            if self.props.animation.frame().source_rect.x / TILE_SIZE > 5.5 {
+                self.props.should_despawn = true
+            }
+            return;
+        }
         let player_pos = player.pos();
 
         self.move_to(player_pos);
         self.damage_player(player);
         self.props.new_pos();
         self.wall_collsion(walls);
-
-        self.change_anim()
     }
 
     fn tick_anim(&mut self) {
         self.props.animation.update();
+        if self.props.health <= 0. {
+            if self.props.animation.current_animation() != 2 {
+                self.props.animation.set_animation(2);
+                self.props.animation.set_frame(0);
+            }
+            return;
+        }
+        if !self.props.is_moving() {
+            self.props.animation.set_animation(0);
+        } else {
+            self.props.animation.set_animation(1);
+        }
+        if self.props.velocity.x > 0. {
+            self.props.flip_sprite = false
+        }
+        if self.props.velocity.x < 0. {
+            self.props.flip_sprite = true
+        }
     }
 
     fn max_health(&self) -> f32 {
@@ -60,9 +83,11 @@ impl IsAMonster for Slime {
 
     fn draw(&self, texture: &Textures) {
         let dest_size = Some(self.props.animation.frame().dest_size * SCALE_FACTOR);
+        let source = Some(self.props.animation.frame().source_rect);
         let draw_param = DrawTextureParams {
-            source: Some(self.props.animation.frame().source_rect),
+            source,
             dest_size,
+            flip_x: self.props.flip_sprite,
             ..Default::default()
         };
         draw_texture_ex(
@@ -73,16 +98,6 @@ impl IsAMonster for Slime {
             draw_param,
         );
         self.draw_health_bar(&texture["ui"])
-    }
-
-    fn change_anim(&mut self) {
-        let speed = self.props.velocity.length();
-
-        if speed < 1. {
-            self.props.animation.set_animation(0);
-        } else {
-            self.props.animation.set_animation(1);
-        }
     }
 
     fn get_props(&self) -> &Props {
@@ -139,7 +154,11 @@ fn slime_animations() -> AnimatedSprite {
     AnimatedSprite::new(
         TILE_SIZE as u32,
         TILE_SIZE as u32,
-        &[make_anim("idle", 0, 4, 8), make_anim("moving", 1, 6, 8)],
+        &[
+            make_anim("idle", 0, 4, 8),
+            make_anim("moving", 1, 6, 8),
+            make_anim("dying", 2, 7, 8),
+        ],
         true,
     )
 }

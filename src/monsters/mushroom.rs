@@ -25,11 +25,25 @@ impl IsAMonster for Mushroom {
         self.props.new_pos();
         self.wall_collsion(walls);
 
-        self.change_anim();
+        if self.props.health <= 0. {
+            self.props.should_despawn = true
+        }
     }
 
     fn tick_anim(&mut self) {
-        self.props.animation.update()
+        self.props.animation.update();
+
+        if self.props.is_moving() {
+            self.props.animation.set_animation(0)
+        } else {
+            self.props.animation.set_animation(1)
+        }
+        if self.props.velocity.x > 0. {
+            self.props.flip_sprite = false;
+        }
+        if self.props.velocity.x < 0. {
+            self.props.flip_sprite = true
+        }
     }
 
     fn max_health(&self) -> f32 {
@@ -58,9 +72,11 @@ impl IsAMonster for Mushroom {
 
     fn draw(&self, texture: &Textures) {
         let dest_size = Some(self.props.animation.frame().dest_size * SCALE_FACTOR);
+        let source = Some(self.props.animation.frame().source_rect);
         let draw_param = DrawTextureParams {
-            source: Some(self.props.animation.frame().source_rect),
+            source,
             dest_size,
+            flip_x: self.props.flip_sprite,
             ..Default::default()
         };
         draw_texture_ex(
@@ -71,18 +87,6 @@ impl IsAMonster for Mushroom {
             draw_param,
         );
         self.draw_health_bar(&texture["ui"]);
-    }
-
-    fn change_anim(&mut self) {
-        let movement_vector = self.props.velocity;
-
-        if movement_vector.length() < 1. {
-            self.props.animation.set_animation(1)
-        } else if movement_vector.x >= 0. {
-            self.props.animation.set_animation(0)
-        } else {
-            self.props.animation.set_animation(2)
-        }
     }
 
     fn get_props(&self) -> &Props {

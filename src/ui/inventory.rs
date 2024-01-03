@@ -181,7 +181,7 @@ impl Game {
             player_inv.content[12] = player_inv.holding.clone();
             player_inv.holding = None;
             return;
-        } 
+        }
         player_inv.holding = player_inv.content[12].clone();
         player_inv.content[12] = None;
     }

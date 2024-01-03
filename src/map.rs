@@ -179,7 +179,7 @@ impl Area {
         // Spawn loot for every dying mob
         for mob in mobs.iter() {
             let mob = mob.get();
-            if mob.get_props().health > 0. {
+            if !mob.get_props().should_despawn {
                 continue;
             }
             let loot = mob.loot();
@@ -188,7 +188,7 @@ impl Area {
             }
         }
         let items = &mut self.items;
-        mobs.retain(|mob| mob.get().get_props().health > 0.);
+        mobs.retain(|mob| !mob.get().get_props().should_despawn);
         projectiles.retain(|proj| !proj.should_despawn && !proj.life_time.is_done());
         items.retain(|item| !item.should_delete);
     }

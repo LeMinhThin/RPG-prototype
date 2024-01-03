@@ -37,6 +37,8 @@ pub struct Props {
     pub health: f32,
     pub animation: AnimatedSprite,
     pub pos: Vec2,
+    pub should_despawn: bool,
+    pub flip_sprite: bool,
 }
 
 #[derive(Clone, Debug)]
@@ -101,6 +103,8 @@ impl Props {
             health: heath,
             animation,
             pos,
+            should_despawn: false,
+            flip_sprite: false,
         }
     }
 
@@ -116,7 +120,7 @@ impl Props {
         let vector = vec2(point.x - self.pos.x, point.y - self.pos.y).normalize() * speed;
         self.velocity += vector
     }
-    fn is_moving(&self) -> bool {
+    pub fn is_moving(&self) -> bool {
         self.velocity.length() > 10.
     }
 
@@ -284,7 +288,7 @@ impl Player {
         let params = DrawTextureParams {
             dest_size,
             source,
-            rotation: rotation + PI / 2.,
+            rotation: rotation + 1. * PI / 4.,
             ..Default::default()
         };
 
