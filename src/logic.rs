@@ -60,10 +60,6 @@ impl Timer {
     pub fn repeat(&mut self) {
         self.time = self.duration
     }
-
-    pub fn elapsed(&self) -> f32 {
-        self.duration - self.time
-    }
 }
 
 impl Game {
@@ -133,8 +129,7 @@ impl Game {
                     }
                     let mouse_pos = self.get_mouse_pos();
                     self.player.face(mouse_pos);
-                    self.damage_monster();
-                    self.player.attack(mouse_pos)
+                    self.player.attack(mouse_pos);
                 }
                 _ => return,
             }
@@ -253,6 +248,10 @@ impl Game {
                 .projectiles
                 .push(self.player.current_projectile(mouse_pos))
         }
+        if let PlayerState::Attacking(mut attack) = self.player.state {
+            self.damage_monster(&mut attack);
+            self.player.state = PlayerState::Attacking(attack)
+        }
     }
 
     fn is_touching_gate(&mut self) {
@@ -311,22 +310,36 @@ impl Game {
         &mut self.maps.get_mut(&self.current_map).unwrap().enemies
     }
 
-    fn damage_monster(&mut self) {
+    fn damage_monster(&mut self, attack: &mut Attack) {
+        let prog = attack.progress();
+        if prog < 0.5 {
+            return;
+        }
+        if attack.attacked {
+            return;
+        }
         let damage_zone = self.player.weapon_hitbox();
         let damage = self.player.held_weapon.base_damage;
-        let player_pos = &self.player.pos();
+        let player_pos = self.player.pos();
 
         for monster in self.get_monster_list() {
-            if damage_zone.overlaps(&monster.get().hitbox()) {
-                let monster = monster.get_mut().get_mut_props();
-                let knockback = vec2(monster.pos.x - player_pos.x, monster.pos.y - player_pos.y)
-                    .normalize()
-                    * KNOCKBACK;
-
-                monster.health -= damage;
-                monster.knockback(knockback);
+            if !damage_zone.overlaps(&monster.get().hitbox()) {
+                continue;
             }
+            let monster = monster.get_mut().get_mut_props();
+            let knockback = vec2(monster.pos.x - player_pos.x, monster.pos.y - player_pos.y)
+                .normalize()
+                * KNOCKBACK;
+
+            monster.health -= damage;
+            monster.knockback(knockback);
         }
+
+        attack.attacked = true;
+
+        // A bit unrelated since this will move the player toward the mouse
+        let vector = (attack.mouse_pos - player_pos).normalize() * 8. *STANDARD_SQUARE;
+        self.player.props.velocity += vector;
     }
 
     fn move_map(&mut self, command: &str) {

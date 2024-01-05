@@ -13,7 +13,7 @@ impl Weapon {
         Weapon {
             base_damage: 10.,
             lenght: STANDARD_SQUARE,
-            cooldown: 0.2,
+            cooldown: 0.3,
             angle: 0.,
         }
     }

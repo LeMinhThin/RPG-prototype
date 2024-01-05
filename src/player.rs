@@ -13,12 +13,20 @@ pub const PLAYER_HEALTH: f32 = 100.;
 const PLAYER_VELOCITY: f32 = 350.;
 const FRICTION: f32 = 25.;
 
+// So, this is a hack that I have managed to come up with
+#[derive(Clone, PartialEq, Copy)]
+pub struct Attack {
+    pub timer: Timer,
+    pub mouse_pos: Vec2,
+    pub attacked: bool,
+}
+
 #[derive(Clone, PartialEq)]
 pub enum PlayerState {
     Transition,
     Normal,
     Throwing(f32),
-    Attacking(Timer, Vec2),
+    Attacking(Attack),
 }
 #[derive(Clone)]
 pub struct Player {
@@ -206,6 +214,12 @@ impl Player {
             self.state = PlayerState::Throwing(time + get_frame_time());
             return;
         }
+        if let PlayerState::Attacking(attack) = self.state {
+            let prog = attack.progress();
+            if prog > 0.5 {
+                self.props.new_pos();
+            }
+        }
     }
 
     pub fn current_projectile(&self, mouse_pos: Vec2) -> Projectile {
@@ -215,11 +229,11 @@ impl Player {
     }
 
     fn state_management(&mut self) {
-        if let PlayerState::Attacking(mut timer, mouse_pos) = self.state {
-            timer.tick();
-            self.state = match timer.is_done() {
+        if let PlayerState::Attacking(mut attack) = self.state {
+            attack.timer.tick();
+            self.state = match attack.timer.is_done() {
                 true => PlayerState::Normal,
-                false => PlayerState::Attacking(timer, mouse_pos),
+                false => PlayerState::Attacking(attack),
             };
             self.change_anim(false);
             return;
@@ -238,7 +252,13 @@ impl Player {
     }
 
     pub fn attack(&mut self, mouse_pos: Vec2) {
-        self.state = PlayerState::Attacking(Timer::new(self.held_weapon.cooldown), mouse_pos);
+        let timer = Timer::new(self.held_weapon.cooldown);
+        let attack = Attack {
+            timer,
+            mouse_pos,
+            attacked: false,
+        };
+        self.state = PlayerState::Attacking(attack);
         self.combo = (self.combo + 1) % 2
     }
 
@@ -260,25 +280,22 @@ impl Player {
 
     fn weapon_angle(&self) -> f32 {
         let (timer, mouse_pos) = match self.state {
-            PlayerState::Attacking(timer, mouse_pos) => (timer, mouse_pos),
+            PlayerState::Attacking(attack) => (attack.timer, attack.mouse_pos),
             _ => return 0.,
         };
-        let angular_velocity = PI / timer.duration;
-
-        let time;
-        if self.combo % 2 == 0 {
-            time = timer.elapsed()
+        // I know it doesn't make sense but it works
+        let arc_lenght = 7. * PI / 12.;
+        let mut timer_progress = timer.time / timer.duration;
+        if timer_progress < 0.5 {
+            timer_progress = 0.
         } else {
-            time = timer.time
+            timer_progress = 1.
         }
-        time * angular_velocity - angle_between(mouse_pos, self.pos()) + PI / 2.
+
+        -angle_between(mouse_pos, self.pos()) + (arc_lenght / 2. - timer_progress * arc_lenght)
     }
 
     pub fn draw_weapon(&self, texture: &Texture2D) {
-        match self.state {
-            PlayerState::Attacking(..) => (),
-            _ => return,
-        }
         let source = self.weapon_texture();
         if source.is_none() {
             return;
@@ -298,7 +315,33 @@ impl Player {
             pos.y + (20. * PIXEL * rotation.sin()),
         ) - STANDARD_SQUARE / 2.;
 
-        draw_texture_ex(texture, center.x, center.y, WHITE, params)
+        draw_texture_ex(texture, center.x, center.y, WHITE, params);
+    }
+
+    pub fn draw_slash(&self, texture: &Texture2D, mouse_pos: Vec2, timer: Timer) {
+        let progress = 1. - timer.time / timer.duration;
+        if progress < 0.5 {
+            return;
+        }
+        let rotation = -angle_between(self.pos(), mouse_pos) + 1. * PI / 6.;
+        let source = Some(source_rect(progress));
+        let dest_size = Some(vec2(2. * STANDARD_SQUARE, 2. * STANDARD_SQUARE));
+        let params = DrawTextureParams {
+            dest_size,
+            source,
+            rotation,
+            ..Default::default()
+        };
+
+        let player_pos = self.pos();
+
+        draw_texture_ex(
+            texture,
+            player_pos.x - STANDARD_SQUARE,
+            player_pos.y - STANDARD_SQUARE,
+            WHITE,
+            params,
+        )
     }
 
     pub fn draw(&self, texture: &Texture2D) {
@@ -379,6 +422,12 @@ impl Player {
     }
 }
 
+impl Attack {
+    pub fn progress(&self) -> f32 {
+        1. - self.timer.time / self.timer.duration
+    }
+}
+
 #[rustfmt::skip]
 fn player_animations() -> AnimatedSprite {
     AnimatedSprite::new(
@@ -398,7 +447,7 @@ fn player_animations() -> AnimatedSprite {
     )
 }
 
-fn angle_between(start_point: Vec2, end_point: Vec2) -> f32 {
+pub fn angle_between(start_point: Vec2, end_point: Vec2) -> f32 {
     let vector = (end_point - start_point).normalize();
     vector.angle_between(vec2(1., 0.))
 }
@@ -414,4 +463,20 @@ fn should_face(angle: f32) -> Orientation {
     } else {
         Orientation::Down
     }
+}
+
+fn source_rect(progress: f32) -> Rect {
+    let mut ret_rect = Rect::new(0., 0., TILE_SIZE * 2., TILE_SIZE * 2.);
+    if progress > 0.875 {
+        ret_rect.x = 6. * TILE_SIZE;
+        return ret_rect;
+    }
+    if progress > 0.75 {
+        ret_rect.x = 4. * TILE_SIZE;
+        return ret_rect;
+    }
+    if progress > 0.625 {
+        ret_rect.x = 2. * TILE_SIZE;
+    }
+    ret_rect
 }

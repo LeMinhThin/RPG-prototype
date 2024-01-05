@@ -1,5 +1,5 @@
 use crate::logic::*;
-use crate::player::{Collidable, Player, Props};
+use crate::player::{Collidable, Player, Props, PIXEL};
 use crate::ui::items::Item;
 use macroquad::experimental::animation::*;
 use macroquad::prelude::*;
@@ -25,7 +25,7 @@ impl IsAMonster for Slime {
             }
             return;
         }
-        let player_pos = player.pos();
+        let player_pos = player.props.pos;
 
         self.move_to(player_pos);
         self.damage_player(player);
@@ -72,7 +72,7 @@ impl IsAMonster for Slime {
         if !player.invul_time.is_done() {
             return;
         }
-        let self_hitbox = self.hitbox();
+        let self_hitbox = self.damage_box();
         let player_hitbox = player.hitbox();
 
         if let Some(_) = self_hitbox.intersect(player_hitbox) {
@@ -126,6 +126,11 @@ impl Slime {
         let animation = slime_animations();
         let props = Props::from(pos, SLIME_HEALTH, animation);
         Slime { props, damage: 10. }
+    }
+
+    fn damage_box(&self) -> Rect {
+        let pos = self.props.pos;
+        Rect::new(pos.x + 4. * PIXEL, pos.y + 12. * PIXEL, 16. *PIXEL, 12. * PIXEL)
     }
 }
 

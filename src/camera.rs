@@ -129,7 +129,7 @@ impl Game {
     fn draw_monsters(&self) {
         let map = &self.maps[&self.current_map];
         for monster in map.enemies.iter() {
-            monster.get().draw(&self.textures)
+            monster.get().draw(&self.textures);
         }
     }
 
@@ -149,17 +149,19 @@ impl Game {
 
     fn draw_player(&self) {
         let player = &self.player;
-
-        player.draw(&self.textures["player"]);
         let mouse_pos = self.get_mouse_pos();
         match self.player.state {
-            PlayerState::Attacking(..) => player.draw_weapon(&self.textures["ui"]),
+            PlayerState::Attacking(attack) => {
+                player.draw_weapon(&self.textures["ui"]);
+                player.draw_slash(&self.textures["slash"], attack.mouse_pos, attack.timer);
+            }
             PlayerState::Throwing(time) => {
                 player.draw_held_proj(&self.textures["player"], mouse_pos);
                 player.draw_throw_indicator(mouse_pos, &self.textures["player"], time);
             }
             _ => (),
         }
+        player.draw(&self.textures["player"]);
     }
 
     #[allow(dead_code)]
