@@ -225,6 +225,13 @@ impl Game {
             self.player.inventory.append(item.item.clone());
             item.should_delete = true
         }
+        for chest in current_map.chests.iter_mut() {
+            let item = chest.tick(self.player.search_box());
+            if let Some(item) = item {
+                current_map.items.push(item)
+            }
+        }
+
 
         current_map.clean_up();
     }

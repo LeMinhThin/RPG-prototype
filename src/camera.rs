@@ -1,3 +1,4 @@
+use crate::interactables::ChestState;
 use crate::player::{Collidable, PlayerState};
 use crate::{logic::*, map::Area};
 use macroquad::prelude::*;
@@ -95,8 +96,8 @@ impl Game {
 
         self.draw_terrain();
         self.draw_monsters();
-        self.draw_player();
         self.draw_interactables();
+        self.draw_player();
         self.draw_projectiles();
         self.draw_decorations();
         self.draw_npcs();
@@ -125,6 +126,9 @@ impl Game {
         for item in interactables {
             item.draw(&self.textures["chest"]);
             if !item.hitbox().overlaps(&search_box) {
+                continue;
+            }
+            if let ChestState::Opened = item.state {
                 continue;
             }
             item.draw_overlay(&self.textures["ui"])

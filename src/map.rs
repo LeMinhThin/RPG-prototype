@@ -163,6 +163,9 @@ impl Area {
         for npc in &npcs {
             walls.push(npc.hitbox)
         }
+        for chest in &chests {
+            walls.push(chest.hitbox())
+        }
 
         (
             name.into(),

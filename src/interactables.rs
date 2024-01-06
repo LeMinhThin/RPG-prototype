@@ -1,5 +1,5 @@
 use macroquad::prelude::*;
-use crate::ui::items::Item;
+use crate::ui::items::{Item, ItemEntity};
 use crate::logic::{Timer, TILE, TILE_SIZE};
 use crate::player::PIXEL;
 use crate::camera::TERRAIN_TILE_SIZE;
@@ -13,7 +13,7 @@ pub enum ChestState {
 pub struct Chest {
     content: Item,
     pos: Vec2,
-    state: ChestState
+    pub state: ChestState
 }
 
 impl Chest {
@@ -21,15 +21,36 @@ impl Chest {
         Self { content: item, pos, state: ChestState::Closed }
     }
 
-    /*
-    pub fn open(&mut self) {
+    fn open(&mut self, search_box: Rect) {
+        if !is_key_pressed(KeyCode::R) {
+            return;
+        }
+        if !self.hitbox().overlaps(&search_box) {
+            return;
+        }
         match self.state {
             ChestState::Closed => (),
             _ => return
         }
-        self.state = ChestState::Opening(Timer::new(3.));
+        self.state = ChestState::Opening(Timer::new(0.5));
     }
-    */
+
+    pub fn tick(&mut self, search_box: Rect) -> Option<ItemEntity> {
+        self.open(search_box);
+        if let ChestState::Opening(mut timer) = self.state {
+            if !timer.is_done() {
+                timer.tick();
+                self.state = ChestState::Opening(timer);
+                return None;
+            }
+            let mut pos = self.pos;
+            pos.y += 10. * PIXEL;
+            let item = ItemEntity::new(self.content.clone(), pos);
+            self.state = ChestState::Opened;
+            return Some(item);
+        }
+        None
+    }
 
     pub fn draw(&self, texture: &Texture2D) {
         let hitbox = self.hitbox();
@@ -46,7 +67,7 @@ impl Chest {
     }
 
     pub fn hitbox(&self) -> Rect {
-        Rect::new(self.pos.x, self.pos.y, 14. * PIXEL, 15. * PIXEL)
+        Rect::new(self.pos.x + PIXEL, self.pos.y + PIXEL, 18. * PIXEL, 17. * PIXEL)
     }
 
     pub fn draw_overlay(&self, texture: &Texture2D) {

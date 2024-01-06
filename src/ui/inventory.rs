@@ -19,7 +19,7 @@ pub struct Inventory {
 impl Inventory {
     pub fn empty() -> Self {
         #[rustfmt::skip]
-        let content = [Some(Item::rusty_sword()), None, None, None, None, None, None, None, None, None, None, None, None]; // Idk
+        let content = [None, None, None, None, None, None, None, None, None, None, None, None, None]; // Idk
         Self {
             content,
             slot_hitboxes: [Rect::new(0., 0., 0., 0.); 13],
