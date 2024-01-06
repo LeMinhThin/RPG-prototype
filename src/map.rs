@@ -3,14 +3,15 @@ use serde_json::Value;
 use std::rc::Rc;
 
 use crate::camera::TERRAIN_TILE_SIZE;
-use crate::logic::{Timer, KNOCKBACK, STANDARD_SQUARE, TILE_SIZE};
+use crate::logic::{Timer, KNOCKBACK, TILE, TILE_SIZE};
 use crate::monsters::*;
 use crate::npc::NPC;
 use crate::player::PIXEL;
 use crate::ui::items::*;
+use crate::interactables::Chest;
 use spawner::*;
 
-pub const RATIO: f32 = STANDARD_SQUARE / TERRAIN_TILE_SIZE;
+pub const RATIO: f32 = TILE / TERRAIN_TILE_SIZE;
 const PROJ_SPEED: f32 = 2000.;
 
 pub struct Area {
@@ -21,6 +22,7 @@ pub struct Area {
     pub npcs: Vec<NPC>,
     pub projectiles: Vec<Projectile>,
     pub items: Vec<ItemEntity>,
+    pub chests: Vec<Chest>,
     pub draw_mesh: Meshes,
 }
 
@@ -70,7 +72,7 @@ impl Projectile {
 
     pub fn draw(&self, texture: &Texture2D) {
         let center = self.hitbox().center();
-        let dest_size = Some(vec2(STANDARD_SQUARE, STANDARD_SQUARE));
+        let dest_size = Some(vec2(TILE, TILE));
         let source = Some(Rect::new(TILE_SIZE * 6., TILE_SIZE, TILE_SIZE, TILE_SIZE));
         let rotation = self.speed.angle_between(vec2(1., 0.));
         let params = DrawTextureParams {
@@ -82,8 +84,8 @@ impl Projectile {
 
         draw_texture_ex(
             texture,
-            center.x - STANDARD_SQUARE / 2.,
-            center.y - STANDARD_SQUARE / 2.,
+            center.x - TILE / 2.,
+            center.y - TILE / 2.,
             WHITE,
             params,
         )
@@ -129,6 +131,7 @@ impl Area {
         let mut spawners = vec![];
         let mut gates = vec![];
         let mut npcs = vec![];
+        let mut chests = vec![];
 
         for layer in parsed["layers"].as_array().unwrap() {
             match layer["name"].as_str().unwrap().to_lowercase().as_str() {
@@ -150,6 +153,9 @@ impl Area {
                 "npcs" => {
                     npcs = make_npcs(layer).unwrap();
                 }
+                "interactables" => {
+                    chests = make_chests(layer);
+                }
                 _ => (),
             }
         }
@@ -169,6 +175,7 @@ impl Area {
                 gates,
                 walls,
                 npcs,
+                chests,
             },
         )
     }
@@ -283,7 +290,7 @@ fn get_props(objects: &Value) -> Option<(f32, f32, MobType, u32)> {
     let props = objects["properties"].as_array()?;
     // Default values
     let mut cooldown = 30.;
-    let mut spawn_radius = 3. * STANDARD_SQUARE;
+    let mut spawn_radius = 3. * TILE;
     let mut kind = MobType::Slime;
     let mut max_mob = 3;
 
@@ -293,7 +300,7 @@ fn get_props(objects: &Value) -> Option<(f32, f32, MobType, u32)> {
             "kind" => kind = what_kind(prop["value"].as_str()?),
             "max_mob" => max_mob = prop["value"].as_f64()? as u32,
             "spawn_radius" => {
-                spawn_radius = prop["value"].as_f64()? as f32 * STANDARD_SQUARE;
+                spawn_radius = prop["value"].as_f64()? as f32 * TILE;
             }
             x => warn!("[WARN] unrecognised field name {x}"),
         }
@@ -373,6 +380,42 @@ fn make_npcs(objects: &Value) -> Option<Vec<NPC>> {
     Some(npcs)
 }
 
+fn make_chests(table: &Value) -> Vec<Chest> {
+    let mut ret_vec = vec![];
+    let table = table.get("objects");
+    if table.is_none() {
+        error!("make_chest: Invalid layer");
+        return ret_vec;
+    }
+    let table = table.unwrap().as_array();
+    if table.is_none() {
+        error!("make_chest: Invalid layer");
+        return ret_vec;
+    }
+    for elem in table.unwrap() {
+        let x = get_pos(elem, "x", "make_chest") * RATIO + PIXEL;
+        let y = get_pos(elem, "y", "make_chest") * RATIO + PIXEL;
+        let item = match get_item(elem) {
+            Ok(item) => item,
+            Err(ItemErr::Invalid(name)) => {
+                warn!("Invalid Item name {name}, defaulting to slime");
+                Item::slime(1)
+            }
+            Err(ItemErr::NotSameType) => {
+                warn!("Key is not of type string, defaulting to slime");
+                Item::slime(1)
+            }
+            Err(ItemErr::NoKey) => {
+                warn!("Key 'item' does not exist, defaulting to slime");
+                Item::slime(1)
+            }
+        };
+        let chest = Chest::new(vec2(x,y), item);
+        ret_vec.push(chest);
+    }
+    ret_vec
+}
+
 fn get_pos(table: &Value, value: &str, func: &str) -> f32 {
     let result = match table.get(value) {
         Some(value) => value,
@@ -389,4 +432,25 @@ fn get_pos(table: &Value, value: &str, func: &str) -> f32 {
         }
     };
     value
+}
+
+enum ItemErr {
+    NoKey,
+    NotSameType,
+    Invalid(String),
+}
+
+fn get_item(table: &Value) -> Result<Item, ItemErr> {
+    let key = table.get("properties").ok_or(ItemErr::NoKey)?;
+    let key = key.as_array().ok_or(ItemErr::NoKey)?;
+    // Since tiled would not allow an array to have 0 item this code should not cause a crash
+    let key = key[0]["value"].as_str().ok_or(ItemErr::NotSameType)?;
+
+    let item = match key.to_lowercase().as_str() {
+        "rusty sword" | "rusty_sword" => Ok(Item::rusty_sword()),
+        "slime" => Ok(Item::slime(1)),
+        "mushroom" => Ok(Item::mushroom(1)),
+        x => Err(ItemErr::Invalid(String::from(x)))
+    };
+    item
 }

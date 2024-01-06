@@ -46,7 +46,7 @@ pub trait IsAMonster {
             TILE_SIZE,
             TILE_SIZE,
         ));
-        let dest_size = Some(vec2(STANDARD_SQUARE, STANDARD_SQUARE));
+        let dest_size = Some(vec2(TILE, TILE));
         let draw_param = DrawTextureParams {
             source,
             dest_size,
@@ -55,7 +55,7 @@ pub trait IsAMonster {
         draw_texture_ex(
             texture,
             props.pos.x,
-            props.pos.y - STANDARD_SQUARE / 2.,
+            props.pos.y - TILE / 2.,
             WHITE,
             draw_param,
         );

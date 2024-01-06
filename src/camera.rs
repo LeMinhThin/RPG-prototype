@@ -60,8 +60,8 @@ impl Game {
         let bound_x = mesh[0].len();
         let bound_y = mesh.len();
         let bounds = vec2(
-            bound_x as f32 * STANDARD_SQUARE,
-            bound_y as f32 * STANDARD_SQUARE,
+            bound_x as f32 * TILE,
+            bound_y as f32 * TILE,
         );
         Rect::new(0., 0., bounds.x, bounds.y)
     }
@@ -96,6 +96,7 @@ impl Game {
         self.draw_terrain();
         self.draw_monsters();
         self.draw_player();
+        self.draw_interactables();
         self.draw_projectiles();
         self.draw_decorations();
         self.draw_npcs();
@@ -118,6 +119,18 @@ impl Game {
         }
     }
 
+    fn draw_interactables(&self) {
+        let interactables = &self.maps[&self.current_map].chests;
+        let search_box = self.player.search_box();
+        for item in interactables {
+            item.draw(&self.textures["chest"]);
+            if !item.hitbox().overlaps(&search_box) {
+                continue;
+            }
+            item.draw_overlay(&self.textures["ui"])
+        }
+    }
+
     fn draw_projectiles(&self) {
         let projectiles = &self.maps[&self.current_map].projectiles;
 
@@ -134,14 +147,14 @@ impl Game {
     }
 
     fn draw_terrain(&self) {
-        let screen = self.cam_box().shift(STANDARD_SQUARE, STANDARD_SQUARE);
+        let screen = self.cam_box().shift(TILE, TILE);
         let mesh = &self.maps[&self.current_map].draw_mesh.terrain;
         let texture = &self.textures["terrain"];
         draw_tiles(mesh, vec2(0., 0.), texture, Some(screen), TERRAIN_TILE_SIZE);
     }
 
     fn draw_decorations(&self) {
-        let screen = self.cam_box().shift(STANDARD_SQUARE, STANDARD_SQUARE);
+        let screen = self.cam_box().shift(TILE, TILE);
         let mesh = &self.maps[&self.current_map].draw_mesh.decorations;
         let texture = &self.textures["terrain"];
         draw_tiles(mesh, vec2(0., 0.), texture, Some(screen), TERRAIN_TILE_SIZE);
@@ -181,14 +194,14 @@ impl Game {
     }
 
     fn draw_npcs(&self) {
-        let player_pos = self.player.pos();
+        let search_box = self.player.search_box();
         let map = &self.maps[&self.current_map];
         let npcs = &map.npcs;
 
         for npc in npcs {
             npc.draw(&self.textures[&npc.name]);
 
-            if npc.hitbox.center().distance(player_pos) < STANDARD_SQUARE {
+            if npc.hitbox.overlaps(&search_box) {
                 npc.draw_overlay(&self.textures["ui"]);
             }
         }
@@ -272,7 +285,7 @@ impl Utils for Rect {
 
 fn gen_draw_params(source_id: &u16, tile_size: f32) -> DrawTextureParams {
     // Scale it by a really small factor
-    let dest_size = Some(vec2(STANDARD_SQUARE, STANDARD_SQUARE) * 1.01f32);
+    let dest_size = Some(vec2(TILE, TILE) * 1.01f32);
     let (x_index, y_index) = to_index(source_id, tile_size);
 
     let source = Some(Rect::new(x_index, y_index, tile_size, tile_size));
@@ -317,7 +330,7 @@ pub fn draw_tiles(
     let mut col_num = 0.;
     for slice in mesh {
         for cell in slice {
-            let draw_pos = vec2(col_num * STANDARD_SQUARE, row_num * STANDARD_SQUARE);
+            let draw_pos = vec2(col_num * TILE, row_num * TILE);
             if should_skip(draw_pos, screen, cell) {
                 col_num += 1.;
                 continue;
@@ -326,8 +339,8 @@ pub fn draw_tiles(
 
             draw_texture_ex(
                 &texture,
-                origin.x + col_num * STANDARD_SQUARE,
-                origin.y + row_num * STANDARD_SQUARE,
+                origin.x + col_num * TILE,
+                origin.y + row_num * TILE,
                 WHITE,
                 params,
             );

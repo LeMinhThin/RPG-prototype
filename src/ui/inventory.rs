@@ -1,5 +1,5 @@
 use crate::camera::{draw_tiles, render_text, Utils};
-use crate::logic::{Game, STANDARD_SQUARE, TILE_SIZE};
+use crate::logic::{Game, TILE, TILE_SIZE};
 use crate::player::{Player, PIXEL};
 use macroquad::prelude::*;
 
@@ -66,7 +66,6 @@ impl Game {
         let mesh = window_texture();
         draw_tiles(&mesh, l_box.point(), &self.textures["ui"], None, TILE_SIZE);
         draw_tiles(&mesh, r_box.point(), &self.textures["ui"], None, TILE_SIZE);
-        //draw_slots(r_box, &self.textures["ui"]);
         self.player.update_inv(r_box, l_box);
         self.draw_slots();
         self.render_items();
@@ -97,8 +96,8 @@ impl Game {
         let mut diag_rect = Rect::new(
             mouse_pos.x + 4. * PIXEL,
             mouse_pos.y,
-            4. * STANDARD_SQUARE,
-            2. * STANDARD_SQUARE,
+            4. * TILE,
+            2. * TILE,
         );
         for slot in player_inv.slot_hitboxes {
             if !slot.contains(mouse_pos) {

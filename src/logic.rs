@@ -11,7 +11,7 @@ use macroquad::prelude::*;
 
 pub const TILE_SIZE: f32 = 24.;
 pub const SCALE_FACTOR: f32 = 6.;
-pub const STANDARD_SQUARE: f32 = TILE_SIZE * SCALE_FACTOR;
+pub const TILE: f32 = TILE_SIZE * SCALE_FACTOR;
 pub const KNOCKBACK: f32 = 5000.;
 
 pub type Textures = HashMap<Rc<str>, Texture2D>;
@@ -59,6 +59,10 @@ impl Timer {
 
     pub fn repeat(&mut self) {
         self.time = self.duration
+    }
+    
+    pub fn progress(&self) -> f32 {
+        1. - self.time / self.duration
     }
 }
 
@@ -140,10 +144,10 @@ impl Game {
     fn talk_to_npc(&mut self) {
         let current_map = self.maps.get_mut(&self.current_map).unwrap();
         let npcs = &mut current_map.npcs;
-        let player_pos = self.player.pos();
+        let search_box = self.player.search_box();
 
         for npc in npcs.iter_mut() {
-            if npc.pos().distance(player_pos) < STANDARD_SQUARE {
+            if npc.hitbox.overlaps(&search_box) {
                 self.state = GameState::Talking(0, 0);
                 npc.is_talking = true
             }
@@ -338,15 +342,15 @@ impl Game {
         attack.attacked = true;
 
         // A bit unrelated since this will move the player toward the mouse
-        let vector = (attack.mouse_pos - player_pos).normalize() * 8. *STANDARD_SQUARE;
+        let vector = (attack.mouse_pos - player_pos).normalize() * 8. * TILE;
         self.player.props.velocity += vector;
     }
 
     fn move_map(&mut self, command: &str) {
         let commands: Vec<&str> = command.split_whitespace().map(|x| x.trim()).collect();
 
-        let pos_x = commands[1].parse::<f32>().unwrap() * STANDARD_SQUARE;
-        let pos_y = commands[2].parse::<f32>().unwrap() * STANDARD_SQUARE;
+        let pos_x = commands[1].parse::<f32>().unwrap() * TILE;
+        let pos_y = commands[2].parse::<f32>().unwrap() * TILE;
 
         //self.cam_offset.x = -pos_x / screen_width();
         //self.cam_offset.y = pos_y / screen_height();

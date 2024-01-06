@@ -39,17 +39,13 @@ impl NPC {
             dest_size,
             ..Default::default()
         };
-        let pos = npc_draw_pos(self.hitbox);
+        let pos = overlay_pos(self.hitbox);
 
         draw_texture_ex(texture, pos.x, pos.y, WHITE, draw_param)
     }
 
-    pub fn pos(&self) -> Vec2 {
-        self.hitbox.center()
-    }
-
     pub fn draw_overlay(&self, texture: &Texture2D) {
-        let dest_size = Some(vec2(STANDARD_SQUARE, STANDARD_SQUARE));
+        let dest_size = Some(vec2(TILE, TILE));
         let source = Some(Rect::new(TILE_SIZE, 0., TILE_SIZE, TILE_SIZE));
 
         let draw_param = DrawTextureParams {
@@ -58,9 +54,9 @@ impl NPC {
             ..Default::default()
         };
 
-        let pos = npc_draw_pos(self.hitbox);
+        let pos = overlay_pos(self.hitbox);
 
-        draw_texture_ex(texture, pos.x, pos.y - STANDARD_SQUARE, WHITE, draw_param);
+        draw_texture_ex(texture, pos.x, pos.y - TILE, WHITE, draw_param);
     }
 }
 
@@ -92,8 +88,8 @@ fn make_dialog(path: PathBuf) -> Option<Vec<String>> {
     Some(dialog)
 }
 
-fn npc_draw_pos(rect: Rect) -> Vec2 {
-    let x = rect.center().x - STANDARD_SQUARE / 2.;
-    let y = rect.bottom() - STANDARD_SQUARE;
+pub fn overlay_pos(rect: Rect) -> Vec2 {
+    let x = rect.center().x - TILE / 2.;
+    let y = rect.bottom() - TILE;
     vec2(x, y)
 }

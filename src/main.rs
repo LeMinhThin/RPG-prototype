@@ -12,6 +12,7 @@ mod npc;
 mod player;
 mod ui;
 mod weapons;
+mod interactables;
 
 fn window_conf() -> Conf {
     Conf {

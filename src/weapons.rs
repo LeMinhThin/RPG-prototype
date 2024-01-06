@@ -1,4 +1,4 @@
-use crate::logic::STANDARD_SQUARE;
+use crate::logic::TILE;
 
 #[derive(Clone)]
 pub struct Weapon {
@@ -12,7 +12,7 @@ impl Weapon {
     pub fn sword() -> Self {
         Weapon {
             base_damage: 10.,
-            lenght: STANDARD_SQUARE,
+            lenght: TILE,
             cooldown: 0.3,
             angle: 0.,
         }

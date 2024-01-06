@@ -1,6 +1,6 @@
 use macroquad::prelude::*;
 
-use crate::logic::{Game, STANDARD_SQUARE, TILE_SIZE};
+use crate::logic::{Game, TILE, TILE_SIZE};
 use crate::player::{PIXEL, PLAYER_HEALTH};
 
 pub mod inventory;
@@ -24,7 +24,7 @@ impl Game {
         );
 
         let texture = &self.textures["ui"];
-        let dest_size = Some(vec2(STANDARD_SQUARE * 3., STANDARD_SQUARE));
+        let dest_size = Some(vec2(TILE * 3., TILE));
         let source = Some(Rect::new(0., TILE_SIZE, TILE_SIZE * 3., TILE_SIZE));
         let params = DrawTextureParams {
             source,

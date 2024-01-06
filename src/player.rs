@@ -8,7 +8,7 @@ use macroquad::rand::rand;
 use std::f32::consts::PI;
 
 pub const INVUL_TIME: f32 = 1.0;
-pub const PIXEL: f32 = (1. / TILE_SIZE) * STANDARD_SQUARE;
+pub const PIXEL: f32 = (1. / TILE_SIZE) * TILE;
 pub const PLAYER_HEALTH: f32 = 100.;
 const PLAYER_VELOCITY: f32 = 350.;
 const FRICTION: f32 = 25.;
@@ -301,7 +301,7 @@ impl Player {
             return;
         }
         let rotation = self.weapon_angle();
-        let dest_size = Some(vec2(STANDARD_SQUARE, STANDARD_SQUARE));
+        let dest_size = Some(vec2(TILE, TILE));
         let params = DrawTextureParams {
             dest_size,
             source,
@@ -313,7 +313,7 @@ impl Player {
         let center = vec2(
             pos.x + (20. * PIXEL * rotation.cos()),
             pos.y + (20. * PIXEL * rotation.sin()),
-        ) - STANDARD_SQUARE / 2.;
+        ) - TILE / 2.;
 
         draw_texture_ex(texture, center.x, center.y, WHITE, params);
     }
@@ -325,9 +325,9 @@ impl Player {
         }
         let rotation = -angle_between(self.pos(), mouse_pos) + 1. * PI / 6.;
         let source = Some(source_rect(progress));
-        let dest_size = Some(vec2(2. * STANDARD_SQUARE, 2. * STANDARD_SQUARE));
+        let size = vec2(TILE, TILE) * 3.;
         let params = DrawTextureParams {
-            dest_size,
+            dest_size: Some(size),
             source,
             rotation,
             ..Default::default()
@@ -337,11 +337,11 @@ impl Player {
 
         draw_texture_ex(
             texture,
-            player_pos.x - STANDARD_SQUARE,
-            player_pos.y - STANDARD_SQUARE,
+            player_pos.x - size.x / 2.,
+            player_pos.y - size.y / 2.,
             WHITE,
             params,
-        )
+        );
     }
 
     pub fn draw(&self, texture: &Texture2D) {
@@ -381,7 +381,7 @@ impl Player {
     pub fn draw_held_proj(&self, texture: &Texture2D, mouse_pos: Vec2) {
         let pos = self.projectile_pos(mouse_pos);
         let source = Some(Rect::new(TILE_SIZE * 6., TILE_SIZE, TILE_SIZE, TILE_SIZE));
-        let dest_size = Some(vec2(STANDARD_SQUARE, STANDARD_SQUARE));
+        let dest_size = Some(vec2(TILE, TILE));
         let params = DrawTextureParams {
             source,
             dest_size,
@@ -394,12 +394,12 @@ impl Player {
         let pos = self.pos();
         let vec = (mouse_pos - pos).normalize() * 500.;
         let pos = vec2(
-            pos.x + vec.x - STANDARD_SQUARE / 2.,
-            pos.y + vec.y - STANDARD_SQUARE / 2.,
+            pos.x + vec.x - TILE / 2.,
+            pos.y + vec.y - TILE / 2.,
         );
 
         let source = Some(Rect::new(TILE_SIZE * 7., TILE_SIZE, TILE_SIZE, TILE_SIZE));
-        let dest_size = Some(vec2(STANDARD_SQUARE, STANDARD_SQUARE));
+        let dest_size = Some(vec2(TILE, TILE));
         let rotation = time * 2. * PI;
         let params = DrawTextureParams {
             source,
@@ -419,6 +419,16 @@ impl Player {
             "Rusty sword" => Some(Rect::new(0., 3. * TILE_SIZE, TILE_SIZE, TILE_SIZE)),
             _ => None,
         };
+    }
+
+    pub fn search_box(&self) -> Rect {
+        let pos = self.props.pos;
+        return match self.facing {
+            Orientation::Up => Rect::new(pos.x, pos.y - TILE, TILE, TILE),
+            Orientation::Left => Rect::new(pos.x - TILE, pos.y, TILE, TILE),
+            Orientation::Down => Rect::new(pos.x, pos.y + TILE, TILE, TILE),
+            Orientation::Right => Rect::new(pos.x + TILE, pos.y, TILE, TILE)
+        }
     }
 }
 

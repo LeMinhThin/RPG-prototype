@@ -130,7 +130,12 @@ impl Slime {
 
     fn damage_box(&self) -> Rect {
         let pos = self.props.pos;
-        Rect::new(pos.x + 4. * PIXEL, pos.y + 12. * PIXEL, 16. *PIXEL, 12. * PIXEL)
+        Rect::new(
+            pos.x + 4. * PIXEL,
+            pos.y + 12. * PIXEL,
+            16. * PIXEL,
+            12. * PIXEL,
+        )
     }
 }
 
@@ -143,8 +148,8 @@ impl Collidable for Slime {
         Rect {
             x: self.props.pos.x,
             y: self.props.pos.y,
-            w: STANDARD_SQUARE,
-            h: STANDARD_SQUARE,
+            w: TILE,
+            h: TILE,
         }
     }
 

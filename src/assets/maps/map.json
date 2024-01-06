@@ -153,6 +153,35 @@
         }, 
         {
          "draworder":"topdown",
+         "id":9,
+         "name":"Interactables",
+         "objects":[
+                {
+                 "height":0,
+                 "id":100,
+                 "name":"",
+                 "point":true,
+                 "properties":[
+                        {
+                         "name":"item",
+                         "type":"string",
+                         "value":"rusty_sword"
+                        }],
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":0,
+                 "x":176,
+                 "y":48
+                }],
+         "opacity":1,
+         "type":"objectgroup",
+         "visible":true,
+         "x":0,
+         "y":0
+        }, 
+        {
+         "draworder":"topdown",
          "id":6,
          "name":"Spawners",
          "objects":[
@@ -608,8 +637,8 @@
          "x":0,
          "y":0
         }],
- "nextlayerid":9,
- "nextobjectid":99,
+ "nextlayerid":10,
+ "nextobjectid":101,
  "orientation":"orthogonal",
  "properties":[
         {

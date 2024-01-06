@@ -124,8 +124,8 @@ impl Collidable for Mushroom {
         Rect {
             x: self.props.pos.x,
             y: self.props.pos.y,
-            w: STANDARD_SQUARE,
-            h: STANDARD_SQUARE,
+            w: TILE,
+            h: TILE,
         }
     }
 
