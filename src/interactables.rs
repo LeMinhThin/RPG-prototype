@@ -1,24 +1,28 @@
-use macroquad::prelude::*;
-use crate::ui::items::{Item, ItemEntity};
-use crate::logic::{Timer, TILE, TILE_SIZE};
-use crate::player::PIXEL;
 use crate::camera::TERRAIN_TILE_SIZE;
+use crate::logic::{Timer, TILE, TILE_SIZE};
 use crate::npc::overlay_pos;
+use crate::player::PIXEL;
+use crate::ui::items::{Item, ItemEntity};
+use macroquad::prelude::*;
 
 pub enum ChestState {
     Closed,
     Opening(Timer),
-    Opened
+    Opened,
 }
 pub struct Chest {
     content: Item,
     pos: Vec2,
-    pub state: ChestState
+    pub state: ChestState,
 }
 
 impl Chest {
     pub fn new(pos: Vec2, item: Item) -> Self {
-        Self { content: item, pos, state: ChestState::Closed }
+        Self {
+            content: item,
+            pos,
+            state: ChestState::Closed,
+        }
     }
 
     fn open(&mut self, search_box: Rect) {
@@ -30,7 +34,7 @@ impl Chest {
         }
         match self.state {
             ChestState::Closed => (),
-            _ => return
+            _ => return,
         }
         self.state = ChestState::Opening(Timer::new(0.5));
     }
@@ -67,7 +71,12 @@ impl Chest {
     }
 
     pub fn hitbox(&self) -> Rect {
-        Rect::new(self.pos.x + PIXEL, self.pos.y + PIXEL, 18. * PIXEL, 17. * PIXEL)
+        Rect::new(
+            self.pos.x + PIXEL,
+            self.pos.y + PIXEL,
+            18. * PIXEL,
+            17. * PIXEL,
+        )
     }
 
     pub fn draw_overlay(&self, texture: &Texture2D) {
@@ -86,7 +95,7 @@ impl Chest {
     }
 
     fn texture(&self) -> Rect {
-        let mut rect = Rect::new(0.,0., TERRAIN_TILE_SIZE, TERRAIN_TILE_SIZE);
+        let mut rect = Rect::new(0., 0., TERRAIN_TILE_SIZE, TERRAIN_TILE_SIZE);
         match self.state {
             ChestState::Closed => (),
             ChestState::Opening(timer) => {
@@ -96,7 +105,7 @@ impl Chest {
                     rect.x = 2. * TERRAIN_TILE_SIZE;
                 }
             }
-            ChestState::Opened => rect.x = 3. * TERRAIN_TILE_SIZE
+            ChestState::Opened => rect.x = 3. * TERRAIN_TILE_SIZE,
         }
         rect
     }

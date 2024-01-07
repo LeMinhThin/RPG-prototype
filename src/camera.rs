@@ -1,5 +1,6 @@
 use crate::interactables::ChestState;
 use crate::player::{Collidable, PlayerState};
+use crate::ui::main_menu::MainMenu;
 use crate::{logic::*, map::Area};
 use macroquad::prelude::*;
 use textwrap::Options;
@@ -60,10 +61,7 @@ impl Game {
         let mesh = &self.maps[&self.current_map].draw_mesh.terrain;
         let bound_x = mesh[0].len();
         let bound_y = mesh.len();
-        let bounds = vec2(
-            bound_x as f32 * TILE,
-            bound_y as f32 * TILE,
-        );
+        let bounds = vec2(bound_x as f32 * TILE, bound_y as f32 * TILE);
         Rect::new(0., 0., bounds.x, bounds.y)
     }
 
@@ -106,10 +104,22 @@ impl Game {
 
         match &self.state {
             GameState::Normal => (),
-            GameState::GUI => self.show_inv(),
+            GameState::GUI(gui) => self.draw_gui(gui),
             GameState::Talking(..) => self.draw_dialog(),
             GameState::Transition(timer, _) => draw_transition(self.cam_box(), timer),
         }
+    }
+
+    fn draw_gui(&self, gui: &GUIType) {
+        match gui {
+            GUIType::Inventory => self.show_inv(),
+            GUIType::MainMenu(menu) => self.draw_main_menu(menu),
+        }
+    }
+
+    fn draw_main_menu(&self, menu: &MainMenu) {
+        menu.draw_background(&self.textures["menu_bg"], self.cam_box());
+        menu.draw_buttons(&self.textures["ui"], &self.font);
     }
 
     fn draw_items(&self) {

@@ -5,6 +5,7 @@ use crate::player::{PIXEL, PLAYER_HEALTH};
 
 pub mod inventory;
 pub mod items;
+pub mod main_menu;
 
 impl Game {
     pub fn hud(&self) {

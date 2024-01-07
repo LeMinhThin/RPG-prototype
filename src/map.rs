@@ -3,12 +3,12 @@ use serde_json::Value;
 use std::rc::Rc;
 
 use crate::camera::TERRAIN_TILE_SIZE;
+use crate::interactables::Chest;
 use crate::logic::{Timer, KNOCKBACK, TILE, TILE_SIZE};
 use crate::monsters::*;
 use crate::npc::NPC;
 use crate::player::PIXEL;
 use crate::ui::items::*;
-use crate::interactables::Chest;
 use spawner::*;
 
 pub const RATIO: f32 = TILE / TERRAIN_TILE_SIZE;
@@ -413,7 +413,7 @@ fn make_chests(table: &Value) -> Vec<Chest> {
                 Item::slime(1)
             }
         };
-        let chest = Chest::new(vec2(x,y), item);
+        let chest = Chest::new(vec2(x, y), item);
         ret_vec.push(chest);
     }
     ret_vec
@@ -453,7 +453,7 @@ fn get_item(table: &Value) -> Result<Item, ItemErr> {
         "rusty sword" | "rusty_sword" => Ok(Item::rusty_sword()),
         "slime" => Ok(Item::slime(1)),
         "mushroom" => Ok(Item::mushroom(1)),
-        x => Err(ItemErr::Invalid(String::from(x)))
+        x => Err(ItemErr::Invalid(String::from(x))),
     };
     item
 }

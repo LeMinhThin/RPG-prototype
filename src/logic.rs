@@ -6,6 +6,7 @@ use std::rc::Rc;
 use crate::map::*;
 use crate::monsters::Monster;
 use crate::player::*;
+use crate::ui::main_menu::MainMenu;
 use macroquad::experimental::animation::*;
 use macroquad::prelude::*;
 
@@ -25,12 +26,19 @@ pub struct Game {
     pub textures: Textures,
     pub state: GameState,
     pub font: Font,
+    pub quit: bool,
 }
 
-#[derive(PartialEq)]
+#[derive(Clone)]
+pub enum GUIType {
+    Inventory,
+    MainMenu(MainMenu),
+}
+
+#[derive(Clone)]
 pub enum GameState {
     Normal,
-    GUI,
+    GUI(GUIType),
     Talking(usize, usize),
     Transition(Timer, bool),
 }
@@ -60,7 +68,7 @@ impl Timer {
     pub fn repeat(&mut self) {
         self.time = self.duration
     }
-    
+
     pub fn progress(&self) -> f32 {
         1. - self.time / self.duration
     }
@@ -78,6 +86,7 @@ impl Game {
             let map_content = Area::from(&json_string);
             area.insert(map_content.0, map_content.1);
         }
+        let state = GameState::GUI(GUIType::MainMenu(MainMenu::new()));
 
         Game {
             player: Player::new(),
@@ -85,19 +94,25 @@ impl Game {
             current_map,
             textures,
             cam_offset: vec2(0., 0.),
-            state: GameState::Normal,
+            state,
             font,
+            quit: false,
         }
     }
 
     fn key_event_handler(&mut self) {
         if is_key_pressed(KeyCode::E) {
-            self.state = GameState::GUI
+            self.state = GameState::GUI(GUIType::Inventory)
         }
 
         if is_key_pressed(KeyCode::Escape) {
-            if self.state == GameState::GUI {
-                self.state = GameState::Normal
+            let gui = match &self.state {
+                GameState::GUI(gui) => gui,
+                _ => return,
+            };
+            match gui {
+                GUIType::Inventory => self.state = GameState::Normal,
+                _ => return,
             }
         }
 
@@ -147,10 +162,12 @@ impl Game {
         let search_box = self.player.search_box();
 
         for npc in npcs.iter_mut() {
-            if npc.hitbox.overlaps(&search_box) {
-                self.state = GameState::Talking(0, 0);
-                npc.is_talking = true
+            if !npc.hitbox.overlaps(&search_box) {
+                continue;
             }
+            self.state = GameState::Talking(0, 0);
+            npc.is_talking = true;
+            npc.face(self.player.pos())
         }
     }
 
@@ -187,7 +204,7 @@ impl Game {
         self.new_camera_offset();
         self.key_event_handler();
         self.anim_tick();
-        match self.state {
+        match self.state.clone() {
             GameState::Talking(..) => {
                 self.player.change_anim(false);
                 self.conversation();
@@ -198,8 +215,9 @@ impl Game {
                 self.timer_progress(&mut timer, &mut moved);
                 return;
             }
-            GameState::GUI => {
+            GameState::GUI(gui) => {
                 self.player.change_anim(false);
+                self.tick_gui(gui);
                 return;
             }
             GameState::Normal => (),
@@ -232,21 +250,20 @@ impl Game {
             }
         }
 
-
         current_map.clean_up();
     }
 
     fn tick_player(&mut self) {
-        if self.state != GameState::Normal {
-            self.player.change_anim(false);
-        }
-
         match self.state {
-            GameState::Talking(..) => self.conversation(),
-            GameState::Transition(mut timer, mut moved) => {
-                self.timer_progress(&mut timer, &mut moved)
+            GameState::Talking(..) => {
+                self.conversation();
+                self.player.change_anim(false)
             }
-            GameState::GUI => (),
+            GameState::Transition(mut timer, mut moved) => {
+                self.timer_progress(&mut timer, &mut moved);
+                self.player.change_anim(false)
+            }
+            GameState::GUI(_) => self.player.change_anim(false),
             GameState::Normal => (),
         }
         let mouse_pos = self.get_mouse_pos();
@@ -313,7 +330,8 @@ impl Game {
         }
 
         for npc in current_map.npcs.iter_mut() {
-            npc.anim.update()
+            npc.update_anim();
+            npc.anim.update();
         }
     }
 

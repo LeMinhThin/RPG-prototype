@@ -1,10 +1,10 @@
+use logic::*;
+use macroquad::prelude::*;
 use std::rc::Rc;
 use std::{collections::HashMap, path::PathBuf};
 
-use logic::*;
-use macroquad::prelude::*;
-
 mod camera;
+mod interactables;
 mod logic;
 mod map;
 mod monsters;
@@ -12,7 +12,6 @@ mod npc;
 mod player;
 mod ui;
 mod weapons;
-mod interactables;
 
 fn window_conf() -> Conf {
     Conf {
@@ -25,8 +24,8 @@ fn window_conf() -> Conf {
 
 #[macroquad::main(window_conf)]
 async fn main() {
-    let textures = load_textures().await;
     let font = load_font().await;
+    let textures = load_textures().await;
     let mut game_state = Game::new(textures, font);
     loop {
         game_state.tick();
@@ -34,7 +33,7 @@ async fn main() {
         next_frame().await;
 
         // game over if health <= 0
-        if game_state.player.props.health <= 0. {
+        if game_state.quit {
             break;
         }
     }

@@ -143,7 +143,7 @@ impl Player {
         Player {
             state: PlayerState::Normal,
             invul_time: Timer::new(INVUL_TIME),
-            props: Props::from(vec2(0., 0.), PLAYER_HEALTH, animation),
+            props: Props::from(Vec2::ZERO, PLAYER_HEALTH, animation),
             held_weapon: Weapon::sword(),
             facing: Orientation::Down,
             inventory: Inventory::empty(),
@@ -393,10 +393,7 @@ impl Player {
     pub fn draw_throw_indicator(&self, mouse_pos: Vec2, texture: &Texture2D, time: f32) {
         let pos = self.pos();
         let vec = (mouse_pos - pos).normalize() * 500.;
-        let pos = vec2(
-            pos.x + vec.x - TILE / 2.,
-            pos.y + vec.y - TILE / 2.,
-        );
+        let pos = vec2(pos.x + vec.x - TILE / 2., pos.y + vec.y - TILE / 2.);
 
         let source = Some(Rect::new(TILE_SIZE * 7., TILE_SIZE, TILE_SIZE, TILE_SIZE));
         let dest_size = Some(vec2(TILE, TILE));
@@ -427,8 +424,8 @@ impl Player {
             Orientation::Up => Rect::new(pos.x, pos.y - TILE, TILE, TILE),
             Orientation::Left => Rect::new(pos.x - TILE, pos.y, TILE, TILE),
             Orientation::Down => Rect::new(pos.x, pos.y + TILE, TILE, TILE),
-            Orientation::Right => Rect::new(pos.x + TILE, pos.y, TILE, TILE)
-        }
+            Orientation::Right => Rect::new(pos.x + TILE, pos.y, TILE, TILE),
+        };
     }
 }
 
@@ -462,7 +459,7 @@ pub fn angle_between(start_point: Vec2, end_point: Vec2) -> f32 {
     vector.angle_between(vec2(1., 0.))
 }
 
-fn should_face(angle: f32) -> Orientation {
+pub fn should_face(angle: f32) -> Orientation {
     // My god that's a mouthful
     if (angle > -PI / 4. && angle < 0.) || (angle < PI / 4. && angle > 0.) {
         Orientation::Right

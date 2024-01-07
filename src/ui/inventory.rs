@@ -54,23 +54,29 @@ impl Inventory {
 }
 
 impl Game {
-    pub fn show_inv(&mut self) {
-        let screen_center = self.cam_box().center();
+    pub fn tick_inv(&mut self) {
         let width = 720.;
         let height = 1296.;
         let margin = 50.;
-
+        let screen_center = self.cam_box().center();
         let (l_box, r_box) = dual_box(screen_center, width, height, margin);
+        self.player.update_inv(r_box, l_box);
+        self.inv_click_detection();
+    }
 
+    pub fn show_inv(&self) {
+        let width = 720.;
+        let height = 1296.;
+        let margin = 50.;
+        let screen_center = self.cam_box().center();
+        let (l_box, r_box) = dual_box(screen_center, width, height, margin);
         #[rustfmt::skip]
         let mesh = window_texture();
         draw_tiles(&mesh, l_box.point(), &self.textures["ui"], None, TILE_SIZE);
         draw_tiles(&mesh, r_box.point(), &self.textures["ui"], None, TILE_SIZE);
-        self.player.update_inv(r_box, l_box);
         self.draw_slots();
         self.render_items();
         self.draw_description();
-        self.inv_click_detection();
         self.draw_held_item()
     }
 
@@ -93,12 +99,7 @@ impl Game {
         let mouse_pos = self.get_mouse_pos();
         let player_inv = &self.player.inventory;
         let mut index = 0;
-        let mut diag_rect = Rect::new(
-            mouse_pos.x + 4. * PIXEL,
-            mouse_pos.y,
-            4. * TILE,
-            2. * TILE,
-        );
+        let mut diag_rect = Rect::new(mouse_pos.x + 4. * PIXEL, mouse_pos.y, 4. * TILE, 2. * TILE);
         for slot in player_inv.slot_hitboxes {
             if !slot.contains(mouse_pos) {
                 index += 1;

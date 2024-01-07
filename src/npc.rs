@@ -1,4 +1,5 @@
 use crate::logic::*;
+use crate::player::{angle_between, should_face, Orientation};
 use macroquad::experimental::animation::AnimatedSprite;
 use macroquad::prelude::*;
 use serde_json::Value;
@@ -12,6 +13,7 @@ pub struct NPC {
     pub hitbox: Rect,
     pub anim: AnimatedSprite,
     pub is_talking: bool,
+    pub facing: Orientation,
 }
 
 impl NPC {
@@ -28,6 +30,7 @@ impl NPC {
             anim,
             hitbox,
             is_talking: false,
+            facing: Orientation::Down,
         }
     }
 
@@ -57,6 +60,21 @@ impl NPC {
         let pos = overlay_pos(self.hitbox);
 
         draw_texture_ex(texture, pos.x, pos.y - TILE, WHITE, draw_param);
+    }
+
+    pub fn face(&mut self, pos: Vec2) {
+        let npc_pos = vec2(self.hitbox.x, self.hitbox.y);
+        let angle = angle_between(npc_pos, pos);
+        self.facing = should_face(angle);
+    }
+
+    pub fn update_anim(&mut self) {
+        match self.facing {
+            Orientation::Up => self.anim.set_animation(2),
+            Orientation::Down => self.anim.set_animation(0),
+            Orientation::Left => self.anim.set_animation(1),
+            Orientation::Right => self.anim.set_animation(3),
+        }
     }
 }
 
