@@ -71,7 +71,7 @@ impl MainMenu {
                 color: BLACK,
                 ..Default::default()
             };
-            render_text(button.hitbox.shift(-TILE * 1.75, -TILE/ 2.), name, params)
+            render_text(button.hitbox.shift(-TILE * 1.9, -TILE / 2.), name, params)
         }
     }
     pub fn new() -> Self {

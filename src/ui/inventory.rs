@@ -1,7 +1,9 @@
 use crate::camera::{draw_tiles, render_text, Utils};
 use crate::logic::{Game, TILE, TILE_SIZE};
 use crate::player::{Player, PIXEL};
+use crate::weapons::Weapon;
 use macroquad::prelude::*;
+use std::mem::swap;
 
 use super::items::{Item, ItemType};
 
@@ -156,7 +158,7 @@ impl Game {
                         player_inv.holding = None;
                         return;
                     }
-                    (*slot, *holding) = (holding.clone(), slot.clone());
+                    swap(holding, slot);
                     return;
                 }
                 player_inv.content[index] = Some(holding.clone());
@@ -174,12 +176,18 @@ impl Game {
         if !weapon_slot.contains(mouse_pos) {
             return;
         }
-        if let Some(item) = &player_inv.holding {
+        if let Some(item) = player_inv.holding.clone() {
             if item.class != ItemType::Weapon {
                 return;
             }
-            player_inv.content[12] = player_inv.holding.clone();
+            if player_inv.content[12].is_some() {
+                swap(&mut player_inv.holding, &mut player_inv.content[12]);
+                return;
+            }
+
+            player_inv.content[12] = Some(item.clone());
             player_inv.holding = None;
+            self.player.held_weapon = get_weapon(item.name());
             return;
         }
         player_inv.holding = player_inv.content[12].clone();
@@ -326,6 +334,7 @@ pub fn source_rect(item: Option<&Item>) -> Option<Rect> {
         "Slime" => Some(Rect::new(0., TILE_SIZE * 2., TILE_SIZE, TILE_SIZE)),
         "Mushroom" => Some(Rect::new(TILE_SIZE, TILE_SIZE * 2., TILE_SIZE, TILE_SIZE)),
         "Rusty sword" => Some(Rect::new(0., 3. * TILE_SIZE, TILE_SIZE, TILE_SIZE)),
+        "Black sword" => Some(Rect::new(TILE_SIZE, 3. * TILE_SIZE, TILE_SIZE, TILE_SIZE)),
         _ => None,
     };
 }
@@ -351,4 +360,15 @@ fn desc_diag() -> Vec<Vec<u16>> {
         vec![7 ,  8, 8,  9],
         vec![31, 32, 32, 33],
     ]
+}
+
+fn get_weapon(name: &str) -> Weapon {
+    match name {
+        "Rusty sword" => Weapon::rusty_sword(),
+        "Black sword" => Weapon::black_sword(),
+        x => {
+            error!("{x} isn't handled, returning rusty_sword anyway");
+            Weapon::rusty_sword()
+        }
+    }
 }

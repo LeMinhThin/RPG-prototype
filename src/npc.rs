@@ -100,7 +100,7 @@ fn make_dialog(path: PathBuf) -> Option<Vec<String>> {
     let arr = parsed["dialog"].as_array()?;
 
     for item in arr {
-        dialog.push(item.as_str()?.to_string())
+        dialog.push(format!("{} ",item.as_str()?.to_string()))
     }
 
     Some(dialog)

@@ -1,5 +1,5 @@
 use crate::interactables::ChestState;
-use crate::player::{Collidable, PlayerState};
+use crate::player::{Collidable, PlayerState, PIXEL};
 use crate::ui::main_menu::MainMenu;
 use crate::{logic::*, map::Area};
 use macroquad::prelude::*;
@@ -230,26 +230,29 @@ impl Game {
         let npcs = &self.maps[&self.current_map].npcs;
         let npc = npcs.iter().find(|npc| npc.is_talking).unwrap();
         let text = &npc.dialogs[line][..char];
-        let diag_box = self.diag_box();
-        self.draw_diag_box();
+        let mut diag_box = self.diag_box();
+        self.draw_diag_box(&self.textures["ui"]);
         let params = TextParams {
             font_size: 48,
             font: Some(&self.font),
+            color: BLACK,
             ..Default::default()
         };
+        diag_box.x += 5. * PIXEL;
         render_text(diag_box, text, params);
     }
 
-    fn draw_diag_box(&self) {
+    fn draw_diag_box(&self, texture: &Texture2D) {
         let diag_box = self.diag_box();
+        let mesh = diag_mesh();
 
-        draw_rectangle(diag_box.x, diag_box.y, diag_box.w, diag_box.h, GRAY);
+        draw_tiles(&mesh, diag_box.point(), texture, None, TILE_SIZE);
     }
 
     fn diag_box(&self) -> Rect {
         let cam_box = self.cam_box();
-        let diag_width = 1200.;
-        let diag_height = 400.;
+        let diag_width = 9. * TILE;
+        let diag_height = 3. * TILE;
 
         Rect::new(
             cam_box.center().x - diag_width / 2.,
@@ -376,4 +379,12 @@ fn should_skip(point: Vec2, screen: Option<Rect>, cell: &u16) -> bool {
         return false;
     }
     return false;
+}
+
+fn diag_mesh() -> Vec<Vec<u16>> {
+    vec![
+        vec![7, 8, 8, 8, 8, 8, 8, 8, 9],
+        vec![19, 20, 20, 20, 20, 20, 20, 20, 21],
+        vec![31, 32, 32, 32, 32, 32, 32, 32, 33],
+    ]
 }

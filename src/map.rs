@@ -451,6 +451,7 @@ fn get_item(table: &Value) -> Result<Item, ItemErr> {
 
     let item = match key.to_lowercase().as_str() {
         "rusty sword" | "rusty_sword" => Ok(Item::rusty_sword()),
+        "black sword" | "black_sword" => Ok(Item::black_sword()),
         "slime" => Ok(Item::slime(1)),
         "mushroom" => Ok(Item::mushroom(1)),
         x => Err(ItemErr::Invalid(String::from(x))),

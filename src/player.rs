@@ -144,7 +144,7 @@ impl Player {
             state: PlayerState::Normal,
             invul_time: Timer::new(INVUL_TIME),
             props: Props::from(Vec2::ZERO, PLAYER_HEALTH, animation),
-            held_weapon: Weapon::sword(),
+            held_weapon: Weapon::rusty_sword(),
             facing: Orientation::Down,
             inventory: Inventory::empty(),
             combo: 0,
@@ -285,7 +285,10 @@ impl Player {
         };
         // I know it doesn't make sense but it works
         let arc_lenght = 7. * PI / 12.;
-        let mut timer_progress = timer.time / timer.duration;
+        let mut timer_progress = timer.progress();
+        if self.combo % 2 == 1 {
+            timer_progress = 1. - timer_progress;
+        }
         if timer_progress < 0.5 {
             timer_progress = 0.
         } else {
@@ -323,13 +326,16 @@ impl Player {
         if progress < 0.5 {
             return;
         }
-        let rotation = -angle_between(self.pos(), mouse_pos) + 1. * PI / 6.;
+        let flip = self.combo % 2 == 0;
+        let extra = flip as u8 as f32 * (2. / 3. * PI);
+        let rotation = -angle_between(self.pos(), mouse_pos) + 1. * PI / 6. + extra;
         let source = Some(source_rect(progress));
         let size = vec2(TILE, TILE) * 3.;
         let params = DrawTextureParams {
             dest_size: Some(size),
             source,
             rotation,
+            flip_x: flip,
             ..Default::default()
         };
 
@@ -414,6 +420,7 @@ impl Player {
         }
         return match inv.as_ref().unwrap().name() {
             "Rusty sword" => Some(Rect::new(0., 3. * TILE_SIZE, TILE_SIZE, TILE_SIZE)),
+            "Black sword" => Some(Rect::new(TILE_SIZE, 3. * TILE_SIZE, TILE_SIZE, TILE_SIZE)),
             _ => None,
         };
     }

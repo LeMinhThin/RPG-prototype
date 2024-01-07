@@ -173,6 +173,24 @@
                  "width":0,
                  "x":176,
                  "y":48
+                }, 
+                {
+                 "height":0,
+                 "id":101,
+                 "name":"",
+                 "point":true,
+                 "properties":[
+                        {
+                         "name":"item",
+                         "type":"string",
+                         "value":"black sword"
+                        }],
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":0,
+                 "x":223.875,
+                 "y":96.125
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -638,7 +656,7 @@
          "y":0
         }],
  "nextlayerid":10,
- "nextobjectid":101,
+ "nextobjectid":102,
  "orientation":"orthogonal",
  "properties":[
         {

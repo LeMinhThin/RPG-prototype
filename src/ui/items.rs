@@ -59,6 +59,16 @@ impl Item {
         }
     }
 
+    pub fn black_sword() -> Self {
+        Self {
+            name: "Black sword".into(),
+            description: "It is unclear how it got so black".into(),
+            count: 1,
+            class: ItemType::Weapon,
+            value: 20,
+        }
+    }
+
     pub fn name(&self) -> &str {
         &self.name
     }
