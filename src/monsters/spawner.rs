@@ -2,10 +2,10 @@ use macroquad::prelude::*;
 use macroquad::rand::*;
 
 use crate::logic::Timer;
+use crate::map::Monster;
 
 use super::mushroom::Mushroom;
 use super::slime::Slime;
-use super::Monster;
 
 // The term "radius" being used here is technically wrong as it is more of a square than a circle but
 // it would take an additional layer of complexity to fix this tiny bug, which I'm not very fond of
@@ -62,14 +62,12 @@ impl Spawner {
             match self.kind {
                 MobType::Slime => {
                     let slime = Slime::from(vec2(self.pos.x + x_offset, self.pos.y + y_offset));
-                    let new_mob = Monster::new(slime);
-                    monsters.push(new_mob);
+                    monsters.push(Box::new(slime));
                 }
                 MobType::Mushroom => {
                     let mushroom =
                         Mushroom::from(vec2(self.pos.x + x_offset, self.pos.y + y_offset));
-                    let new_mob = Monster::new(mushroom);
-                    monsters.push(new_mob)
+                    monsters.push(Box::new(mushroom))
                 }
             }
         }
@@ -84,7 +82,7 @@ impl Spawner {
         );
         let mut num_mobs = 0;
         for mob in mobs {
-            let mob_hitbox = mob.get().hitbox();
+            let mob_hitbox = mob.hitbox();
 
             if !self.is_same_type(mob) {
                 continue;
@@ -98,7 +96,7 @@ impl Spawner {
     }
 
     fn is_same_type(&self, mob: &Monster) -> bool {
-        let mob_type = mob.get().get_type();
+        let mob_type = mob.get_type();
         mob_type == self.kind
     }
 }

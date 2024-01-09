@@ -14,7 +14,7 @@ pub struct Item {
     pub count: u8,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ItemEntity {
     pub item: Item,
     pub hitbox: Rect,

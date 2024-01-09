@@ -3,7 +3,7 @@ use serde_json::Value;
 use std::rc::Rc;
 
 use crate::camera::TERRAIN_TILE_SIZE;
-use crate::interactables::Chest;
+use crate::interactables::{Chest, Interactables};
 use crate::logic::{Timer, KNOCKBACK, TILE, TILE_SIZE};
 use crate::monsters::*;
 use crate::npc::NPC;
@@ -13,6 +13,8 @@ use spawner::*;
 
 pub const RATIO: f32 = TILE / TERRAIN_TILE_SIZE;
 const PROJ_SPEED: f32 = 2000.;
+pub type Monster = Box<dyn Entity>;
+pub type Interactable = Box<dyn Interactables>;
 
 pub struct Area {
     pub enemies: Vec<Monster>,
@@ -22,7 +24,7 @@ pub struct Area {
     pub npcs: Vec<NPC>,
     pub projectiles: Vec<Projectile>,
     pub items: Vec<ItemEntity>,
-    pub chests: Vec<Chest>,
+    pub interactables: Vec<Interactable>,
     pub draw_mesh: Meshes,
 }
 
@@ -97,7 +99,6 @@ impl Projectile {
         let hitbox = self.hitbox();
 
         for monster in monsters.iter_mut() {
-            let monster = monster.get_mut();
             if hitbox.overlaps(&monster.hitbox()) {
                 let props = monster.get_mut_props();
                 props.health -= self.damage;
@@ -131,7 +132,7 @@ impl Area {
         let mut spawners = vec![];
         let mut gates = vec![];
         let mut npcs = vec![];
-        let mut chests = vec![];
+        let mut interactables = vec![];
 
         for layer in parsed["layers"].as_array().unwrap() {
             match layer["name"].as_str().unwrap().to_lowercase().as_str() {
@@ -154,7 +155,7 @@ impl Area {
                     npcs = make_npcs(layer).unwrap();
                 }
                 "interactables" => {
-                    chests = make_chests(layer);
+                    interactables = parse_interactable(layer);
                 }
                 _ => (),
             }
@@ -163,7 +164,7 @@ impl Area {
         for npc in &npcs {
             walls.push(npc.hitbox)
         }
-        for chest in &chests {
+        for chest in &interactables {
             walls.push(chest.hitbox())
         }
 
@@ -178,7 +179,7 @@ impl Area {
                 gates,
                 walls,
                 npcs,
-                chests,
+                interactables,
             },
         )
     }
@@ -188,7 +189,6 @@ impl Area {
         let mobs = &mut self.enemies;
         // Spawn loot for every dying mob
         for mob in mobs.iter() {
-            let mob = mob.get();
             if !mob.get_props().should_despawn {
                 continue;
             }
@@ -198,7 +198,7 @@ impl Area {
             }
         }
         let items = &mut self.items;
-        mobs.retain(|mob| !mob.get().get_props().should_despawn);
+        mobs.retain(|mob| !mob.get_props().should_despawn);
         projectiles.retain(|proj| !proj.should_despawn && !proj.life_time.is_done());
         items.retain(|item| !item.should_delete);
     }
@@ -296,16 +296,18 @@ fn get_props(objects: &Value) -> Option<(f32, f32, MobType, u32)> {
     let mut spawn_radius = 3. * TILE;
     let mut kind = MobType::Slime;
     let mut max_mob = 3;
-
+    
+    if let Some(mob) = objects["type"].as_str() {
+        kind = what_kind(mob)
+    }
     for prop in props {
         match prop["name"].as_str()? {
             "cooldown" => cooldown = prop["value"].as_f64()? as f32,
-            "kind" => kind = what_kind(prop["value"].as_str()?),
             "max_mob" => max_mob = prop["value"].as_f64()? as u32,
             "spawn_radius" => {
                 spawn_radius = prop["value"].as_f64()? as f32 * TILE;
             }
-            x => warn!("[WARN] unrecognised field name {x}"),
+            x => warn!("[WARN] unrecognised field name {}", x),
         }
     }
 
@@ -383,40 +385,55 @@ fn make_npcs(objects: &Value) -> Option<Vec<NPC>> {
     Some(npcs)
 }
 
-fn make_chests(table: &Value) -> Vec<Chest> {
+fn parse_interactable(table: &Value) -> Vec<Interactable> {
     let mut ret_vec = vec![];
-    let table = table.get("objects");
-    if table.is_none() {
-        error!("make_chest: Invalid layer");
-        return ret_vec;
-    }
-    let table = table.unwrap().as_array();
-    if table.is_none() {
-        error!("make_chest: Invalid layer");
-        return ret_vec;
-    }
-    for elem in table.unwrap() {
-        let x = get_pos(elem, "x", "make_chest") * RATIO + PIXEL;
-        let y = get_pos(elem, "y", "make_chest") * RATIO + PIXEL;
-        let item = match get_item(elem) {
-            Ok(item) => item,
-            Err(ItemErr::Invalid(name)) => {
-                warn!("Invalid Item name {name}, defaulting to slime");
-                Item::slime(1)
+    let table = match table.get("objects") {
+        Some(table) => table,
+        None => {
+            error!("parse_interactable: Invalid layer");
+            return ret_vec;
+        }
+    };
+    let table = match table.as_array() {
+        Some(table) => table,
+        None => {
+            error!("parse_interactable: Layer can not be represented as array");
+            return ret_vec;
+        }
+    };
+
+    for item in table {
+        match item["type"].as_str().unwrap().to_lowercase().as_str() {
+            "chest" => ret_vec.push(make_chests(item)),
+            x => {
+                error!("Unrecognised interactable type {}", x)
             }
-            Err(ItemErr::NotSameType) => {
-                warn!("Key is not of type string, defaulting to slime");
-                Item::slime(1)
-            }
-            Err(ItemErr::NoKey) => {
-                warn!("Key 'item' does not exist, defaulting to slime");
-                Item::slime(1)
-            }
-        };
-        let chest = Chest::new(vec2(x, y), item);
-        ret_vec.push(chest);
+        }
     }
+
     ret_vec
+}
+
+fn make_chests(table: &Value) -> Interactable {
+    let x = get_pos(table, "x", "make_chest") * RATIO + PIXEL;
+    let y = get_pos(table, "y", "make_chest") * RATIO + PIXEL;
+    let item = match get_item(table) {
+        Ok(item) => item,
+        Err(ItemErr::Invalid(name)) => {
+            warn!("Invalid Item name {name}, defaulting to slime");
+            Item::slime(1)
+        }
+        Err(ItemErr::NotSameType) => {
+            warn!("Key is not of type string, defaulting to slime");
+            Item::slime(1)
+        }
+        Err(ItemErr::NoKey) => {
+            warn!("Key 'item' does not exist, defaulting to slime");
+            Item::slime(1)
+        }
+    };
+    let chest = Chest::new(vec2(x, y), item);
+    Box::new(chest)
 }
 
 fn get_pos(table: &Value, value: &str, func: &str) -> f32 {

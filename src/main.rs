@@ -4,7 +4,7 @@ use std::rc::Rc;
 use std::{collections::HashMap, path::PathBuf};
 
 mod camera;
-mod interactables;
+pub mod interactables;
 mod logic;
 mod map;
 mod monsters;

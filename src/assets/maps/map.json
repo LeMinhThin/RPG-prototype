@@ -168,7 +168,7 @@
                          "value":"rusty_sword"
                         }],
                  "rotation":0,
-                 "type":"",
+                 "type":"chest",
                  "visible":true,
                  "width":0,
                  "x":176,
@@ -186,7 +186,7 @@
                          "value":"black sword"
                         }],
                  "rotation":0,
-                 "type":"",
+                 "type":"chest",
                  "visible":true,
                  "width":0,
                  "x":223.875,
@@ -215,11 +215,6 @@
                          "value":10
                         }, 
                         {
-                         "name":"kind",
-                         "type":"string",
-                         "value":"slime"
-                        }, 
-                        {
                          "name":"max_mob",
                          "type":"int",
                          "value":5
@@ -230,7 +225,7 @@
                          "value":3
                         }],
                  "rotation":0,
-                 "type":"",
+                 "type":"slime",
                  "visible":true,
                  "width":0,
                  "x":733.318181818182,
@@ -248,11 +243,6 @@
                          "value":10
                         }, 
                         {
-                         "name":"kind",
-                         "type":"string",
-                         "value":"mushroom"
-                        }, 
-                        {
                          "name":"max_mob",
                          "type":"int",
                          "value":2
@@ -263,7 +253,7 @@
                          "value":5
                         }],
                  "rotation":0,
-                 "type":"",
+                 "type":"mushroom",
                  "visible":true,
                  "width":0,
                  "x":640,

@@ -1,4 +1,3 @@
-use crate::interactables::ChestState;
 use crate::player::{Collidable, PlayerState, PIXEL};
 use crate::ui::main_menu::MainMenu;
 use crate::{logic::*, map::Area};
@@ -92,6 +91,10 @@ impl Game {
         };
         set_camera(&camera);
 
+        if let GameState::GUI(GUIType::MainMenu(menu)) = &self.state {
+            self.draw_main_menu(menu);
+            return;
+        }
         self.draw_terrain();
         self.draw_monsters();
         self.draw_interactables();
@@ -113,7 +116,7 @@ impl Game {
     fn draw_gui(&self, gui: &GUIType) {
         match gui {
             GUIType::Inventory => self.show_inv(),
-            GUIType::MainMenu(menu) => self.draw_main_menu(menu),
+            GUIType::MainMenu(_) => return, // This should not be reachable since it's already been covered
         }
     }
 
@@ -131,14 +134,11 @@ impl Game {
     }
 
     fn draw_interactables(&self) {
-        let interactables = &self.maps[&self.current_map].chests;
+        let interactables = &self.maps[&self.current_map].interactables;
         let search_box = self.player.search_box();
         for item in interactables {
             item.draw(&self.textures["chest"]);
             if !item.hitbox().overlaps(&search_box) {
-                continue;
-            }
-            if let ChestState::Opened = item.state {
                 continue;
             }
             item.draw_overlay(&self.textures["ui"])
@@ -156,7 +156,7 @@ impl Game {
     fn draw_monsters(&self) {
         let map = &self.maps[&self.current_map];
         for monster in map.enemies.iter() {
-            monster.get().draw(&self.textures);
+            monster.draw(&self.textures);
         }
     }
 

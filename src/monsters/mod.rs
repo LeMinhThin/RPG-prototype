@@ -7,20 +7,6 @@ pub mod mushroom;
 pub mod slime;
 pub mod spawner;
 
-pub struct Monster(Box<dyn Entity>);
-
-impl Monster {
-    pub fn get(&self) -> &dyn Entity {
-        self.0.as_ref()
-    }
-    pub fn get_mut(&mut self) -> &mut dyn Entity {
-        self.0.as_mut()
-    }
-    pub fn new<T: Entity + 'static>(mob: T) -> Self {
-        Monster(Box::new(mob))
-    }
-}
-
 pub trait IsAMonster {
     fn loot(&self) -> Option<Item>;
     fn tick(&mut self, player: &mut Player, walls: &[Rect]);

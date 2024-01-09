@@ -3,8 +3,8 @@ use std::fs::{read_dir, read_to_string};
 use std::path::PathBuf;
 use std::rc::Rc;
 
+use crate::interactables::GameSignal;
 use crate::map::*;
-use crate::monsters::Monster;
 use crate::player::*;
 use crate::ui::main_menu::MainMenu;
 use macroquad::experimental::animation::*;
@@ -25,6 +25,7 @@ pub struct Game {
     pub cam_offset: Vec2,
     pub textures: Textures,
     pub state: GameState,
+    pub tasks: Vec<Option<GameSignal>>,
     pub font: Font,
     pub quit: bool,
 }
@@ -90,6 +91,7 @@ impl Game {
 
         Game {
             player: Player::new(),
+            tasks: vec![],
             maps: area,
             current_map,
             textures,
@@ -225,13 +227,26 @@ impl Game {
         self.is_touching_gate();
 
         self.tick_player();
+        self.tick_map();
+        self.do_task();
+    }
+
+    fn do_task(&mut self) {
+        let tasks = self.tasks.clone();
+        tasks
+            .iter()
+            .for_each(|task| self.handle_signals(task.as_ref()));
+        self.tasks.clear()
+    }
+
+    fn tick_map(&mut self) {
         let current_map = self.maps.get_mut(&self.current_map).unwrap();
 
         for projectile in current_map.projectiles.iter_mut() {
             projectile.tick(&mut current_map.enemies);
         }
         for monster in current_map.enemies.iter_mut() {
-            monster.get_mut().tick(&mut self.player, &current_map.walls);
+            monster.tick(&mut self.player, &current_map.walls);
         }
         for spawner in current_map.spawners.iter_mut() {
             spawner.tick(&mut current_map.enemies)
@@ -243,14 +258,25 @@ impl Game {
             self.player.inventory.append(item.item.clone());
             item.should_delete = true
         }
-        for chest in current_map.chests.iter_mut() {
-            let item = chest.tick(self.player.search_box());
-            if let Some(item) = item {
-                current_map.items.push(item)
-            }
+        let search_box = self.player.search_box();
+        for chest in current_map.interactables.iter_mut() {
+            let signal = chest.activate(&search_box);
+            self.tasks.push(signal)
         }
 
         current_map.clean_up();
+    }
+
+    fn handle_signals(&mut self, signal: Option<&GameSignal>) {
+        let signal = match signal {
+            Some(signal) => signal,
+            None => return,
+        };
+
+        let current_map = self.maps.get_mut(&self.current_map).unwrap();
+        match signal {
+            GameSignal::SpawnItem(item) => current_map.items.push(item.clone()),
+        }
     }
 
     fn tick_player(&mut self) {
@@ -326,7 +352,7 @@ impl Game {
 
         let current_map = self.maps.get_mut(&self.current_map).unwrap();
         for monster in current_map.enemies.iter_mut() {
-            monster.get_mut().tick_anim();
+            monster.tick_anim();
         }
 
         for npc in current_map.npcs.iter_mut() {
@@ -352,10 +378,10 @@ impl Game {
         let player_pos = self.player.pos();
 
         for monster in self.get_monster_list() {
-            if !damage_zone.overlaps(&monster.get().hitbox()) {
+            if !damage_zone.overlaps(&monster.hitbox()) {
                 continue;
             }
-            let monster = monster.get_mut().get_mut_props();
+            let monster = monster.get_mut_props();
             let knockback = vec2(monster.pos.x - player_pos.x, monster.pos.y - player_pos.y)
                 .normalize()
                 * KNOCKBACK;
