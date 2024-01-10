@@ -1,3 +1,4 @@
+use crate::Rc;
 use crate::logic::*;
 use crate::map::Projectile;
 use crate::ui::inventory::Inventory;
@@ -37,6 +38,13 @@ pub struct Player {
     pub facing: Orientation,
     pub inventory: Inventory,
     pub combo: u8,
+    pub spawn_loc: SpawnLocation,
+}
+
+#[derive(Clone)]
+pub struct SpawnLocation {
+    pub location: Vec2,
+    pub map: Rc<str>
 }
 
 #[derive(Clone)]
@@ -55,6 +63,15 @@ pub enum Orientation {
     Right,
     Down,
     Up,
+}
+
+impl SpawnLocation {
+    fn new() -> Self {
+        Self {
+            location: Vec2::ZERO,
+            map: "Village".into()
+        }
+    }
 }
 
 pub trait Collidable {
@@ -147,6 +164,7 @@ impl Player {
             held_weapon: Weapon::rusty_sword(),
             facing: Orientation::Down,
             inventory: Inventory::empty(),
+            spawn_loc: SpawnLocation::new(),
             combo: 0,
         }
     }
@@ -215,7 +233,7 @@ impl Player {
             return;
         }
         if let PlayerState::Attacking(attack) = self.state {
-            let prog = attack.progress();
+            let prog = attack.timer.progress();
             if prog > 0.5 {
                 self.props.new_pos();
             }
@@ -433,12 +451,6 @@ impl Player {
             Orientation::Down => Rect::new(pos.x, pos.y + TILE, TILE, TILE),
             Orientation::Right => Rect::new(pos.x + TILE, pos.y, TILE, TILE),
         };
-    }
-}
-
-impl Attack {
-    pub fn progress(&self) -> f32 {
-        1. - self.timer.time / self.timer.duration
     }
 }
 

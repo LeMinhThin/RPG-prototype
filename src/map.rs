@@ -4,7 +4,7 @@ use std::rc::Rc;
 
 use crate::camera::TERRAIN_TILE_SIZE;
 use crate::interactables::{Chest, Interactables};
-use crate::logic::{Timer, KNOCKBACK, TILE, TILE_SIZE};
+use crate::logic::*;
 use crate::monsters::*;
 use crate::npc::NPC;
 use crate::player::PIXEL;
@@ -38,8 +38,9 @@ pub struct Projectile {
 
 #[derive(Clone)]
 pub struct Gate {
-    pub command: Rc<str>,
-    pub location: Rect,
+    pub map: Rc<str>,
+    pub hitbox: Rect,
+    pub location: Vec2,
 }
 
 pub struct Meshes {
@@ -204,16 +205,22 @@ impl Area {
     }
 }
 impl Gate {
-    fn new(x: f32, y: f32, w: f32, h: f32, command: &str) -> Self {
-        let location = Rect::new(x, y, w, h);
+    fn new(hitbox: Rect, location: Vec2, command: &str) -> Self {
         Gate {
+            hitbox,
             location,
-            command: command.into(),
+            map: command.into(),
         }
     }
 
     pub fn hitbox(&self) -> Rect {
-        self.location
+        self.hitbox
+    }
+
+    pub fn get_transition(&self) -> Transition {
+        let pos = self.location;
+        let map = self.map.clone();
+        Transition::new(Timer::new(0.7),pos, map)
     }
 }
 
@@ -296,7 +303,7 @@ fn get_props(objects: &Value) -> Option<(f32, f32, MobType, u32)> {
     let mut spawn_radius = 3. * TILE;
     let mut kind = MobType::Slime;
     let mut max_mob = 3;
-    
+
     if let Some(mob) = objects["type"].as_str() {
         kind = what_kind(mob)
     }
@@ -334,10 +341,15 @@ fn make_gates(objects: &Value) -> Option<Vec<Gate>> {
         let y = get_pos(gate, "y", "make_gates") * RATIO;
         let w = get_pos(gate, "width", "make_gates") * RATIO;
         let h = get_pos(gate, "height", "make_gates") * RATIO;
+        let hitbox = Rect::new(x,y,w,h);
 
         let command = get_command(&gate["properties"]).unwrap();
+        let commands: Vec<&str> = command.split_whitespace().collect();
+        let command = commands[0].trim().into();
+        let pos_x = commands[1].trim().parse::<f32>().unwrap() * TILE;
+        let pos_y = commands[2].trim().parse::<f32>().unwrap() * TILE;
 
-        gates.push(Gate::new(x, y, w, h, command))
+        gates.push(Gate::new(hitbox,vec2(pos_x, pos_y), command))
     }
 
     Some(gates)

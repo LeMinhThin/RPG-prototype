@@ -33,7 +33,7 @@ async fn main() {
         next_frame().await;
 
         // game over if health <= 0
-        if game_state.quit {
+        if let GameState::Quit = game_state.state {
             break;
         }
     }

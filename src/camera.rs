@@ -95,6 +95,7 @@ impl Game {
             self.draw_main_menu(menu);
             return;
         }
+
         self.draw_terrain();
         self.draw_monsters();
         self.draw_interactables();
@@ -106,16 +107,19 @@ impl Game {
         self.hud();
 
         match &self.state {
-            GameState::Normal => (),
+            GameState::Normal | GameState::Quit => (),
             GameState::GUI(gui) => self.draw_gui(gui),
             GameState::Talking(..) => self.draw_dialog(),
-            GameState::Transition(timer, _) => draw_transition(self.cam_box(), timer),
+            GameState::Transition(transition) => draw_transition(self.cam_box(), &transition.timer),
         }
     }
 
     fn draw_gui(&self, gui: &GUIType) {
         match gui {
             GUIType::Inventory => self.show_inv(),
+            GUIType::DeathScreen(death_screen) => {
+                death_screen.draw_buttons(&self.textures["ui"], &self.font)
+            }
             GUIType::MainMenu(_) => return, // This should not be reachable since it's already been covered
         }
     }
@@ -198,10 +202,10 @@ impl Game {
 
         for gate in gates {
             draw_rectangle(
-                gate.location.x,
-                gate.location.y,
-                gate.location.w,
-                gate.location.h,
+                gate.hitbox.x,
+                gate.hitbox.y,
+                gate.hitbox.w,
+                gate.hitbox.h,
                 GREEN,
             )
         }

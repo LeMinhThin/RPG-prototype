@@ -6,7 +6,7 @@ use std::rc::Rc;
 use crate::interactables::GameSignal;
 use crate::map::*;
 use crate::player::*;
-use crate::ui::main_menu::MainMenu;
+use crate::ui::*;
 use macroquad::experimental::animation::*;
 use macroquad::prelude::*;
 
@@ -25,29 +25,49 @@ pub struct Game {
     pub cam_offset: Vec2,
     pub textures: Textures,
     pub state: GameState,
-    pub tasks: Vec<Option<GameSignal>>,
+    pub tasks: Vec<Option<GameSignal>>, // This is kind of a hack
     pub font: Font,
-    pub quit: bool,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
+pub struct Transition {
+    pub timer: Timer,
+    moved: bool,
+    pos: Vec2,
+    map: Rc<str>
+}
+
+#[derive(Clone, Debug)]
 pub enum GUIType {
     Inventory,
     MainMenu(MainMenu),
+    DeathScreen(DeathScreen),
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum GameState {
     Normal,
+    Quit,
     GUI(GUIType),
     Talking(usize, usize),
-    Transition(Timer, bool),
+    Transition(Transition),
 }
 
 #[derive(PartialEq, Clone, Copy, Debug)]
 pub struct Timer {
     pub time: f32,
     pub duration: f32,
+}
+
+impl Transition {
+    pub fn new(timer: Timer, pos: Vec2, map: Rc<str>) -> Self {
+        Self {
+            timer,
+            pos,
+            map,
+            moved: false
+        }
+    }
 }
 
 impl Timer {
@@ -98,7 +118,6 @@ impl Game {
             cam_offset: vec2(0., 0.),
             state,
             font,
-            quit: false,
         }
     }
 
@@ -212,19 +231,18 @@ impl Game {
                 self.conversation();
                 return;
             }
-            GameState::Transition(mut timer, mut moved) => {
+            GameState::Transition(mut transition) => {
                 self.player.change_anim(false);
-                self.timer_progress(&mut timer, &mut moved);
+                self.timer_progress(&mut transition);
                 return;
             }
-            GameState::GUI(gui) => {
+            GameState::GUI(_) => {
                 self.player.change_anim(false);
-                self.tick_gui(gui);
+                self.tick_gui();
                 return;
             }
-            GameState::Normal => (),
+            GameState::Normal | GameState::Quit => (),
         }
-        self.is_touching_gate();
 
         self.tick_player();
         self.tick_map();
@@ -263,6 +281,14 @@ impl Game {
             let signal = chest.activate(&search_box);
             self.tasks.push(signal)
         }
+        let player_hitbox = self.player.hitbox();
+        for gate in &current_map.gates {
+            if !gate.hitbox().overlaps(&player_hitbox) {
+                continue;
+            }
+            self.state = GameState::Transition(gate.get_transition());
+            self.player.state = PlayerState::Transition;
+        }
 
         current_map.clean_up();
     }
@@ -280,17 +306,19 @@ impl Game {
     }
 
     fn tick_player(&mut self) {
-        match self.state {
+        match self.state.clone() {
             GameState::Talking(..) => {
                 self.conversation();
                 self.player.change_anim(false)
             }
-            GameState::Transition(mut timer, mut moved) => {
-                self.timer_progress(&mut timer, &mut moved);
+            GameState::Transition(mut transition) => {
+                self.timer_progress(&mut transition);
                 self.player.change_anim(false)
             }
-            GameState::GUI(_) => self.player.change_anim(false),
-            GameState::Normal => (),
+            GameState::GUI(_) => {
+                self.player.change_anim(false);
+            }
+            GameState::Normal | GameState::Quit => (),
         }
         let mouse_pos = self.get_mouse_pos();
         let current_map = self.maps.get_mut(&self.current_map).unwrap();
@@ -306,44 +334,30 @@ impl Game {
             self.damage_monster(&mut attack);
             self.player.state = PlayerState::Attacking(attack)
         }
-    }
 
-    fn is_touching_gate(&mut self) {
-        let gates = &self.maps[&self.current_map].gates;
-        let player_hitbox = self.player.hitbox();
-
-        for gate in gates {
-            if gate.hitbox().overlaps(&player_hitbox) {
-                let timer = Timer::new(0.7);
-                self.state = GameState::Transition(timer, false);
-                self.player.state = PlayerState::Transition;
-            }
+        if self.player.props.health <= 0. {
+            self.state = GameState::GUI(GUIType::DeathScreen(DeathScreen::new()))
         }
     }
 
-    fn transition(&mut self, timer: &Timer, moved: &mut bool) {
-        if should_move(timer, self.cam_box()) && !*moved {
+    fn transition(&mut self, transition: &mut Transition) {
+        let timer = transition.timer;
+        let moved = &mut transition.moved;
+        if should_move(&timer, self.cam_box()) && !*moved {
             *moved = true;
-            let gates = self.maps[&self.current_map].gates.clone();
-            let player_hitbox = self.player.hitbox();
-            let gate = gates
-                .iter()
-                .find(|gate| gate.hitbox().overlaps(&player_hitbox))
-                .unwrap();
-
-            self.move_map(&gate.command);
+            self.move_map(transition.pos, transition.map.clone());
         }
     }
 
-    fn timer_progress(&mut self, timer: &mut Timer, moved: &mut bool) {
-        timer.tick();
-        self.transition(timer, moved);
+    fn timer_progress(&mut self, transition: &mut Transition) {
+        transition.timer.tick();
+        self.transition(transition);
 
-        if timer.is_done() {
+        if transition.timer.is_done() {
             self.player.state = PlayerState::Normal;
             self.state = GameState::Normal;
         } else {
-            self.state = GameState::Transition(*timer, *moved)
+            self.state = GameState::Transition(transition.clone())
         }
     }
 
@@ -366,7 +380,7 @@ impl Game {
     }
 
     fn damage_monster(&mut self, attack: &mut Attack) {
-        let prog = attack.progress();
+        let prog = attack.timer.progress();
         if prog < 0.5 {
             return;
         }
@@ -397,19 +411,11 @@ impl Game {
         self.player.props.velocity += vector;
     }
 
-    fn move_map(&mut self, command: &str) {
-        let commands: Vec<&str> = command.split_whitespace().map(|x| x.trim()).collect();
+    fn move_map(&mut self, pos: Vec2, map: Rc<str>) {
+        self.player.props.pos.x = pos.x;
+        self.player.props.pos.y = pos.y;
 
-        let pos_x = commands[1].parse::<f32>().unwrap() * TILE;
-        let pos_y = commands[2].parse::<f32>().unwrap() * TILE;
-
-        //self.cam_offset.x = -pos_x / screen_width();
-        //self.cam_offset.y = pos_y / screen_height();
-
-        self.player.props.pos.x = pos_x;
-        self.player.props.pos.y = pos_y;
-
-        self.current_map = commands[0].into();
+        self.current_map = map
     }
 }
 

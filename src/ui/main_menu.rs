@@ -2,45 +2,17 @@ use std::collections::HashMap;
 
 use macroquad::prelude::*;
 
+use super::Button;
 use crate::camera::{draw_tiles, render_text, Utils};
-use crate::logic::Game;
 use crate::logic::*;
 
-#[derive(Clone)]
-pub struct Button {
-    hitbox: Rect,
-}
-impl Button {
-    fn is_clicked(&self, mouse_pos: Vec2) -> bool {
-        if !is_mouse_button_down(MouseButton::Left) {
-            return false;
-        }
-        if !self.hitbox.contains(mouse_pos) {
-            return false;
-        }
-        true
-    }
-
-    fn size(size: Vec2) -> Self {
-        let hitbox = Rect::new(0., 0., size.x, size.y);
-        Self { hitbox }
-    }
-
-    fn center_on(self, pos: Vec2) -> Self {
-        let x = pos.x - self.hitbox.w / 2.;
-        let y = pos.y - self.hitbox.h / 2.;
-        let hitbox = Rect::new(x, y, self.hitbox.w, self.hitbox.h);
-        Self { hitbox }
-    }
-}
-
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct MainMenu {
-    buttons: HashMap<String, Button>,
+    pub buttons: HashMap<String, Button>,
 }
 
 impl MainMenu {
-    fn update(&mut self, screen_box: Rect) {
+    pub fn update(&mut self, screen_box: Rect) {
         let size = vec2(5., 2.) * TILE;
         let mut pos = screen_box.center();
         pos.y -= TILE;
@@ -81,29 +53,6 @@ impl MainMenu {
     }
 }
 
-impl Game {
-    fn tick_main_menu(&mut self, menu: &mut MainMenu) {
-        menu.update(self.cam_box());
-        let mouse_pos = self.get_mouse_pos();
-        if menu.buttons["play"].is_clicked(mouse_pos) {
-            self.state = GameState::Normal
-        }
-        if menu.buttons["quit"].is_clicked(mouse_pos) {
-            self.quit = true
-        }
-    }
-
-    pub fn tick_gui(&mut self, mut gui: GUIType) {
-        match &mut gui {
-            GUIType::Inventory => self.tick_inv(),
-            GUIType::MainMenu(main_menu) => self.tick_main_menu(main_menu),
-        }
-        if let GameState::GUI(_) = self.state {
-            self.state = GameState::GUI(gui)
-        }
-    }
-}
-
-fn button_mesh() -> Vec<Vec<u16>> {
+pub fn button_mesh() -> Vec<Vec<u16>> {
     vec![vec![10, 11, 11, 11, 12], vec![22, 23, 23, 23, 24]]
 }
