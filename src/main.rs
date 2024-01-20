@@ -52,7 +52,7 @@ async fn load_textures() -> HashMap<Rc<str>, Texture2D> {
 }
 
 async fn load_font() -> Font {
-    load_ttf_font("assets/font/Monocraft.otf").await.unwrap()
+    load_ttf_font("assets/font/font.ttf").await.unwrap()
 }
 
 fn to_name(path: &PathBuf) -> Rc<str> {

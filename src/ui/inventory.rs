@@ -5,7 +5,7 @@ use crate::weapons::Weapon;
 use macroquad::prelude::*;
 use std::mem::swap;
 
-use super::items::{Item, ItemType};
+use super::items::{Item, ItemID, ItemType};
 
 const ROW: u8 = 3;
 const COL: f32 = 4.;
@@ -101,7 +101,12 @@ impl Game {
         let mouse_pos = self.get_mouse_pos();
         let player_inv = &self.player.inventory;
         let mut index = 0;
-        let mut diag_rect = Rect::new(mouse_pos.x + 4. * PIXEL, mouse_pos.y, 4. * TILE, 2. * TILE);
+        let mut diag_rect = Rect::new(
+            mouse_pos.x + 4. * PIXEL,
+            mouse_pos.y - 3. * PIXEL,
+            4. * TILE,
+            2. * TILE,
+        );
         for slot in player_inv.slot_hitboxes {
             if !slot.contains(mouse_pos) {
                 index += 1;
@@ -123,13 +128,14 @@ impl Game {
             let mut param = TextParams {
                 color: BLACK,
                 font: Some(&self.font),
-                font_size: 48,
+                font_size: 44,
                 ..Default::default()
             };
             render_text(diag_rect, name, param.clone());
-            param.font_size = 28;
             let desc = item.description();
-            diag_rect.y += 10. * PIXEL;
+            param.font_size = 26;
+            diag_rect.y += 12. * PIXEL;
+            diag_rect.w *= 0.9;
             render_text(diag_rect, desc, param);
             index += 1;
         }
@@ -187,7 +193,7 @@ impl Game {
 
             player_inv.content[12] = Some(item.clone());
             player_inv.holding = None;
-            self.player.held_weapon = get_weapon(item.name());
+            self.player.held_weapon = get_weapon(&item.kind);
             return;
         }
         player_inv.holding = player_inv.content[12].clone();
@@ -330,12 +336,11 @@ fn param() -> DrawTextureParams {
 }
 
 pub fn source_rect(item: Option<&Item>) -> Option<Rect> {
-    return match item?.name() {
-        "Slime" => Some(Rect::new(0., TILE_SIZE * 2., TILE_SIZE, TILE_SIZE)),
-        "Mushroom" => Some(Rect::new(TILE_SIZE, TILE_SIZE * 2., TILE_SIZE, TILE_SIZE)),
-        "Rusty sword" => Some(Rect::new(0., 3. * TILE_SIZE, TILE_SIZE, TILE_SIZE)),
-        "Black sword" => Some(Rect::new(TILE_SIZE, 3. * TILE_SIZE, TILE_SIZE, TILE_SIZE)),
-        _ => None,
+    return match item?.kind {
+        ItemID::Slime => Some(Rect::new(0., TILE_SIZE * 2., TILE_SIZE, TILE_SIZE)),
+        ItemID::Mushroom => Some(Rect::new(TILE_SIZE, TILE_SIZE * 2., TILE_SIZE, TILE_SIZE)),
+        ItemID::RustySword => Some(Rect::new(0., 3. * TILE_SIZE, TILE_SIZE, TILE_SIZE)),
+        ItemID::BlackSword => Some(Rect::new(TILE_SIZE, 3. * TILE_SIZE, TILE_SIZE, TILE_SIZE)),
     };
 }
 
@@ -357,17 +362,17 @@ fn window_texture() -> Vec<Vec<u16>> {
 #[rustfmt::skip]
 fn desc_diag() -> Vec<Vec<u16>> {
     vec![
-        vec![7 ,  8, 8,  9],
+        vec![7 ,  8,  8,  9],
         vec![31, 32, 32, 33],
     ]
 }
 
-fn get_weapon(name: &str) -> Weapon {
-    match name {
-        "Rusty sword" => Weapon::rusty_sword(),
-        "Black sword" => Weapon::black_sword(),
+fn get_weapon(kind: &ItemID) -> Weapon {
+    match kind {
+        ItemID::RustySword => Weapon::rusty_sword(),
+        ItemID::BlackSword => Weapon::black_sword(),
         x => {
-            error!("{x} isn't handled, returning rusty_sword anyway");
+            error!("{x:?} isn't handled, returning rusty_sword anyway");
             Weapon::rusty_sword()
         }
     }

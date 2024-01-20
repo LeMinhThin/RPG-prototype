@@ -1,8 +1,9 @@
-use crate::Rc;
 use crate::logic::*;
 use crate::map::Projectile;
 use crate::ui::inventory::Inventory;
+use crate::ui::items::ItemID;
 use crate::weapons::Weapon;
+use crate::Rc;
 use macroquad::experimental::animation::*;
 use macroquad::prelude::*;
 use macroquad::rand::rand;
@@ -44,7 +45,7 @@ pub struct Player {
 #[derive(Clone)]
 pub struct SpawnLocation {
     pub location: Vec2,
-    pub map: Rc<str>
+    pub map: Rc<str>,
 }
 
 #[derive(Clone)]
@@ -69,7 +70,7 @@ impl SpawnLocation {
     fn new() -> Self {
         Self {
             location: Vec2::ZERO,
-            map: "Village".into()
+            map: "Village".into(),
         }
     }
 }
@@ -436,9 +437,9 @@ impl Player {
         if let None = inv {
             return None;
         }
-        return match inv.as_ref().unwrap().name() {
-            "Rusty sword" => Some(Rect::new(0., 3. * TILE_SIZE, TILE_SIZE, TILE_SIZE)),
-            "Black sword" => Some(Rect::new(TILE_SIZE, 3. * TILE_SIZE, TILE_SIZE, TILE_SIZE)),
+        return match inv.as_ref().unwrap().kind {
+            ItemID::RustySword => Some(Rect::new(0., 3. * TILE_SIZE, TILE_SIZE, TILE_SIZE)),
+            ItemID::BlackSword => Some(Rect::new(TILE_SIZE, 3. * TILE_SIZE, TILE_SIZE, TILE_SIZE)),
             _ => None,
         };
     }

@@ -191,6 +191,23 @@
                  "width":0,
                  "x":223.875,
                  "y":96.125
+                }, 
+                {
+                 "height":16.125,
+                 "id":104,
+                 "name":"",
+                 "properties":[
+                        {
+                         "name":"to",
+                         "type":"string",
+                         "value":"map2 2 3"
+                        }],
+                 "rotation":0,
+                 "type":"door",
+                 "visible":true,
+                 "width":16.125,
+                 "x":48,
+                 "y":128
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -646,7 +663,7 @@
          "y":0
         }],
  "nextlayerid":10,
- "nextobjectid":102,
+ "nextobjectid":105,
  "orientation":"orthogonal",
  "properties":[
         {

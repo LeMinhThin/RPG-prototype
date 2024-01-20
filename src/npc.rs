@@ -9,7 +9,7 @@ use std::rc::Rc;
 
 pub struct NPC {
     pub name: Rc<str>,
-    pub dialogs: Vec<String>,
+    pub dialogs: Vec<Vec<char>>,
     pub hitbox: Rect,
     pub anim: AnimatedSprite,
     pub is_talking: bool,
@@ -20,7 +20,7 @@ impl NPC {
     pub fn new(name: &str, diag_path: &str, hitbox: Rect) -> Self {
         // Because cross platform lol
         let path: PathBuf = diag_path.replace("..", "assets").into();
-        let dialogs: Vec<String> = make_dialog(path).unwrap();
+        let dialogs = make_dialog(path).unwrap();
 
         let anim = npc_anim();
 
@@ -92,7 +92,7 @@ fn npc_anim() -> AnimatedSprite {
     )
 }
 
-fn make_dialog(path: PathBuf) -> Option<Vec<String>> {
+fn make_dialog(path: PathBuf) -> Option<Vec<Vec<char>>> {
     let mut dialog = vec![];
 
     let json_string = read_to_string(path).unwrap();
@@ -100,7 +100,9 @@ fn make_dialog(path: PathBuf) -> Option<Vec<String>> {
     let arr = parsed["dialog"].as_array()?;
 
     for item in arr {
-        dialog.push(format!("{} ", item.as_str()?.to_string()))
+        let mut chars: Vec<char> = item.as_str()?.chars().collect();
+        chars.push(' ');
+        dialog.push(chars)
     }
 
     Some(dialog)

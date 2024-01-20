@@ -25,7 +25,7 @@ pub struct Game {
     pub cam_offset: Vec2,
     pub textures: Textures,
     pub state: GameState,
-    pub tasks: Vec<Option<GameSignal>>, // This is kind of a hack
+    pub tasks: Vec<GameSignal>, // This is kind of a hack
     pub font: Font,
 }
 
@@ -34,7 +34,7 @@ pub struct Transition {
     pub timer: Timer,
     moved: bool,
     pos: Vec2,
-    map: Rc<str>
+    map: Rc<str>,
 }
 
 #[derive(Clone, Debug)]
@@ -60,12 +60,12 @@ pub struct Timer {
 }
 
 impl Transition {
-    pub fn new(timer: Timer, pos: Vec2, map: Rc<str>) -> Self {
+    pub fn new(pos: Vec2, map: Rc<str>) -> Self {
         Self {
-            timer,
+            timer: Timer::new(0.7),
             pos,
             map,
-            moved: false
+            moved: false,
         }
     }
 }
@@ -253,7 +253,7 @@ impl Game {
         let tasks = self.tasks.clone();
         tasks
             .iter()
-            .for_each(|task| self.handle_signals(task.as_ref()));
+            .for_each(|task| self.handle_signals(task));
         self.tasks.clear()
     }
 
@@ -277,10 +277,14 @@ impl Game {
             item.should_delete = true
         }
         let search_box = self.player.search_box();
-        for chest in current_map.interactables.iter_mut() {
-            let signal = chest.activate(&search_box);
-            self.tasks.push(signal)
+
+        for interactable in current_map.interactables.iter_mut() {
+            let signal = interactable.activate(&search_box);
+            if let Some(signal) = signal {
+                self.tasks.push(signal)
+            }
         }
+
         let player_hitbox = self.player.hitbox();
         for gate in &current_map.gates {
             if !gate.hitbox().overlaps(&player_hitbox) {
@@ -293,15 +297,11 @@ impl Game {
         current_map.clean_up();
     }
 
-    fn handle_signals(&mut self, signal: Option<&GameSignal>) {
-        let signal = match signal {
-            Some(signal) => signal,
-            None => return,
-        };
-
+    fn handle_signals(&mut self, signal: &GameSignal) {
         let current_map = self.maps.get_mut(&self.current_map).unwrap();
         match signal {
             GameSignal::SpawnItem(item) => current_map.items.push(item.clone()),
+            GameSignal::MovePlayer(trans) => self.state = GameState::Transition(trans.clone())
         }
     }
 

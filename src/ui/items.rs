@@ -1,15 +1,12 @@
 use macroquad::prelude::*;
-use std::rc::Rc;
 
 use super::inventory::source_rect;
 
 #[allow(dead_code)]
 #[derive(Clone, Debug)]
 pub struct Item {
-    // Because a guy named Logan Smith told me so
-    name: Rc<str>,
-    description: Rc<str>,
     value: u32,
+    pub kind: ItemID,
     pub class: ItemType,
     pub count: u8,
 }
@@ -27,12 +24,19 @@ pub enum ItemType {
     Weapon,
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub enum ItemID {
+    Slime,
+    Mushroom,
+    RustySword,
+    BlackSword,
+}
+
 impl Item {
     pub fn slime(count: u8) -> Self {
         Item {
-            name: "Slime".into(),
+            kind: ItemID::Slime,
             value: 5,
-            description: "It's quite slimy".into(),
             count,
             class: ItemType::RegularItem,
         }
@@ -40,10 +44,8 @@ impl Item {
 
     pub fn mushroom(count: u8) -> Self {
         Item {
-            name: "Mushroom".into(),
+            kind: ItemID::Mushroom,
             value: 5,
-            description: "Contrary to popular belief, eating this will not make you grow bigger"
-                .into(),
             count,
             class: ItemType::RegularItem,
         }
@@ -51,8 +53,7 @@ impl Item {
 
     pub fn rusty_sword() -> Self {
         Self {
-            name: "Rusty sword".into(),
-            description: "It is not the best sword out there".into(),
+            kind: ItemID::RustySword,
             count: 1,
             class: ItemType::Weapon,
             value: 10,
@@ -61,8 +62,7 @@ impl Item {
 
     pub fn black_sword() -> Self {
         Self {
-            name: "Black sword".into(),
-            description: "It is unclear how it got so black".into(),
+            kind: ItemID::BlackSword,
             count: 1,
             class: ItemType::Weapon,
             value: 20,
@@ -70,15 +70,25 @@ impl Item {
     }
 
     pub fn name(&self) -> &str {
-        &self.name
+        match self.kind {
+            ItemID::Mushroom => "Nấm Đỏ",
+            ItemID::Slime => "Chất nhầy",
+            ItemID::RustySword => "Kiếm rỉ sét",
+            ItemID::BlackSword => "Hắc kiếm",
+        }
     }
 
     pub fn description(&self) -> &str {
-        &self.description
+        match self.kind {
+            ItemID::Mushroom => "Trái với một tựa game nổi tiếng nào đó, việc tiêu thụ loại nấm này sẽ không làm bạn cao lên",
+            ItemID::Slime => "Nó khá nhầy nhụa",
+            ItemID::BlackSword => "Một thanh kiếm với màu đen huyền bí",
+            ItemID::RustySword => "Một thanh kiếm đã bị rỉ sét"
+        }
     }
 
     pub fn is_same_type(&self, item: &Item) -> bool {
-        self.name() == item.name()
+        self.kind == item.kind
     }
 }
 impl ItemEntity {

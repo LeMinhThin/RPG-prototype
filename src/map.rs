@@ -3,7 +3,7 @@ use serde_json::Value;
 use std::rc::Rc;
 
 use crate::camera::TERRAIN_TILE_SIZE;
-use crate::interactables::{Chest, Interactables};
+use crate::interactables::{Chest, Interactables, Door};
 use crate::logic::*;
 use crate::monsters::*;
 use crate::npc::NPC;
@@ -220,7 +220,7 @@ impl Gate {
     pub fn get_transition(&self) -> Transition {
         let pos = self.location;
         let map = self.map.clone();
-        Transition::new(Timer::new(0.7),pos, map)
+        Transition::new(pos, map)
     }
 }
 
@@ -326,7 +326,7 @@ fn what_kind(name: &str) -> MobType {
         "slime" => MobType::Slime,
         "mushroom" => MobType::Mushroom,
         x => {
-            warn!("[WARN] unrecognised mob type {x}, falling back to slime");
+            warn!("[WARN] unrecognised mob type {}, falling back to slime", x);
             MobType::Slime
         }
     }
@@ -341,7 +341,7 @@ fn make_gates(objects: &Value) -> Option<Vec<Gate>> {
         let y = get_pos(gate, "y", "make_gates") * RATIO;
         let w = get_pos(gate, "width", "make_gates") * RATIO;
         let h = get_pos(gate, "height", "make_gates") * RATIO;
-        let hitbox = Rect::new(x,y,w,h);
+        let hitbox = Rect::new(x, y, w, h);
 
         let command = get_command(&gate["properties"]).unwrap();
         let commands: Vec<&str> = command.split_whitespace().collect();
@@ -349,7 +349,7 @@ fn make_gates(objects: &Value) -> Option<Vec<Gate>> {
         let pos_x = commands[1].trim().parse::<f32>().unwrap() * TILE;
         let pos_y = commands[2].trim().parse::<f32>().unwrap() * TILE;
 
-        gates.push(Gate::new(hitbox,vec2(pos_x, pos_y), command))
+        gates.push(Gate::new(hitbox, vec2(pos_x, pos_y), command))
     }
 
     Some(gates)
@@ -416,7 +416,8 @@ fn parse_interactable(table: &Value) -> Vec<Interactable> {
 
     for item in table {
         match item["type"].as_str().unwrap().to_lowercase().as_str() {
-            "chest" => ret_vec.push(make_chests(item)),
+            "chest" => ret_vec.push(make_chest(item)),
+            "door" => ret_vec.push(make_door(item)),
             x => {
                 error!("Unrecognised interactable type {}", x)
             }
@@ -426,12 +427,30 @@ fn parse_interactable(table: &Value) -> Vec<Interactable> {
     ret_vec
 }
 
-fn make_chests(table: &Value) -> Interactable {
+fn make_door(table: &Value) -> Interactable {
+    let x = get_pos(table, "x", "make_door") * RATIO;
+    let y = get_pos(table, "y", "make_door") * RATIO;
+    let w = get_pos(table, "width", "make_door") * RATIO;
+    let h = get_pos(table, "height", "make_door") * RATIO;
+    let hitbox = Rect::new(x, y, w, h);
+
+    let command = get_command(&table["properties"]).unwrap();
+    let commands: Vec<&str> = command.split_whitespace().collect();
+    let command = commands[0].trim().into();
+    let pos_x = commands[1].trim().parse::<f32>().unwrap() * TILE;
+    let pos_y = commands[2].trim().parse::<f32>().unwrap() * TILE;
+    let location = vec2(pos_x, pos_y);
+
+    let door = Door::new(hitbox, command, location);
+    Box::new(door)
+}
+
+fn make_chest(table: &Value) -> Interactable {
     let x = get_pos(table, "x", "make_chest") * RATIO + PIXEL;
     let y = get_pos(table, "y", "make_chest") * RATIO + PIXEL;
     let item = match get_item(table) {
         Ok(item) => item,
-        Err(ItemErr::Invalid(name)) => {
+        Err(ItemErr::ParseErr(name)) => {
             warn!("Invalid Item name {name}, defaulting to slime");
             Item::slime(1)
         }
@@ -469,7 +488,7 @@ fn get_pos(table: &Value, value: &str, func: &str) -> f32 {
 enum ItemErr {
     NoKey,
     NotSameType,
-    Invalid(String),
+    ParseErr(String),
 }
 
 fn get_item(table: &Value) -> Result<Item, ItemErr> {
@@ -483,7 +502,7 @@ fn get_item(table: &Value) -> Result<Item, ItemErr> {
         "black sword" | "black_sword" => Ok(Item::black_sword()),
         "slime" => Ok(Item::slime(1)),
         "mushroom" => Ok(Item::mushroom(1)),
-        x => Err(ItemErr::Invalid(String::from(x))),
+        x => Err(ItemErr::ParseErr(String::from(x))),
     };
     item
 }

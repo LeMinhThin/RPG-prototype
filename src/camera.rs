@@ -233,17 +233,17 @@ impl Game {
 
         let npcs = &self.maps[&self.current_map].npcs;
         let npc = npcs.iter().find(|npc| npc.is_talking).unwrap();
-        let text = &npc.dialogs[line][..char];
+        let text: String = npc.dialogs[line][..char].iter().collect();
         let mut diag_box = self.diag_box();
         self.draw_diag_box(&self.textures["ui"]);
         let params = TextParams {
-            font_size: 48,
+            font_size: 50,
             font: Some(&self.font),
             color: BLACK,
             ..Default::default()
         };
         diag_box.x += 5. * PIXEL;
-        render_text(diag_box, text, params);
+        render_text(diag_box, &text, params);
     }
 
     fn draw_diag_box(&self, texture: &Texture2D) {
@@ -319,11 +319,11 @@ fn gen_draw_params(source_id: &u16, tile_size: f32) -> DrawTextureParams {
 
 pub fn render_text(diag_box: Rect, content: &str, params: TextParams) {
     let width = (diag_box.w / params.font_size as f32) * 1.5;
-    let max_width = Options::new(width as usize);
+    let max_width = Options::new(width as usize + 1);
     let lines = textwrap::wrap(content, max_width);
-    let mut offset = 0.;
+    let mut offset = PIXEL * 5.;
     for line in lines {
-        offset += params.font_size as f32 + 20.;
+        offset += params.font_size as f32 * 1.2;
         draw_text_ex(&line, diag_box.x, diag_box.y + offset, params.clone())
     }
 }

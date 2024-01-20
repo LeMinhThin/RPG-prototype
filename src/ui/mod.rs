@@ -86,11 +86,10 @@ impl Game {
         let mouse_pos = self.get_mouse_pos();
 
         if menu.buttons["respawn"].is_clicked(mouse_pos) {
-            let timer = Timer::new(0.7);
             let pos = self.player.spawn_loc.location;
             let map = self.player.spawn_loc.map.clone();
 
-            let state = GameState::Transition(Transition::new(timer, pos, map));
+            let state = GameState::Transition(Transition::new(pos, map));
             self.player.state = PlayerState::Transition;
             self.player.props.health = PLAYER_HEALTH;
             return state;
@@ -115,5 +114,4 @@ impl Game {
             GUIType::DeathScreen(death_screen) => self.tick_death_screen(death_screen.clone()),
         }
     }
-
 }

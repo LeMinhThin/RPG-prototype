@@ -1,13 +1,18 @@
+use crate::Transition;
 use macroquad::prelude::*;
 
 pub mod chests;
+pub mod doors;
+
 pub use chests::*;
+pub use doors::*;
 
 use crate::ui::items::ItemEntity;
 
 #[derive(Clone)]
 pub enum GameSignal {
     SpawnItem(ItemEntity),
+    MovePlayer(Transition),
 }
 
 pub trait Interactables {
