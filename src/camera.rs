@@ -37,7 +37,14 @@ impl Game {
                 cam_box.x -= cam_box.w - rect.w
             }
         }
-        // So uhm the camera will start to follow the player once the player has gone out of bound.
+
+        if bound_box.w < cam_box.w {
+            cam_box = cam_box.center_on(vec2(cam_box.center().x, bound_box.center().y))
+        }
+        if bound_box.h < cam_box.h {
+            cam_box = cam_box.center_on(vec2(bound_box.center().x, cam_box.center().y))
+        }
+        // So uhm, the camera will start to follow the player once the player has gone out of bound.
         // Since it would be quite nice to hide some easter eggs with it, this is a feauture now.
         self.set_offset(cam_box.center())
     }
@@ -80,7 +87,6 @@ impl Game {
     }
 
     pub fn draw(&mut self) {
-        clear_background(WHITE);
         let zoom_x = 1. / screen_width();
         let zoom_y = 1. / screen_height();
         let camera: Camera2D = Camera2D {
@@ -287,6 +293,7 @@ fn to_index(point: &u16, tile_size: f32) -> (f32, f32) {
 pub trait Utils {
     fn draw(&self);
     fn shift(&self, x: f32, y: f32) -> Self;
+    fn center_on(self, pos: Vec2) -> Self;
 }
 
 impl Utils for Rect {
@@ -301,6 +308,12 @@ impl Utils for Rect {
             w: self.w + x,
             h: self.h + x,
         }
+    }
+
+    fn center_on(self, pos: Vec2) -> Self {
+        let x = pos.x - self.w / 2.;
+        let y = pos.y - self.h / 2.;
+        Rect::new(x, y, self.w, self.h)
     }
 }
 
