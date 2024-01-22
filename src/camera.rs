@@ -22,27 +22,16 @@ impl Game {
 
         let bound_box = self.bound_box();
 
-        // Inverse collision detection lmao
-        if let Some(rect) = bound_box.intersect(cam_box) {
-            if cam_box.top() < bound_box.top() {
-                cam_box.y += cam_box.h - rect.h
-            }
-            if cam_box.bottom() > bound_box.bottom() {
-                cam_box.y -= cam_box.h - rect.h
-            }
-            if cam_box.left() < bound_box.left() {
-                cam_box.x += cam_box.w - rect.w
-            }
-            if cam_box.right() > bound_box.right() {
-                cam_box.x -= cam_box.w - rect.w
-            }
+        if bound_box.w < cam_box.w {
+            cam_box = cam_box.center_on(vec2(bound_box.center().x, cam_box.center().y))
+        } else {
+            snap_x(&mut cam_box, bound_box)
         }
 
-        if bound_box.w < cam_box.w {
-            cam_box = cam_box.center_on(vec2(cam_box.center().x, bound_box.center().y))
-        }
         if bound_box.h < cam_box.h {
-            cam_box = cam_box.center_on(vec2(bound_box.center().x, cam_box.center().y))
+            cam_box = cam_box.center_on(vec2(cam_box.center().x, bound_box.center().y))
+        } else {
+            snap_y(&mut cam_box, bound_box)
         }
         // So uhm, the camera will start to follow the player once the player has gone out of bound.
         // Since it would be quite nice to hide some easter eggs with it, this is a feauture now.
@@ -104,10 +93,10 @@ impl Game {
 
         self.draw_terrain();
         self.draw_monsters();
-        self.draw_interactables();
         self.draw_player();
         self.draw_projectiles();
         self.draw_decorations();
+        self.draw_interactables();
         self.draw_npcs();
         self.draw_items();
         self.hud();
@@ -404,4 +393,25 @@ fn diag_mesh() -> Vec<Vec<u16>> {
         vec![19, 20, 20, 20, 20, 20, 20, 20, 21],
         vec![31, 32, 32, 32, 32, 32, 32, 32, 33],
     ]
+}
+fn snap_y(cam_box: &mut Rect, bound_box: Rect) {
+    if let Some(rect) = bound_box.intersect(*cam_box) {
+        if cam_box.top() < bound_box.top() {
+            cam_box.y += cam_box.h - rect.h
+        }
+        if cam_box.bottom() > bound_box.bottom() {
+            cam_box.y -= cam_box.h - rect.h
+        }
+    }
+}
+
+fn snap_x(cam_box: &mut Rect, bound_box: Rect) {
+    if let Some(rect) = bound_box.intersect(*cam_box) {
+        if cam_box.left() < bound_box.left() {
+            cam_box.x += cam_box.w - rect.w
+        }
+        if cam_box.right() > bound_box.right() {
+            cam_box.x -= cam_box.w - rect.w
+        }
+    }
 }

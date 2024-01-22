@@ -99,7 +99,7 @@ impl Game {
     pub fn new(textures: Textures, font: Font) -> Self {
         let mut area: Maps = HashMap::new();
         // TODO unhardcode this value
-        let current_map = "Village".into();
+        let current_map: Rc<str> = "Room".into();
 
         let map_list = get_path("assets/maps/", ".json");
         for map in map_list {
@@ -110,7 +110,7 @@ impl Game {
         let state = GameState::GUI(GUIType::MainMenu(MainMenu::new()));
 
         Game {
-            player: Player::new(),
+            player: Player::new(current_map.clone()),
             tasks: vec![],
             maps: area,
             current_map,
@@ -250,25 +250,29 @@ impl Game {
     }
 
     fn do_task(&mut self) {
-        let tasks = self.tasks.clone();
-        tasks
-            .iter()
-            .for_each(|task| self.handle_signals(task));
-        self.tasks.clear()
+        let mut tasks = vec![];
+        // Idk a hack of sort
+        std::mem::swap(&mut tasks, &mut self.tasks);
+        tasks.iter().for_each(|task| self.handle_signals(task));
     }
 
     fn tick_map(&mut self) {
         let current_map = self.maps.get_mut(&self.current_map).unwrap();
+        current_map
+            .projectiles
+            .iter_mut()
+            .for_each(|proj| proj.tick(&mut current_map.enemies));
 
-        for projectile in current_map.projectiles.iter_mut() {
-            projectile.tick(&mut current_map.enemies);
-        }
-        for monster in current_map.enemies.iter_mut() {
-            monster.tick(&mut self.player, &current_map.walls);
-        }
-        for spawner in current_map.spawners.iter_mut() {
-            spawner.tick(&mut current_map.enemies)
-        }
+        current_map
+            .enemies
+            .iter_mut()
+            .for_each(|enemy| enemy.tick(&mut self.player, &current_map.walls));
+
+        current_map
+            .spawners
+            .iter_mut()
+            .for_each(|spawner| spawner.tick(&mut current_map.enemies));
+
         for item in current_map.items.iter_mut() {
             if !item.hitbox.overlaps(&self.player.hitbox()) {
                 continue;
@@ -301,7 +305,7 @@ impl Game {
         let current_map = self.maps.get_mut(&self.current_map).unwrap();
         match signal {
             GameSignal::SpawnItem(item) => current_map.items.push(item.clone()),
-            GameSignal::MovePlayer(trans) => self.state = GameState::Transition(trans.clone())
+            GameSignal::MovePlayer(trans) => self.state = GameState::Transition(trans.clone()),
         }
     }
 
@@ -412,9 +416,7 @@ impl Game {
     }
 
     fn move_map(&mut self, pos: Vec2, map: Rc<str>) {
-        self.player.props.pos.x = pos.x;
-        self.player.props.pos.y = pos.y;
-
+        self.player.props.pos = pos;
         self.current_map = map
     }
 }

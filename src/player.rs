@@ -67,11 +67,8 @@ pub enum Orientation {
 }
 
 impl SpawnLocation {
-    fn new() -> Self {
-        Self {
-            location: Vec2::ZERO,
-            map: "Village".into(),
-        }
+    fn new(pos: Vec2, map: Rc<str>) -> Self {
+        Self { location: pos, map }
     }
 }
 
@@ -156,16 +153,17 @@ impl Props {
 }
 
 impl Player {
-    pub fn new() -> Self {
+    pub fn new(map: Rc<str>) -> Self {
         let animation = player_animations();
+        let pos = vec2(11. * TILE, 2. * TILE);
         Player {
             state: PlayerState::Normal,
             invul_time: Timer::new(INVUL_TIME),
-            props: Props::from(Vec2::ZERO, PLAYER_HEALTH, animation),
+            props: Props::from(pos, PLAYER_HEALTH, animation),
             held_weapon: Weapon::rusty_sword(),
             facing: Orientation::Down,
             inventory: Inventory::empty(),
-            spawn_loc: SpawnLocation::new(),
+            spawn_loc: SpawnLocation::new(pos, map),
             combo: 0,
         }
     }

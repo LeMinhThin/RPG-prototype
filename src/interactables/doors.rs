@@ -1,5 +1,4 @@
 use super::*;
-use crate::camera::Utils;
 use crate::npc::overlay_pos;
 use crate::player::PIXEL;
 use crate::Rc;
@@ -22,9 +21,7 @@ impl Door {
 }
 
 impl Interactables for Door {
-    fn draw(&self, _texture: &Texture2D) {
-        self.hitbox.draw()
-    }
+    fn draw(&self, _texture: &Texture2D) {}
 
     fn hitbox(&self) -> Rect {
         self.hitbox
@@ -34,11 +31,13 @@ impl Interactables for Door {
         if !is_key_pressed(KeyCode::R) {
             return None;
         }
-        if search_box.overlaps(&self.hitbox) {
-            let trans = Transition::new(self.location, self.map.clone());
-            return Some(GameSignal::MovePlayer(trans));
+
+        if !search_box.overlaps(&self.hitbox) {
+            return None;
         }
-        None
+
+        let trans = Transition::new(self.location, self.map.clone());
+        return Some(GameSignal::MovePlayer(trans));
     }
 
     fn draw_overlay(&self, texture: &Texture2D) {

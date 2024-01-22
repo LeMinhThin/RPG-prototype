@@ -3,7 +3,7 @@ use serde_json::Value;
 use std::rc::Rc;
 
 use crate::camera::TERRAIN_TILE_SIZE;
-use crate::interactables::{Chest, Interactables, Door};
+use crate::interactables::{Chest, Door, Interactables};
 use crate::logic::*;
 use crate::monsters::*;
 use crate::npc::NPC;

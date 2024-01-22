@@ -7,7 +7,7 @@ use crate::map::Monster;
 use super::mushroom::Mushroom;
 use super::slime::Slime;
 
-// The term "radius" being used here is technically wrong as it is more of a square than a circle but
+// The term "radius" being used here is technically incorrect as it is more of a square than a circle but
 // it would take an additional layer of complexity to fix this tiny bug, which I'm not very fond of
 // dealing with so "radius" remains for now.
 #[derive(Debug)]

@@ -1,10 +1,9 @@
 use logic::*;
 use macroquad::prelude::*;
-use std::rc::Rc;
-use std::{collections::HashMap, path::PathBuf};
+use std::{collections::HashMap, path::PathBuf, rc::Rc};
 
 mod camera;
-pub mod interactables;
+mod interactables;
 mod logic;
 mod map;
 mod monsters;
@@ -32,7 +31,6 @@ async fn main() {
         game_state.draw();
         next_frame().await;
 
-        // game over if health <= 0
         if let GameState::Quit = game_state.state {
             break;
         }
