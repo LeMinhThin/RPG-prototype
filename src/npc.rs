@@ -80,8 +80,8 @@ impl NPC {
 
 fn npc_anim() -> AnimatedSprite {
     AnimatedSprite::new(
-        TILE_SIZE as u32,
-        TILE_SIZE as u32,
+        16,
+        24,
         &[
             make_anim("down", 0, 6, 12),
             make_anim("left", 1, 6, 12),

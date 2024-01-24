@@ -19,7 +19,7 @@ pub struct Mushroom {
 
 impl IsAMonster for Mushroom {
     fn tick(&mut self, player: &mut Player, walls: &[Rect]) {
-        let player_pos = player.pos();
+        let player_pos = player.props.pos;
         self.move_to(player_pos);
         self.damage_player(player);
         self.props.new_pos();

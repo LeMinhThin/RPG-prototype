@@ -133,8 +133,8 @@ impl Game {
             };
             render_text(diag_rect, name, param.clone());
             let desc = item.description();
-            param.font_size = 26;
-            diag_rect.y += 12. * PIXEL;
+            param.font_size = 28;
+            diag_rect.y += 10. * PIXEL;
             diag_rect.w *= 0.9;
             render_text(diag_rect, desc, param);
             index += 1;

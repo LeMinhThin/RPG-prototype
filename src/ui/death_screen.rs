@@ -1,7 +1,4 @@
-use crate::{
-    camera::{draw_tiles, render_text, Utils},
-    logic::TILE,
-};
+use crate::{camera::draw_tiles, logic::TILE};
 use std::collections::HashMap;
 
 use super::*;
@@ -26,8 +23,8 @@ impl DeathScreen {
         let respawn_button = Button::size(button_size).center_on(pos);
         pos.y += 2. * TILE;
         let main_menu_button = Button::size(button_size).center_on(pos);
-        self.buttons.insert("respawn".to_string(), respawn_button);
-        self.buttons.insert("menu".to_string(), main_menu_button);
+        self.buttons.insert("Hồi Sinh".to_string(), respawn_button);
+        self.buttons.insert("Menu".to_string(), main_menu_button);
     }
 
     pub fn draw_buttons(&self, texture: &Texture2D, font: &Font) {
@@ -37,11 +34,20 @@ impl DeathScreen {
             draw_tiles(&mesh, button.hitbox.point(), texture, None, TILE_SIZE);
             let params = TextParams {
                 font: Some(font),
-                font_size: 120,
+                font_size: 80,
                 color: BLACK,
                 ..Default::default()
             };
-            render_text(button.hitbox.shift(-TILE, -TILE / 2.), name, params);
+            let rect = measure_text(name, Some(font), params.font_size, 1.);
+            let delta_x = (button.hitbox.w - rect.width) / 2.;
+            let delta_y = (button.hitbox.h - rect.height) / 2.;
+            let text_box = vec2(button.hitbox.x + delta_x, button.hitbox.y + delta_y);
+            draw_text_ex(
+                name,
+                text_box.x,
+                button.hitbox.center().y + 3. * PIXEL,
+                params,
+            )
         }
     }
 }

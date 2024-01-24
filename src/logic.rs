@@ -417,7 +417,7 @@ impl Game {
 
     fn move_map(&mut self, pos: Vec2, map: Rc<str>) {
         self.player.props.pos = pos;
-        self.current_map = map
+        self.current_map = map;
     }
 }
 

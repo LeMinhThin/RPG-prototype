@@ -109,42 +109,7 @@
          "draworder":"topdown",
          "id":8,
          "name":"NPCs",
-         "objects":[
-                {
-                 "height":9.25,
-                 "id":96,
-                 "name":"player",
-                 "properties":[
-                        {
-                         "name":"dialog",
-                         "type":"file",
-                         "value":"..\/dialogs\/John.json"
-                        }],
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":16,
-                 "x":64,
-                 "y":86.375
-                }, 
-                {
-                 "height":0,
-                 "id":97,
-                 "name":"player",
-                 "point":true,
-                 "properties":[
-                        {
-                         "name":"dialog",
-                         "type":"file",
-                         "value":"..\/dialogs\/Bob.json"
-                        }],
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":0,
-                 "x":608.606060606061,
-                 "y":237.090909090909
-                }],
+         "objects":[],
          "opacity":1,
          "type":"objectgroup",
          "visible":true,
@@ -663,7 +628,7 @@
          "y":0
         }],
  "nextlayerid":10,
- "nextobjectid":105,
+ "nextobjectid":106,
  "orientation":"orthogonal",
  "properties":[
         {
@@ -679,12 +644,12 @@
          "columns":12,
          "firstgid":1,
          "image":"..\/..\/res\/terrain.png",
-         "imageheight":416,
+         "imageheight":464,
          "imagewidth":192,
          "margin":0,
          "name":"terrain",
          "spacing":0,
-         "tilecount":312,
+         "tilecount":348,
          "tileheight":16,
          "tilewidth":16
         }],

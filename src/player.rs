@@ -1,3 +1,4 @@
+use crate::camera::Utils;
 use crate::logic::*;
 use crate::map::Projectile;
 use crate::ui::inventory::Inventory;
@@ -443,12 +444,13 @@ impl Player {
     }
 
     pub fn search_box(&self) -> Rect {
-        let pos = self.props.pos;
+        let pos = self.pos();
+        let rect = Rect::new(0., 0., TILE, TILE);
         return match self.facing {
-            Orientation::Up => Rect::new(pos.x, pos.y - TILE, TILE, TILE),
-            Orientation::Left => Rect::new(pos.x - TILE, pos.y, TILE, TILE),
-            Orientation::Down => Rect::new(pos.x, pos.y + TILE, TILE, TILE),
-            Orientation::Right => Rect::new(pos.x + TILE, pos.y, TILE, TILE),
+            Orientation::Up => rect.center_on(vec2(pos.x, pos.y - TILE / 2.)),
+            Orientation::Left => rect.center_on(vec2(pos.x - TILE / 2., pos.y)),
+            Orientation::Down => rect.center_on(vec2(pos.x, pos.y + TILE / 2.)),
+            Orientation::Right => rect.center_on(vec2(pos.x + TILE / 2., pos.y)),
         };
     }
 }

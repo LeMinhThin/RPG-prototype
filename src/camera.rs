@@ -4,7 +4,7 @@ use crate::{logic::*, map::Area};
 use macroquad::prelude::*;
 use textwrap::Options;
 
-const CAM_SPEED: f32 = 1. / 10.;
+const CAM_SPEED: f32 = 1. / 8.;
 
 const SHEET_SIZE: u16 = 12;
 const BLANK_TILE: u16 = 0;
@@ -93,10 +93,10 @@ impl Game {
 
         self.draw_terrain();
         self.draw_monsters();
+        self.draw_interactables();
         self.draw_player();
         self.draw_projectiles();
         self.draw_decorations();
-        self.draw_interactables();
         self.draw_npcs();
         self.draw_items();
         self.hud();
@@ -321,11 +321,11 @@ fn gen_draw_params(source_id: &u16, tile_size: f32) -> DrawTextureParams {
 
 pub fn render_text(diag_box: Rect, content: &str, params: TextParams) {
     let width = (diag_box.w / params.font_size as f32) * 1.5;
-    let max_width = Options::new(width as usize + 1);
+    let max_width = Options::new(width as usize);
     let lines = textwrap::wrap(content, max_width);
     let mut offset = PIXEL * 5.;
     for line in lines {
-        offset += params.font_size as f32 * 1.2;
+        offset += params.font_size as f32 * 1.5;
         draw_text_ex(&line, diag_box.x, diag_box.y + offset, params.clone())
     }
 }

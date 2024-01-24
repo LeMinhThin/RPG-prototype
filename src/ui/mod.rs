@@ -72,10 +72,10 @@ impl Game {
     fn tick_main_menu(&mut self, mut menu: MainMenu) -> GameState {
         menu.update(self.cam_box());
         let mouse_pos = self.get_mouse_pos();
-        if menu.buttons["play"].is_clicked(mouse_pos) {
+        if menu.buttons["Chơi"].is_clicked(mouse_pos) {
             return GameState::Normal;
         }
-        if menu.buttons["quit"].is_clicked(mouse_pos) {
+        if menu.buttons["Thoát"].is_clicked(mouse_pos) {
             return GameState::Quit;
         }
         GameState::GUI(GUIType::MainMenu(menu))
@@ -85,7 +85,7 @@ impl Game {
         menu.update(self.cam_box());
         let mouse_pos = self.get_mouse_pos();
 
-        if menu.buttons["respawn"].is_clicked(mouse_pos) {
+        if menu.buttons["Hồi Sinh"].is_clicked(mouse_pos) {
             let pos = self.player.spawn_loc.location;
             let map = self.player.spawn_loc.map.clone();
 
@@ -94,7 +94,7 @@ impl Game {
             self.player.props.health = PLAYER_HEALTH;
             return state;
         }
-        if menu.buttons["menu"].is_clicked(mouse_pos) {
+        if menu.buttons["Menu"].is_clicked(mouse_pos) {
             return GameState::GUI(GUIType::MainMenu(MainMenu::new()));
         }
         return GameState::GUI(GUIType::DeathScreen(menu));

@@ -2,8 +2,8 @@ use std::collections::HashMap;
 
 use macroquad::prelude::*;
 
-use super::Button;
-use crate::camera::{draw_tiles, render_text, Utils};
+use super::{Button, PIXEL};
+use crate::camera::draw_tiles;
 use crate::logic::*;
 
 #[derive(Clone, Debug)]
@@ -19,8 +19,8 @@ impl MainMenu {
         let play_button = Button::size(size).center_on(pos);
         pos.y += 2. * TILE;
         let quit_button = Button::size(size).center_on(pos);
-        self.buttons.insert("play".to_string(), play_button);
-        self.buttons.insert("quit".to_string(), quit_button);
+        self.buttons.insert("Chơi".to_string(), play_button);
+        self.buttons.insert("Thoát".to_string(), quit_button);
     }
 
     pub fn draw_background(&self, bg: &Texture2D, screen_box: Rect) {
@@ -43,7 +43,16 @@ impl MainMenu {
                 color: BLACK,
                 ..Default::default()
             };
-            render_text(button.hitbox.shift(-TILE * 1.9, -TILE / 2.), name, params)
+            let rect = measure_text(name, Some(font), params.font_size, 1.);
+            let delta_x = (button.hitbox.w - rect.width) / 2.;
+            let delta_y = (button.hitbox.h - rect.height) / 2.;
+            let text_box = vec2(button.hitbox.x + delta_x, button.hitbox.y + delta_y);
+            draw_text_ex(
+                name,
+                text_box.x,
+                button.hitbox.center().y + 3. * PIXEL,
+                params,
+            )
         }
     }
     pub fn new() -> Self {

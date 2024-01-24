@@ -33,11 +33,13 @@ impl Spawner {
         max_cooldown: f32,
         pos: Vec2,
     ) -> Self {
+        let mut timer = Timer::new(max_cooldown);
+        timer.time = 0.;
         Spawner {
             kind,
             spawn_radius,
             max_mob,
-            timer: Timer::new(max_cooldown),
+            timer,
             pos,
         }
     }

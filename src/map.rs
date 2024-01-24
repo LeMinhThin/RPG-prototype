@@ -343,7 +343,14 @@ fn make_gates(objects: &Value) -> Option<Vec<Gate>> {
         let h = get_pos(gate, "height", "make_gates") * RATIO;
         let hitbox = Rect::new(x, y, w, h);
 
-        let command = get_command(&gate["properties"]).unwrap();
+        let command = match get_command(&gate["properties"]) {
+            Some(command) => command,
+            None => {
+                dbg!(gate);
+                dbg!(objects);
+                panic!("shid")
+            }
+        };
         let commands: Vec<&str> = command.split_whitespace().collect();
         let command = commands[0].trim().into();
         let pos_x = commands[1].trim().parse::<f32>().unwrap() * TILE;
@@ -356,7 +363,7 @@ fn make_gates(objects: &Value) -> Option<Vec<Gate>> {
 }
 
 fn get_command(objects: &Value) -> Option<&str> {
-    let commands = objects.as_array().unwrap();
+    let commands = objects.as_array()?;
 
     let mut string = "";
     for i in commands {
@@ -419,7 +426,8 @@ fn parse_interactable(table: &Value) -> Vec<Interactable> {
             "chest" => ret_vec.push(make_chest(item)),
             "door" => ret_vec.push(make_door(item)),
             x => {
-                error!("Unrecognised interactable type {}", x)
+                error!("Unrecognised interactable type {}", x);
+                dbg!(item);
             }
         }
     }
